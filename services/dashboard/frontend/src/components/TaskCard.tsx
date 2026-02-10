@@ -11,6 +11,8 @@ export interface Task {
     location?: string;
     bounty_gold: number;
     is_completed: boolean;
+    created_at: string;
+    completed_at?: string;
 }
 
 interface TaskCardProps {

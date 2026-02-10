@@ -12,6 +12,8 @@ class Task(Base):
     bounty_xp = Column(Integer, default=50)
     is_completed = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    task_type = Column(String, nullable=True)
 
 class User(Base):
     __tablename__ = "users"

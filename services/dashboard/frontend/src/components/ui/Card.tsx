@@ -1,8 +1,9 @@
-import { HTMLAttributes, forwardRef, ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { forwardRef, ReactNode } from 'react';
+import { motion, HTMLMotionProps } from 'framer-motion';
 import { clsx } from 'clsx';
 
-export interface CardProps extends HTMLAttributes<HTMLDivElement> {
+export interface CardProps extends HTMLMotionProps<"div"> {
+    children?: ReactNode;
     elevation?: 1 | 2 | 3 | 4;
     padding?: 'none' | 'small' | 'medium' | 'large';
     header?: ReactNode;
