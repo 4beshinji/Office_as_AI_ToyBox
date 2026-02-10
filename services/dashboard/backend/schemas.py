@@ -8,9 +8,8 @@ class TaskBase(BaseModel):
     description: Optional[str] = None
     location: Optional[str] = None
     bounty_gold: int = 10
-    bounty_xp: int = 50
     expires_at: Optional[datetime] = None
-    task_type: Optional[str] = None
+    task_type: Optional[List[str]] = None
 
 class TaskCreate(TaskBase):
     pass
@@ -20,10 +19,9 @@ class TaskUpdate(BaseModel):
     description: Optional[str] = None
     location: Optional[str] = None
     bounty_gold: Optional[int] = None
-    bounty_xp: Optional[int] = None
     is_completed: Optional[bool] = None
     expires_at: Optional[datetime] = None
-    task_type: Optional[str] = None
+    task_type: Optional[List[str]] = None
 
 class Task(TaskBase):
     id: int

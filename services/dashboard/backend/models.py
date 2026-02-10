@@ -9,11 +9,11 @@ class Task(Base):
     description = Column(String)
     location = Column(String)
     bounty_gold = Column(Integer, default=10)
-    bounty_xp = Column(Integer, default=50)
     is_completed = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    completed_at = Column(DateTime(timezone=True), nullable=True)
     expires_at = Column(DateTime(timezone=True), nullable=True)
-    task_type = Column(String, nullable=True)
+    task_type = Column(String, nullable=True) # JSON list of strings
 
 class User(Base):
     __tablename__ = "users"

@@ -8,7 +8,7 @@ class DashboardClient:
         # Default to internal docker-compose DNS name for backend
         self.api_url = api_url or os.getenv("DASHBOARD_API_URL", "http://backend:8000")
     
-    async def create_task(self, title: str, description: str, bounty: int = 0, task_type: str = "general", expires_in_minutes: int = None):
+    async def create_task(self, title: str, description: str, bounty: int = 0, task_types: list[str] = None, expires_in_minutes: int = None):
         """
         Create a new task in the dashboard.
         
@@ -16,19 +16,25 @@ class DashboardClient:
             title: Task title
             description: Task description
             bounty: Reward amounts (Jinbo Points)
-            task_type: Type of task (e.g., 'supply', 'environment', 'maintenance')
-            expires_in_minutes: Duration content should be displayed (minutes). If None, calculated based on type.
+            task_types: List of task types (e.g., ['supply', 'urgent'])
+            expires_in_minutes: Duration content should be displayed (minutes). If None, calculated based on types.
         """
         from datetime import datetime, timedelta, timezone
 
+        if task_types is None:
+            task_types = ["general"]
+
         # Determine expiration if not provided
         if expires_in_minutes is None:
-            if task_type == 'environment':
-                expires_in_minutes = 60  # 1 hour for environmental issues (lights, temp)
-            elif task_type == 'supply':
-                expires_in_minutes = 60 * 24 * 7  # 1 week for supplies
-            else:
-                expires_in_minutes = 60 * 24  # 24 hours default
+            expires_in_minutes = 60 * 24 # Default 24h
+            
+            # Application specific rules
+            if 'environment' in task_types: # e.g. lights on
+                expires_in_minutes = min(expires_in_minutes, 60) # 1 hour max for env issues
+            if 'supply' in task_types:
+                expires_in_minutes = 60 * 24 * 7 # 1 week for supplies
+            if 'urgent' in task_types:
+                expires_in_minutes = min(expires_in_minutes, 30) # 30 mins for urgent
 
         # Calculate expires_at
         expires_at = (datetime.now(timezone.utc) + timedelta(minutes=expires_in_minutes)).isoformat()
@@ -38,9 +44,9 @@ class DashboardClient:
             "title": title,
             "description": description,
             "bounty_gold": bounty,
-            "task_type": task_type,
+            "task_type": task_types,
             "expires_at": expires_at,
-            "location": "Office" # Default location for now, should be passed in arg ideally
+            "location": "Office"
         }
         
         try:

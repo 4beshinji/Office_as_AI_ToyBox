@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.sql import func
 from typing import List
 from database import get_db
 import models
+import json
 
 router = APIRouter(
     prefix="/tasks",
@@ -19,7 +22,22 @@ async def read_tasks(skip: int = 0, limit: int = 100, db: AsyncSession = Depends
         (models.Task.expires_at == None) | (models.Task.expires_at > func.now())
     ).offset(skip).limit(limit)
     result = await db.execute(query)
-    tasks = result.scalars().all()
+    tasks_db = result.scalars().all()
+    
+    # Convert DB models to Schema models (handling JSON parsing)
+    tasks = []
+    for t in tasks_db:
+        # Filter out SQLAlchemy internal state and copy dict
+        t_dict = {k: v for k, v in t.__dict__.items() if not k.startswith('_')}
+        if t.task_type:
+            try:
+                t_dict['task_type'] = json.loads(t.task_type)
+            except:
+                t_dict['task_type'] = []
+        else:
+            t_dict['task_type'] = []
+        tasks.append(schemas.Task(**t_dict))
+        
     return tasks
 
 @router.post("/", response_model=schemas.Task)
@@ -43,14 +61,28 @@ async def create_task(task: schemas.TaskCreate, db: AsyncSession = Depends(get_d
         description=task.description,
         location=task.location,
         bounty_gold=task.bounty_gold,
-        bounty_xp=task.bounty_xp,
         expires_at=task.expires_at,
-        task_type=task.task_type
+        task_type=json.dumps(task.task_type) if task.task_type else None
     )
     db.add(new_task)
     await db.commit()
     await db.refresh(new_task)
-    return new_task
+    
+    # Manually construct response dict to handle task_type parsing and avoid __dict__ issues
+    response_data = {
+        "id": new_task.id,
+        "title": new_task.title,
+        "description": new_task.description,
+        "location": new_task.location,
+        "bounty_gold": new_task.bounty_gold,
+        "is_completed": new_task.is_completed,
+        "created_at": new_task.created_at,
+        "completed_at": new_task.completed_at,
+        "expires_at": new_task.expires_at,
+        "task_type": json.loads(new_task.task_type) if new_task.task_type else []
+    }
+    
+    return schemas.Task(**response_data)
 
 @router.put("/{task_id}/complete", response_model=schemas.Task)
 async def complete_task(task_id: int, db: AsyncSession = Depends(get_db)):

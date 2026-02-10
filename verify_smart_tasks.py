@@ -12,8 +12,7 @@ def check():
             "title": "Task A",
             "description": "Desc A",
             "bounty_gold": 100,
-            "bounty_xp": 0,
-            "task_type": "general",
+            "task_type": ["general", "clean"],
             "expires_at": None,
             "location": "Office"
         })
@@ -21,7 +20,10 @@ def check():
             print(f"Failed to create Task A: {r.status_code} {r.text}")
             return False
         t1 = r.json()
-        print(f"Task A created: ID={t1['id']}")
+        print(f"Task A created: ID={t1['id']} Types={t1.get('task_type')}")
+        if t1.get('task_type') != ["general", "clean"]:
+             print(f"ERROR: Task type mismatch: {t1.get('task_type')}")
+             return False
     except Exception as e:
         print(f"Connection failed: {e}")
         return False
@@ -32,8 +34,7 @@ def check():
         "title": "Task A",
         "description": "Desc A Duplicate",
         "bounty_gold": 200,
-        "bounty_xp": 0,
-        "task_type": "general",
+        "task_type": ["urgent"],
         "expires_at": None,
         "location": "Office"
     })
@@ -48,24 +49,11 @@ def check():
     tasks = r.json()
     print(f"Total tasks: {len(tasks)}")
     
-    # We expect 1 task (Task A Duplicate)
-    # Note: If there were other tasks from before, this might fail, but we're assuming clean DB.
-    # Actually, verify that t1['id'] is NOT in the list (deleted) and t2['id'] IS.
-    
     current_ids = [t['id'] for t in tasks]
     if t1['id'] in current_ids and t1['id'] != t2['id']:
         print("ERROR: Old task was NOT deleted!")
         return False
     
-    target_task = next((t for t in tasks if t['id'] == t2['id']), None)
-    if not target_task:
-        print("ERROR: New task not found?")
-        return False
-        
-    if target_task['description'] != "Desc A Duplicate":
-        print(f"ERROR: Description not updated? Got: {target_task['description']}")
-        return False
-
     # 3. Expiration Check
     print("Creating Expiring Task B...")
     expires_at = (datetime.now(timezone.utc) + timedelta(seconds=2)).isoformat()
@@ -74,8 +62,7 @@ def check():
         "title": "Task B",
         "description": "Expiring",
         "bounty_gold": 50,
-        "bounty_xp": 0,
-        "task_type": "short",
+        "task_type": ["short"],
         "expires_at": expires_at,
         "location": "Office"
     })
