@@ -13,7 +13,8 @@ load_dotenv()
 
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
-LLM_API_URL = os.getenv("LLM_API_URL", "http://localhost:8000/v1")
+# Default to Mock LLM if not specified
+LLM_API_URL = os.getenv("LLM_API_URL", "http://mock-llm:8000/v1")
 
 class Brain:
     def __init__(self):

@@ -26,7 +26,8 @@ services:
     environment:
       - MQTT_BROKER=mosquitto
       - LOG_LEVEL=INFO
-      # - LLM_API_URL=http://llm-engine:8000/v1 # If using decoupled LLM service
+      # - LLM_API_URL=http://mock-llm:8000/v1 # For Testing
+      # - LLM_API_URL=http://llm-engine:8000/v1 # For Production
     volumes:
       - ../services/brain/src:/app
     networks:
@@ -61,7 +62,6 @@ services:
       - backend
     networks:
       - soms-net
-
   # --- Perception Node (Optional/Distributed) ---
   # This container needs GPU access if running YOLO locally.
   # perception:
@@ -73,6 +73,7 @@ volumes:
   soms_mqtt_data:
   soms_mqtt_log:
   soms_db_data:
+
 
 networks:
   soms-net:
