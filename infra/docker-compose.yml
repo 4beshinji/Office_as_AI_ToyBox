@@ -1,0 +1,79 @@
+services:
+  # --- Central Bus ---
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: soms-mqtt
+    restart: unless-stopped
+    ports:
+      - "1883:1883" # Exposed for Edge Devices
+      - "9001:9001" # Websocket
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - soms_mqtt_data:/mosquitto/data
+      - soms_mqtt_log:/mosquitto/log
+    networks:
+      - soms-net
+
+  # --- Central Intelligence (Brain) ---
+  # NOTE: In a distributed setup, this might run elsewhere.
+  # Here we assume it runs alongside the bus.
+  brain:
+    build: ../services/brain
+    container_name: soms-brain
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+    environment:
+      - MQTT_BROKER=mosquitto
+      - LOG_LEVEL=INFO
+      # - LLM_API_URL=http://llm-engine:8000/v1 # If using decoupled LLM service
+    volumes:
+      - ../services/brain/src:/app
+    networks:
+      - soms-net
+
+  # --- Dashboard Backend ---
+  backend:
+    build: ../services/dashboard/backend
+    container_name: soms-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mosquitto
+    volumes:
+      - ../services/dashboard/backend:/app
+      - soms_db_data:/data
+    environment:
+      - DATABASE_URL=sqlite:///data/soms.db
+      - MQTT_BROKER=mosquitto
+    networks:
+      - soms-net
+
+  # --- Dashboard Frontend ---
+  frontend:
+    build: ../services/dashboard/frontend
+    container_name: soms-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - soms-net
+
+  # --- Perception Node (Optional/Distributed) ---
+  # This container needs GPU access if running YOLO locally.
+  # perception:
+  #   build: ../services/perception
+  #   container_name: soms-perception
+  #   ...
+
+volumes:
+  soms_mqtt_data:
+  soms_mqtt_log:
+  soms_db_data:
+
+networks:
+  soms-net:
+    driver: bridge
