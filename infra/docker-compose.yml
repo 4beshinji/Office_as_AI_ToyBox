@@ -62,6 +62,25 @@ services:
       - backend
     networks:
       - soms-net
+  # --- Local LLM Engine (Radeon/ROCm) ---
+  # To enable: uncomment and ensure /dev/kfd and /dev/dri exist
+  # llm-engine:
+  #   image: rocm/vllm:latest
+  #   container_name: soms-llm-engine
+  #   restart: unless-stopped
+  #   devices:
+  #     - /dev/kfd:/dev/kfd
+  #     - /dev/dri:/dev/dri
+  #   ports:
+  #     - "8000:8000"
+  #   volumes:
+  #     - soms_models:/root/.cache/huggingface
+  #   environment:
+  #     - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
+  #   command: --model Qwen/Qwen2.5-32B-Instruct-AWQ --quantization awq --gpu-memory-utilization 0.95 --tensor-parallel-size 1
+  #   networks:
+  #     - soms-net
+
   # --- Perception Node (Optional/Distributed) ---
   # This container needs GPU access if running YOLO locally.
   # perception:
@@ -73,6 +92,7 @@ volumes:
   soms_mqtt_data:
   soms_mqtt_log:
   soms_db_data:
+  soms_models:
 
 
 networks:
