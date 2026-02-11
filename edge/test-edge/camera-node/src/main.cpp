@@ -1,36 +1,32 @@
 /**
  * Camera Node - Freenove ESP32 WROVER v3.0
+ * Request-Driven Image Server
  * 
  * 機能:
- * - OV2640カメラからの画像取得
- * - Wi-Fi/MQTT接続
- * - リクエストに応じた画像キャプチャとBase64送信
- * - ステータス報告
+ * - リクエストに応じた動的解像度での画像キャプチャ
+ * - MQTT経由でのJPEG画像送信（Base64エンコード）
+ * - ステートレス設計（メモリ効率重視）
  */
 
 #include <Arduino.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <base64.h>
 #include "esp_camera.h"
-#include "esp_log.h"
 
 // ==================== 設定 ====================
-// Wi-Fi設定（環境に合わせて変更）
 const char* WIFI_SSID = "YOUR_WIFI_SSID";
 const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";
-
-// MQTT設定
-const char* MQTT_SERVER = "192.168.1.100";  // MQTTブローカーのIP
+const char* MQTT_SERVER = "192.168.1.100";
 const int MQTT_PORT = 1883;
 const char* DEVICE_ID = "camera_node_01";
 
 // MQTTトピック
-const char* TOPIC_STATUS = "office/camera/camera_node_01/status";
-const char* TOPIC_REQUEST = "mcp/camera_node_01/request/capture_image";
-const char* TOPIC_RESPONSE = "mcp/camera_node_01/response/#";
+#define TOPIC_REQUEST "mcp/camera_node_01/request/capture"
+#define TOPIC_STATUS "office/camera/camera_node_01/status"
 
-// カメラピン定義（Freenove ESP32 WROVER v3.0）
+// カメラピン（Freenove ESP32 WROVER v3.0）
 #define PWDN_GPIO_NUM     32
 #define RESET_GPIO_NUM    -1
 #define XCLK_GPIO_NUM     21
@@ -47,70 +43,25 @@ const char* TOPIC_RESPONSE = "mcp/camera_node_01/response/#";
 #define VSYNC_GPIO_NUM    25
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
-
-// オンボードLED
-#define LED_PIN 2
+#define LED_PIN           2
 
 // ==================== グローバル変数 ====================
 WiFiClient wifiClient;
 PubSubClient mqtt(wifiClient);
-static const char* TAG = "CameraNode";
+sensor_t* camera_sensor = nullptr;
 
-// ==================== 関数プロトタイプ ====================
-void setupCamera();
-void setupWiFi();
-void setupMQTT();
-void mqttCallback(char* topic, byte* payload, unsigned int length);
-void captureAndSendImage(const char* requestId);
-void publishStatus();
-
-// ==================== セットアップ ====================
-void setup() {
-  Serial.begin(115200);
-  delay(1000);
-  
-  Serial.println("\n=== Camera Node Starting ===");
-  
-  // LED初期化
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);
-  
-  // カメラ初期化
-  setupCamera();
-  
-  // Wi-Fi接続
-  setupWiFi();
-  
-  // MQTT接続
-  setupMQTT();
-  
-  Serial.println("=== Initialization Complete ===\n");
-  digitalWrite(LED_PIN, HIGH);
-  publishStatus();
-}
-
-// ==================== メインループ ====================
-void loop() {
-  if (!mqtt.connected()) {
-    Serial.println("MQTT disconnected, reconnecting...");
-    setupMQTT();
-  }
-  mqtt.loop();
-  
-  // 定期的なステータス送信（30秒ごと）
-  static unsigned long lastStatus = 0;
-  if (millis() - lastStatus > 30000) {
-    publishStatus();
-    lastStatus = millis();
-  }
-  
-  delay(10);
+// ==================== 解像度マッピング ====================
+framesize_t parseResolution(const char* resStr) {
+  if (strcmp(resStr, "QVGA") == 0) return FRAMESIZE_QVGA;   // 320x240
+  if (strcmp(resStr, "VGA") == 0) return FRAMESIZE_VGA;     // 640x480
+  if (strcmp(resStr, "SVGA") == 0) return FRAMESIZE_SVGA;   // 800x600
+  if (strcmp(resStr, "XGA") == 0) return FRAMESIZE_XGA;     // 1024x768
+  if (strcmp(resStr, "UXGA") == 0) return FRAMESIZE_UXGA;   // 1600x1200
+  return FRAMESIZE_VGA;  // デフォルト
 }
 
 // ==================== カメラ初期化 ====================
 void setupCamera() {
-  Serial.println("Initializing camera...");
-  
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -132,142 +83,124 @@ void setupCamera() {
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
+  config.frame_size = FRAMESIZE_VGA;  // 初期値
+  config.jpeg_quality = 10;
+  config.fb_count = psramFound() ? 2 : 1;
   
-  // PSRAMがある場合は高解像度
-  if (psramFound()) {
-    config.frame_size = FRAMESIZE_UXGA;  // 1600x1200
-    config.jpeg_quality = 10;
-    config.fb_count = 2;
-    Serial.println("PSRAM found, using high resolution");
-  } else {
-    config.frame_size = FRAMESIZE_SVGA;  // 800x600
-    config.jpeg_quality = 12;
-    config.fb_count = 1;
-    Serial.println("PSRAM not found, using lower resolution");
-  }
-  
-  // カメラ初期化
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
-    Serial.printf("Camera init failed with error 0x%x\n", err);
+    Serial.printf("Camera init failed: 0x%x\n", err);
     ESP.restart();
   }
   
-  Serial.println("Camera initialized successfully");
+  camera_sensor = esp_camera_sensor_get();
+  Serial.printf("Camera initialized (PSRAM: %s)\n", psramFound() ? "YES" : "NO");
 }
 
 // ==================== Wi-Fi接続 ====================
 void setupWiFi() {
-  Serial.print("Connecting to WiFi");
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   
+  Serial.print("Connecting to WiFi");
   int attempts = 0;
-  while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+  while (WiFi.status() != WL_CONNECTED && attempts++ < 20) {
     delay(500);
     Serial.print(".");
-    attempts++;
   }
   
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\nWiFi connected!");
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
+    Serial.printf("\nWiFi connected: %s\n", WiFi.localIP().toString().c_str());
   } else {
-    Serial.println("\nWiFi connection failed!");
+    Serial.println("\nWiFi failed!");
     ESP.restart();
   }
 }
 
 // ==================== MQTT接続 ====================
+void mqttCallback(char* topic, byte* payload, unsigned int length);
+
 void setupMQTT() {
   mqtt.setServer(MQTT_SERVER, MQTT_PORT);
   mqtt.setCallback(mqttCallback);
-  mqtt.setBufferSize(65536);  // 大きな画像データ用
+  mqtt.setBufferSize(65536);
   
-  Serial.print("Connecting to MQTT broker...");
-  
-  int attempts = 0;
-  while (!mqtt.connected() && attempts < 5) {
+  Serial.print("Connecting to MQTT");
+  while (!mqtt.connected()) {
     if (mqtt.connect(DEVICE_ID)) {
-      Serial.println(" connected!");
       mqtt.subscribe(TOPIC_REQUEST);
-      Serial.printf("Subscribed to: %s\n", TOPIC_REQUEST);
+      Serial.printf("\nMQTT connected, subscribed to: %s\n", TOPIC_REQUEST);
     } else {
       Serial.print(".");
       delay(2000);
-      attempts++;
     }
-  }
-  
-  if (!mqtt.connected()) {
-    Serial.println("\nMQTT connection failed!");
-  }
-}
-
-// ==================== MQTTメッセージ受信 ====================
-void mqttCallback(char* topic, byte* payload, unsigned int length) {
-  Serial.printf("Message received on topic: %s\n", topic);
-  
-  // JSON解析
-  JsonDocument doc;
-  DeserializationError error = deserializeJson(doc, payload, length);
-  
-  if (error) {
-    Serial.printf("JSON parse failed: %s\n", error.c_str());
-    return;
-  }
-  
-  const char* method = doc["method"];
-  const char* requestId = doc["id"];
-  
-  if (strcmp(method, "capture_image") == 0) {
-    captureAndSendImage(requestId);
   }
 }
 
 // ==================== 画像キャプチャと送信 ====================
-void captureAndSendImage(const char* requestId) {
-  Serial.println("Capturing image...");
-  digitalWrite(LED_PIN, LOW);  // LED点滅で撮影中を表示
+void handleCaptureRequest(JsonDocument& request) {
+  const char* reqId = request["id"] | "unknown";
+  const char* resolution = request["resolution"] | "VGA";
+  int quality = request["quality"] | 10;
   
-  // 画像取得
+  Serial.printf("Capture request: id=%s, res=%s, q=%d\n", reqId, resolution, quality);
+  
+  digitalWrite(LED_PIN, LOW);
+  
+  // 解像度設定
+  framesize_t framesize = parseResolution(resolution);
+  camera_sensor->set_framesize(camera_sensor, framesize);
+  camera_sensor->set_quality(camera_sensor, quality);
+  
+  // 画像キャプチャ
   camera_fb_t* fb = esp_camera_fb_get();
   if (!fb) {
-    Serial.println("Camera capture failed");
+    Serial.println("Capture failed!");
     digitalWrite(LED_PIN, HIGH);
     return;
   }
   
-  Serial.printf("Image captured: %d bytes\n", fb->len);
+  Serial.printf("Captured: %dx%d, %u bytes\n", fb->width, fb->height, fb->len);
   
-  // Base64エンコード（簡易実装：実際はチャンク送信が必要）
-  // ここでは画像サイズが小さい場合のみ対応
-  if (fb->len < 50000) {
-    // レスポンストピック作成
-    char responseTopic[128];
-    snprintf(responseTopic, sizeof(responseTopic), 
-             "mcp/camera_node_01/response/%s", requestId);
-    
-    // JSON作成
-    JsonDocument responseDoc;
-    responseDoc["jsonrpc"] = "2.0";
-    responseDoc["id"] = requestId;
-    responseDoc["result"]["image_size"] = fb->len;
-    responseDoc["result"]["format"] = "jpeg";
-    responseDoc["result"]["resolution"] = "UXGA";
-    
-    char jsonBuffer[256];
-    serializeJson(responseDoc, jsonBuffer);
-    
-    // 送信
-    mqtt.publish(responseTopic, jsonBuffer);
-    Serial.printf("Response sent to: %s\n", responseTopic);
-  }
+  // Base64エンコード
+  String base64Image = base64::encode(fb->buf, fb->len);
   
-  // フレームバッファ解放
+  // レスポンス作成
+  JsonDocument response;
+  response["id"] = reqId;
+  response["image"] = base64Image;
+  response["width"] = fb->width;
+  response["height"] = fb->height;
+  response["size_bytes"] = fb->len;
+  response["format"] = "jpeg";
+  
+  // レスポンストピック
+  char responseTopic[128];
+  snprintf(responseTopic, sizeof(responseTopic), 
+           "mcp/%s/response/%s", DEVICE_ID, reqId);
+  
+  // JSON送信
+  String output;
+  serializeJson(response, output);
+  
+  bool sent = mqtt.publish(responseTopic, output.c_str());
+  Serial.printf("Response sent: %s (%s)\n", responseTopic, sent ? "OK" : "FAIL");
+  
   esp_camera_fb_return(fb);
   digitalWrite(LED_PIN, HIGH);
+}
+
+// ==================== MQTTコールバック ====================
+void mqttCallback(char* topic, byte* payload, unsigned int length) {
+  JsonDocument doc;
+  DeserializationError error = deserializeJson(doc, payload, length);
+  
+  if (error) {
+    Serial.printf("JSON parse error: %s\n", error.c_str());
+    return;
+  }
+  
+  handleCaptureRequest(doc);
 }
 
 // ==================== ステータス送信 ====================
@@ -275,13 +208,49 @@ void publishStatus() {
   JsonDocument doc;
   doc["device_id"] = DEVICE_ID;
   doc["status"] = "online";
-  doc["uptime_ms"] = millis();
+  doc["uptime_sec"] = millis() / 1000;
   doc["free_heap"] = ESP.getFreeHeap();
   doc["wifi_rssi"] = WiFi.RSSI();
   
-  char buffer[256];
-  serializeJson(doc, buffer);
+  String output;
+  serializeJson(doc, output);
+  mqtt.publish(TOPIC_STATUS, output.c_str());
+}
+
+// ==================== セットアップ ====================
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
   
-  mqtt.publish(TOPIC_STATUS, buffer);
-  Serial.println("Status published");
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
+  
+  Serial.println("\n=== Camera Node (Request-Driven) ===");
+  
+  setupCamera();
+  setupWiFi();
+  setupMQTT();
+  
+  digitalWrite(LED_PIN, HIGH);
+  publishStatus();
+  
+  Serial.println("=== Ready ===\n");
+}
+
+// ==================== メインループ ====================
+void loop() {
+  if (!mqtt.connected()) {
+    Serial.println("MQTT reconnecting...");
+    setupMQTT();
+  }
+  mqtt.loop();
+  
+  // 30秒ごとにステータス送信
+  static unsigned long lastStatus = 0;
+  if (millis() - lastStatus > 30000) {
+    publishStatus();
+    lastStatus = millis();
+  }
+  
+  delay(10);
 }

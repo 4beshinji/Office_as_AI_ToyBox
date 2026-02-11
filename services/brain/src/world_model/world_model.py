@@ -1,0 +1,314 @@
+"""
+World Model: Centralized state management for office environment.
+"""
+import json
+import logging
+import time
+from typing import Dict, Optional, List
+from .data_classes import ZoneState, EnvironmentData, OccupancyData, DeviceState, Event
+from .sensor_fusion import SensorFusion
+
+logger = logging.getLogger(__name__)
+
+
+class WorldModel:
+    """
+    Maintains the unified state of all zones in the office.
+    Integrates sensor data, occupancy information, and device states.
+    """
+    
+    def __init__(self):
+        self.zones: Dict[str, ZoneState] = {}
+        self.sensor_fusion = SensorFusion()
+        
+        # Cache for LLM context (optimization)
+        self._llm_context_cache: Optional[str] = None
+        self._cache_timestamp: float = 0
+        
+        # Sensor readings buffer for fusion
+        self._sensor_readings: Dict[str, List] = {}
+    
+    def update_from_mqtt(self, topic: str, payload: dict):
+        """
+        Update world model from MQTT message.
+        
+        Args:
+            topic: MQTT topic (e.g., "office/kitchen/sensor/temp_01/temperature")
+            payload: Message payload (JSON dict)
+        """
+        parsed = self._parse_topic(topic)
+        if not parsed:
+            logger.debug(f"Ignoring non-office topic: {topic}")
+            return
+        
+        zone_id = parsed["zone"]
+        device_type = parsed["device_type"]
+        device_id = parsed.get("device_id")
+        channel = parsed.get("channel")
+        
+        # Create zone if it doesn't exist
+        if zone_id not in self.zones:
+            self.zones[zone_id] = ZoneState(zone_id=zone_id)
+            logger.info(f"Created new zone: {zone_id}")
+        
+        zone = self.zones[zone_id]
+        
+        # Route to appropriate handler
+        if device_type == "sensor":
+            self._update_environment(zone, channel, payload, device_id)
+        elif device_type == "camera":
+            self._update_occupancy(zone, payload)
+        elif device_type in ["hvac", "light", "coffee_machine"]:
+            self._update_device(zone, device_type, device_id, payload)
+        
+        zone.last_update = time.time()
+        
+        # Detect events based on state changes
+        self._detect_events(zone)
+        
+        # Invalidate LLM context cache
+        self._llm_context_cache = None
+    
+    def _parse_topic(self, topic: str) -> Optional[Dict[str, str]]:
+        """
+        Parse MQTT topic into components.
+        
+        Format: office/{zone}/{device_type}/{device_id}/{channel}
+        Example: office/meeting_room_a/sensor/env_01/temperature
+        
+        Returns:
+            Dict with zone, device_type, device_id, channel or None
+        """
+        parts = topic.split('/')
+        if len(parts) < 3 or parts[0] != "office":
+            return None
+        
+        return {
+            "zone": parts[1],
+            "device_type": parts[2],
+            "device_id": parts[3] if len(parts) > 3 else None,
+            "channel": parts[4] if len(parts) > 4 else None
+        }
+    
+    def _update_environment(self, zone: ZoneState, channel: str, payload: dict, device_id: str):
+        """Update environmental data for a zone."""
+        current_time = time.time()
+        
+        # Extract value from payload
+        value = payload.get(channel) or payload.get("value")
+        if value is None:
+            return
+        
+        # Store reading for sensor fusion
+        reading_key = f"{zone.zone_id}:{channel}"
+        if reading_key not in self._sensor_readings:
+            self._sensor_readings[reading_key] = []
+        
+        self._sensor_readings[reading_key].append((device_id, value, current_time))
+        
+        # Keep only recent readings (last 10 minutes)
+        self._sensor_readings[reading_key] = [
+            r for r in self._sensor_readings[reading_key]
+            if current_time - r[2] < 600
+        ]
+        
+        # Fuse multiple sensor readings with appropriate sensor type
+        fused_value = self.sensor_fusion.fuse_generic(
+            self._sensor_readings[reading_key], 
+            sensor_type=channel  # Pass sensor type for half-life selection
+        )
+        
+        if fused_value is None:
+            return
+        
+        # Update zone environment
+        if channel == "temperature":
+            zone.environment.temperature = fused_value
+        elif channel == "humidity":
+            zone.environment.humidity = fused_value
+        elif channel == "co2":
+            zone.environment.co2 = int(fused_value)
+        elif channel == "illuminance":
+            zone.environment.illuminance = fused_value
+        
+        # Update timestamp
+        zone.environment.timestamps[channel] = current_time
+    
+    def _update_occupancy(self, zone: ZoneState, payload: dict):
+        """Update occupancy data from camera/vision system."""
+        # Handle different payload formats
+        if "person_count" in payload:
+            zone.occupancy.vision_count = payload["person_count"]
+        elif "occupancy" in payload:
+            zone.occupancy.vision_count = 1 if payload["occupancy"] else 0
+        
+        # Activity distribution (from activity classification)
+        if "activity_distribution" in payload:
+            zone.occupancy.activity_distribution = payload["activity_distribution"]
+        
+        if "avg_motion_level" in payload:
+            zone.occupancy.avg_motion_level = payload["avg_motion_level"]
+        
+        # Integrate with PIR if available
+        zone.occupancy.person_count = self.sensor_fusion.integrate_occupancy(
+            vision_count=zone.occupancy.vision_count,
+            pir_active=zone.occupancy.pir_detected
+        )
+    
+    def _update_device(self, zone: ZoneState, device_type: str, device_id: str, payload: dict):
+        """Update device state."""
+        if device_id not in zone.devices:
+            zone.devices[device_id] = DeviceState(
+                device_id=device_id,
+                device_type=device_type
+            )
+        
+        device = zone.devices[device_id]
+        
+        # Update power state
+        if "power_state" in payload:
+            device.power_state = payload["power_state"]
+        elif "state" in payload:
+            device.power_state = payload["state"]
+        
+        # Update specific state
+        if "mode" in payload or "target_temp" in payload:
+            device.specific_state.update(payload)
+    
+    def _detect_events(self, zone: ZoneState):
+        """Detect events based on state changes."""
+        current_time = time.time()
+        
+        # Person count change
+        if zone.occupancy.person_count != zone._prev_occupancy:
+            if zone.occupancy.person_count > zone._prev_occupancy:
+                event = Event(
+                    timestamp=current_time,
+                    event_type="person_entered",
+                    severity="info",
+                    data={"count": zone.occupancy.person_count}
+                )
+                zone.events.append(event)
+                zone.occupancy.last_entry_time = current_time
+            elif zone.occupancy.person_count < zone._prev_occupancy:
+                event = Event(
+                    timestamp=current_time,
+                    event_type="person_exited",
+                    severity="info",
+                    data={"count": zone.occupancy.person_count}
+                )
+                zone.events.append(event)
+                if zone.occupancy.person_count == 0:
+                    zone.occupancy.last_exit_time = current_time
+            
+            zone._prev_occupancy = zone.occupancy.person_count
+        
+        # CO2 threshold exceeded
+        if zone.environment.co2 and zone.environment.co2 > 1000:
+            # Avoid duplicate events (don't create if one exists in last 10 minutes)
+            recent_co2_events = [
+                e for e in zone.events
+                if e.event_type == "co2_threshold_exceeded"
+                and current_time - e.timestamp < 600
+            ]
+            if not recent_co2_events:
+                event = Event(
+                    timestamp=current_time,
+                    event_type="co2_threshold_exceeded",
+                    severity="warning",
+                    data={"value": zone.environment.co2}
+                )
+                zone.events.append(event)
+        
+        # Temperature spike
+        if zone.environment.temperature and zone._prev_temperature:
+            temp_change = abs(zone.environment.temperature - zone._prev_temperature)
+            if temp_change > 3.0:  # 3°C change
+                event = Event(
+                    timestamp=current_time,
+                    event_type="temp_spike",
+                    severity="warning",
+                    data={"value": zone.environment.temperature, "change": temp_change}
+                )
+                zone.events.append(event)
+        
+        zone._prev_temperature = zone.environment.temperature
+        
+        # Limit event history size (keep last 50 events per zone)
+        if len(zone.events) > 50:
+            zone.events = zone.events[-50:]
+    
+    def get_zone(self, zone_id: str) -> Optional[ZoneState]:
+        """Get state of a specific zone."""
+        return self.zones.get(zone_id)
+    
+    def get_all_zones(self) -> Dict[str, ZoneState]:
+        """Get all zones."""
+        return self.zones
+    
+    def get_llm_context(self) -> str:
+        """
+        Generate optimized context string for LLM.
+        Cached for 5 seconds to avoid redundant generation.
+        """
+        current_time = time.time()
+        
+        # Return cached context if fresh
+        if self._llm_context_cache and (current_time - self._cache_timestamp < 5):
+            return self._llm_context_cache
+        
+        context_parts = []
+        
+        for zone_id, zone in sorted(self.zones.items()):
+            summary = f"### {zone_id}\n"
+            
+            # Occupancy and activity
+            if zone.occupancy.person_count > 0:
+                summary += f"- 状態: {zone.occupancy.activity_summary}\n"
+                if zone.occupancy.avg_motion_level > 0:
+                    summary += f"- 活動レベル: {zone.occupancy.avg_motion_level:.2f}\n"
+            else:
+                summary += "- 状態: 無人\n"
+            
+            # Environment
+            if zone.environment.temperature is not None:
+                summary += f"- 気温: {zone.environment.temperature:.1f}℃ ({zone.environment.thermal_comfort})\n"
+            
+            if zone.environment.humidity is not None:
+                summary += f"- 湿度: {zone.environment.humidity:.0f}%\n"
+            
+            if zone.environment.co2 is not None:
+                summary += f"- CO2: {zone.environment.co2}ppm"
+                if zone.environment.is_stuffy:
+                    summary += " ⚠️換気必要\n"
+                else:
+                    summary += "\n"
+            
+            if zone.environment.illuminance is not None:
+                summary += f"- 照度: {zone.environment.illuminance:.0f}lux\n"
+            
+            # Devices
+            if zone.devices:
+                summary += "- デバイス:\n"
+                for device_id, device in zone.devices.items():
+                    summary += f"  - {device.device_type} ({device_id}): {device.power_state}\n"
+            
+            # Recent events (last 10 minutes)
+            recent_events = [
+                e for e in zone.events
+                if current_time - e.timestamp < 600
+            ]
+            if recent_events:
+                summary += "- 最近のイベント:\n"
+                for event in recent_events[-3:]:  # Last 3 events
+                    summary += f"  - {event.description}\n"
+            
+            context_parts.append(summary)
+        
+        context = "\n".join(context_parts)
+        
+        # Update cache
+        self._llm_context_cache = context
+        self._cache_timestamp = current_time
+        
+        return context

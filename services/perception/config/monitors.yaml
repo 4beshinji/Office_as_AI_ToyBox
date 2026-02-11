@@ -1,0 +1,20 @@
+monitors:
+  - name: occupancy_meeting_room
+    type: OccupancyMonitor
+    camera_id: camera_node_01
+    zone_name: meeting_room_a
+    enabled: true
+    
+  - name: whiteboard_meeting_room
+    type: WhiteboardMonitor
+    camera_id: camera_node_01
+    zone_name: meeting_room_a
+    enabled: true
+
+yolo:
+  model: yolov11s.pt
+  device: 0  # GPU 0
+  
+mqtt:
+  broker: localhost
+  port: 1883

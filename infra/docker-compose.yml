@@ -46,12 +46,11 @@ services:
       - ../services/dashboard/backend:/app
       - soms_db_data:/data
     environment:
-      - DATABASE_URL=sqlite+aiosqlite:///soms.db
+      - DATABASE_URL=sqlite+aiosqlite:////data/soms.db
       - MQTT_BROKER=mosquitto
     networks:
       - soms-net
 
-  # --- Dashboard Frontend ---
   frontend:
     build: ../services/dashboard/frontend
     container_name: soms-frontend
@@ -62,9 +61,45 @@ services:
       - backend
     networks:
       - soms-net
+
+  # --- VOICEVOX Engine ---
+  voicevox:
+    build: ../services/voice/voicevox
+    container_name: soms-voicevox
+    restart: unless-stopped
+    ports:
+      - "50021:50021"
+    networks:
+      - soms-net
+
+  # --- Voice Service ---
+  voice-service:
+    build: ../services/voice
+    container_name: soms-voice
+    restart: unless-stopped
+    ports:
+      - "8002:8000"
+    depends_on:
+      - voicevox
+    environment:
+      - VOICEVOX_URL=http://voicevox:50021
+      - LLM_API_URL=http://mock-llm:8000/v1
+    volumes:
+      - ../services/voice/src:/app
+      - soms_audio_data:/app/audio
+    networks:
+      - soms-net
   # --- Local LLM Engine ---
   # MOVED: See infra/llm/docker-compose.yml for running vLLM independently.
-
+  # Using Mock LLM for development/testing
+  mock-llm:
+    build: ./mock_llm
+    container_name: soms-mock-llm
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    networks:
+      - soms-net
   # --- Perception Node (Optional/Distributed) ---
   # This container needs GPU access if running YOLO locally.
   # perception:
@@ -76,6 +111,7 @@ volumes:
   soms_mqtt_data:
   soms_mqtt_log:
   soms_db_data:
+  soms_audio_data:
 
 
 networks:

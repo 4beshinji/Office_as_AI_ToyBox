@@ -62,7 +62,18 @@ async def create_task(task: schemas.TaskCreate, db: AsyncSession = Depends(get_d
         location=task.location,
         bounty_gold=task.bounty_gold,
         expires_at=task.expires_at,
-        task_type=json.dumps(task.task_type) if task.task_type else None
+        task_type=json.dumps(task.task_type) if task.task_type else None,
+        urgency=task.urgency,
+        zone=task.zone,
+        min_people_required=task.min_people_required,
+        estimated_duration=task.estimated_duration,
+        is_queued=False,  # New tasks default to not queued
+        dispatched_at=func.now(),  # Mark as dispatched immediately
+        # Voice data (if provided by Brain)
+        announcement_audio_url=getattr(task, 'announcement_audio_url', None),
+        announcement_text=getattr(task, 'announcement_text', None),
+        completion_audio_url=getattr(task, 'completion_audio_url', None),
+        completion_text=getattr(task, 'completion_text', None)
     )
     db.add(new_task)
     await db.commit()
@@ -76,10 +87,21 @@ async def create_task(task: schemas.TaskCreate, db: AsyncSession = Depends(get_d
         "location": new_task.location,
         "bounty_gold": new_task.bounty_gold,
         "is_completed": new_task.is_completed,
+        "is_queued": new_task.is_queued,
         "created_at": new_task.created_at,
         "completed_at": new_task.completed_at,
+        "dispatched_at": new_task.dispatched_at,
         "expires_at": new_task.expires_at,
-        "task_type": json.loads(new_task.task_type) if new_task.task_type else []
+        "task_type": json.loads(new_task.task_type) if new_task.task_type else [],
+        "urgency": new_task.urgency,
+        "zone": new_task.zone,
+        "min_people_required": new_task.min_people_required,
+        "estimated_duration": new_task.estimated_duration,
+        "announcement_audio_url": new_task.announcement_audio_url,
+        "announcement_text": new_task.announcement_text,
+        "completion_audio_url": new_task.completion_audio_url,
+        "completion_text": new_task.completion_text,
+        "last_reminded_at": new_task.last_reminded_at
     }
     
     return schemas.Task(**response_data)
@@ -96,3 +118,94 @@ async def complete_task(task_id: int, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(task)
     return task
+
+@router.put("/{task_id}/reminded", response_model=schemas.Task)
+async def mark_task_reminded(task_id: int, db: AsyncSession = Depends(get_db)):
+    """Update the last_reminded_at timestamp for a task."""
+    result = await db.execute(select(models.Task).filter(models.Task.id == task_id))
+    task = result.scalars().first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    task.last_reminded_at = func.now()
+    await db.commit()
+    await db.refresh(task)
+    return task
+# Queue Management Endpoints
+
+@router.get("/queue", response_model=List[schemas.Task])
+async def get_queued_tasks(db: AsyncSession = Depends(get_db)):
+    """Get all queued tasks (not yet dispatched to dashboard)."""
+    query = select(models.Task).filter(models.Task.is_queued == True).order_by(models.Task.urgency.desc(), models.Task.created_at)
+    result = await db.execute(query)
+    tasks_db = result.scalars().all()
+    
+    tasks = []
+    for t in tasks_db:
+        t_dict = {k: v for k, v in t.__dict__.items() if not k.startswith('_')}
+        if t.task_type:
+            try:
+                t_dict['task_type'] = json.loads(t.task_type)
+            except:
+                t_dict['task_type'] = []
+        else:
+            t_dict['task_type'] = []
+        tasks.append(schemas.Task(**t_dict))
+    
+    return tasks
+
+
+@router.put("/{task_id}/dispatch", response_model=schemas.Task)
+async def dispatch_task(task_id: int, db: AsyncSession = Depends(get_db)):
+    """Mark a queued task as dispatched (send to dashboard)."""
+    result = await db.execute(select(models.Task).filter(models.Task.id == task_id))
+    task = result.scalars().first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    task.is_queued = False
+    task.dispatched_at = func.now()
+    await db.commit()
+    await db.refresh(task)
+    
+    t_dict = {k: v for k, v in task.__dict__.items() if not k.startswith('_')}
+    if task.task_type:
+        try:
+            t_dict['task_type'] = json.loads(task.task_type)
+        except:
+            t_dict['task_type'] = []
+    else:
+        t_dict['task_type'] = []
+    
+    return schemas.Task(**t_dict)
+
+
+@router.get("/stats")
+async def get_task_stats(db: AsyncSession = Depends(get_db)):
+    """Get task statistics."""
+    # Queued tasks count
+    queued_query = select(func.count()).select_from(models.Task).filter(models.Task.is_queued == True)
+    queued_result = await db.execute(queued_query)
+    queued_count = queued_result.scalar()
+    
+    # Completed tasks in last hour
+    completed_query = select(func.count()).select_from(models.Task).filter(
+        models.Task.is_completed == True,
+        models.Task.completed_at >= func.datetime('now', '-1 hour')
+    )
+    completed_result = await db.execute(completed_query)
+    completed_last_hour = completed_result.scalar()
+    
+    # Active (dispatched but not completed)
+    active_query = select(func.count()).select_from(models.Task).filter(
+        models.Task.is_completed == False,
+        models.Task.is_queued == False
+    )
+    active_result = await db.execute(active_query)
+    active_count = active_result.scalar()
+    
+    return {
+        "tasks_queued": queued_count or 0,
+        "tasks_active": active_count or 0,
+        "tasks_completed_last_hour": completed_last_hour or 0
+    }

@@ -7,6 +7,9 @@ import paho.mqtt.client as mqtt
 from mcp_bridge import MCPBridge
 from llm_client import LLMClient
 from sanitizer import Sanitizer
+from world_model import WorldModel
+from task_scheduling import TaskQueueManager
+from task_reminder import TaskReminder
 
 # Load environment variables
 load_dotenv()
@@ -27,7 +30,10 @@ class Brain:
         self.llm = LLMClient(api_url=LLM_API_URL)
         self.dashboard = DashboardClient() # Initialize Dashboard Client
         self.sanitizer = Sanitizer()
-        self.message_buffer = [] 
+        self.message_buffer = []
+        self.world_model = WorldModel()  # Initialize World Model
+        self.task_queue = None  # Will be initialized after world_model
+        self.task_reminder = TaskReminder()  # Initialize Task Reminder
 
     # ... (on_connect and on_message remain same)
 
@@ -46,6 +52,10 @@ class Brain:
             if "mcp" in topic and "response" in topic:
                 self.mcp.handle_response(topic, payload)
             else:
+                # Update World Model
+                self.world_model.update_from_mqtt(topic, payload)
+                
+                # Keep message_buffer for legacy compatibility
                 self.message_buffer.append({"topic": topic, "payload": payload})
                 if len(self.message_buffer) > 10:
                     self.message_buffer.pop(0)
@@ -54,6 +64,10 @@ class Brain:
             logger.error(f"Error processing message: {e}")
 
     async def cognitive_cycle(self):
+        # Process task queue first
+        if self.task_queue:
+            await self.task_queue.process_queue()
+        
         if not self.message_buffer:
             return
 
@@ -79,9 +93,18 @@ class Brain:
             "content": "You are the Autonomous Office Manager..."
         }
         
+        # Use World Model context for LLM
+        llm_context = self.world_model.get_llm_context()
+        
+        # Debug: Log World Model zones
+        zones = list(self.world_model.zones.keys())
+        logger.info(f"World Model zones: {zones}")
+        if llm_context:
+            logger.debug(f"LLM Context preview:\n{llm_context[:300]}")
+        
         user_message = {
             "role": "user",
-            "content": f"Current State: {current_context}"
+            "content": f"Current State:\n{llm_context}\n\nRaw Buffer: {current_context}"
         }
 
         try:
@@ -104,6 +127,14 @@ class Brain:
         except Exception as e:
             logger.error(f"Failed to connect to MQTT: {e}")
             return
+        
+        # Initialize TaskQueueManager after MQTT connection
+        self.task_queue = TaskQueueManager(self.world_model, self.dashboard)
+        logger.info("TaskQueueManager initialized")
+        
+        # Start reminder service as background task
+        asyncio.create_task(self.task_reminder.run_periodic_check())
+        logger.info("TaskReminder service started")
 
         logger.info("Brain is running...")
         while True:

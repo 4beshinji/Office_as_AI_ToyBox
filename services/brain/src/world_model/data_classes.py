@@ -1,0 +1,134 @@
+"""
+Data classes for World Model state representation.
+"""
+from typing import Optional, Dict, Any, List
+from pydantic import BaseModel, Field
+from datetime import datetime
+import time
+
+
+class EnvironmentData(BaseModel):
+    """Environmental sensor data for a zone."""
+    temperature: Optional[float] = None  # Celsius
+    humidity: Optional[float] = None  # Percentage
+    co2: Optional[int] = None  # ppm
+    illuminance: Optional[float] = None  # lux
+    
+    # Timestamps for each measurement
+    timestamps: Dict[str, float] = Field(default_factory=dict)
+    
+    @property
+    def is_stuffy(self) -> bool:
+        """CO2 concentration exceeds 1000ppm threshold."""
+        return self.co2 is not None and self.co2 > 1000
+    
+    @property
+    def thermal_comfort(self) -> str:
+        """Thermal comfort level: cold | comfortable | hot."""
+        if self.temperature is None:
+            return "unknown"
+        if self.temperature < 18:
+            return "cold"
+        elif self.temperature > 26:
+            return "hot"
+        return "comfortable"
+
+
+class OccupancyData(BaseModel):
+    """Occupancy state including activity classification."""
+    person_count: int = 0
+    vision_count: int = 0  # From YOLO
+    pir_detected: bool = False  # From PIR sensor
+    
+    # Activity distribution (active/focused)
+    activity_distribution: Dict[str, int] = Field(default_factory=dict)
+    avg_motion_level: float = 0.0  # 0.0 - 1.0
+    
+    # Temporal statistics
+    last_entry_time: Optional[float] = None
+    last_exit_time: Optional[float] = None
+    
+    @property
+    def is_occupied(self) -> bool:
+        return self.person_count > 0
+    
+    @property
+    def dominant_activity(self) -> str:
+        """Most common activity state."""
+        if not self.activity_distribution:
+            return "unknown"
+        return max(self.activity_distribution, key=self.activity_distribution.get)
+    
+    @property
+    def activity_summary(self) -> str:
+        """Human-readable activity summary."""
+        if self.person_count == 0:
+            return "無人"
+        
+        active = self.activity_distribution.get("active", 0)
+        focused = self.activity_distribution.get("focused", 0)
+        
+        if active > focused:
+            return f"{self.person_count}人が活発に活動中"
+        else:
+            return f"{self.person_count}人が集中作業中"
+
+
+class DeviceState(BaseModel):
+    """State of a controllable device."""
+    device_id: str
+    device_type: str  # "hvac", "light", "coffee_machine", etc.
+    
+    is_online: bool = True
+    power_state: str = "off"  # "on" | "off" | "standby"
+    
+    # Device-specific state (e.g., {"mode": "cooling", "target_temp": 24})
+    specific_state: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Command history
+    last_command: Optional[str] = None
+    last_command_time: Optional[float] = None
+
+
+class Event(BaseModel):
+    """Event record for zone history."""
+    timestamp: float
+    event_type: str  # "person_entered", "temp_spike", "co2_threshold_exceeded", etc.
+    severity: str  # "info" | "warning" | "critical"
+    data: Dict[str, Any] = Field(default_factory=dict)
+    
+    @property
+    def description(self) -> str:
+        """Auto-generated event description."""
+        if self.event_type == "person_entered":
+            return f"{self.data.get('count', 0)}人が入室しました"
+        elif self.event_type == "person_exited":
+            return f"{self.data.get('count', 0)}人が退室しました"
+        elif self.event_type == "co2_threshold_exceeded":
+            return f"CO2濃度が{self.data.get('value', 0)}ppmに達しました（換気推奨）"
+        elif self.event_type == "temp_spike":
+            return f"気温が急上昇しました（{self.data.get('value', 0)}℃）"
+        return f"イベント: {self.event_type}"
+
+
+class ZoneState(BaseModel):
+    """Complete state of a zone (room/area)."""
+    zone_id: str
+    
+    environment: EnvironmentData = Field(default_factory=EnvironmentData)
+    occupancy: OccupancyData = Field(default_factory=OccupancyData)
+    devices: Dict[str, DeviceState] = Field(default_factory=dict)
+    
+    # Event history (recent events only)
+    events: List[Event] = Field(default_factory=list)
+    
+    # Metadata
+    last_update: float = Field(default_factory=time.time)
+    
+    # Internal cache for change detection
+    _prev_occupancy: int = 0
+    _prev_temperature: Optional[float] = None
+    
+    class Config:
+        # Pydantic V2: Private attributes automatically work with underscore prefix
+        from_attributes = True
