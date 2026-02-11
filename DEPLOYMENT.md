@@ -39,7 +39,8 @@
 
 ### シナリオ B: 実機本番環境 (GPU + エッジデバイス)
 1.  **`.env` の編集**:
-    -   `LLM_API_URL=http://llm-engine:8000/v1` を設定。
+    -   `LLM_API_URL=http://ollama:11434/v1` を設定 (Docker内部通信用)。
+    -   ホストから確認する場合は `http://localhost:11434/v1` を使用します。
     -   `RTSP_URL` を実際のカメラのIPアドレスに設定。
 2.  **`infra/docker-compose.yml` の編集**:
     -   `llm-engine` サービスブロックのコメントアウトを外す。

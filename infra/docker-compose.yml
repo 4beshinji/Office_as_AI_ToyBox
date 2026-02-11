@@ -3,10 +3,10 @@ services:
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: soms-mqtt
-    restart: unless-stopped
+    restart: always
     ports:
-      - "1883:1883" # Exposed for Edge Devices
-      - "9001:9001" # Websocket
+      - "192.168.128.161:1883:1883" # Exposed for Edge Devices
+      - "192.168.128.161:9001:9001" # Websocket
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
       - soms_mqtt_data:/mosquitto/data
@@ -20,14 +20,14 @@ services:
   brain:
     build: ../services/brain
     container_name: soms-brain
-    restart: unless-stopped
+    restart: always
     depends_on:
       - mosquitto
     environment:
       - MQTT_BROKER=mosquitto
       - LOG_LEVEL=INFO
-      # - LLM_API_URL=http://mock-llm:8000/v1 # For Testing
-      # - LLM_API_URL=http://llm-engine:8000/v1 # For Production
+      - LLM_API_URL=http://ollama:11434/v1 # Production with Ollama
+      - LLM_MODEL=${LLM_MODEL}
     volumes:
       - ../services/brain/src:/app
     networks:
@@ -37,7 +37,7 @@ services:
   backend:
     build: ../services/dashboard/backend
     container_name: soms-backend
-    restart: unless-stopped
+    restart: always
     ports:
       - "8000:8000"
     depends_on:
@@ -54,7 +54,7 @@ services:
   frontend:
     build: ../services/dashboard/frontend
     container_name: soms-frontend
-    restart: unless-stopped
+    restart: always
     ports:
       - "80:80"
     depends_on:
@@ -66,7 +66,7 @@ services:
   voicevox:
     build: ../services/voice/voicevox
     container_name: soms-voicevox
-    restart: unless-stopped
+    restart: always
     ports:
       - "50021:50021"
     networks:
@@ -76,30 +76,45 @@ services:
   voice-service:
     build: ../services/voice
     container_name: soms-voice
-    restart: unless-stopped
+    restart: always
     ports:
       - "8002:8000"
     depends_on:
       - voicevox
     environment:
       - VOICEVOX_URL=http://voicevox:50021
-      - LLM_API_URL=http://mock-llm:8000/v1
+      - LLM_API_URL=http://ollama:11434/v1
+      - LLM_MODEL=${LLM_MODEL}
     volumes:
       - ../services/voice/src:/app
       - soms_audio_data:/app/audio
     networks:
       - soms-net
-  # --- Local LLM Engine ---
-  # MOVED: See infra/llm/docker-compose.yml for running vLLM independently.
-  # Using Mock LLM for development/testing
-  mock-llm:
-    build: ./mock_llm
-    container_name: soms-mock-llm
-    restart: unless-stopped
+  # --- Local LLM Engine (Ollama) ---
+  ollama:
+    image: ollama/ollama:rocm
+    container_name: soms-ollama
+    restart: always
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
     ports:
-      - "8001:8000"
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    environment:
+      - HSA_OVERRIDE_GFX_VERSION=12.0.1
     networks:
       - soms-net
+  # Using Mock LLM for development/testing (Commented out for Production)
+  # mock-llm:
+  #   build: ./mock_llm
+  #   container_name: soms-mock-llm
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8001:8000"
+  #   networks:
+  #     - soms-net
   # --- Perception Node (Optional/Distributed) ---
   # This container needs GPU access if running YOLO locally.
   # perception:
@@ -112,6 +127,7 @@ volumes:
   soms_mqtt_log:
   soms_db_data:
   soms_audio_data:
+  ollama_models:
 
 
 networks:

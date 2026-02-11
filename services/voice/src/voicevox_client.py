@@ -1,6 +1,8 @@
 import aiohttp
 from pathlib import Path
 from loguru import logger
+import io
+from pydub import AudioSegment
 
 class VoicevoxClient:
     """Client for VOICEVOX speech synthesis API."""
@@ -66,11 +68,16 @@ class VoicevoxClient:
             raise
     
     async def save_audio(self, audio_data: bytes, filepath: Path):
-        """Save audio data to WAV file."""
+        """Save audio data to MP3 file (converted from WAV)."""
         try:
-            with open(filepath, "wb") as f:
-                f.write(audio_data)
-            logger.info(f"Saved audio to {filepath}")
+            # Load WAV from bytes
+            wav_io = io.BytesIO(audio_data)
+            audio_segment = AudioSegment.from_wav(wav_io)
+            
+            # Export to MP3
+            audio_segment.export(filepath, format="mp3", bitrate="64k")
+            
+            logger.info(f"Successfully converted and saved MP3 to {filepath} (Size: {filepath.stat().st_size} bytes)")
         except Exception as e:
-            logger.error(f"Failed to save audio: {e}")
+            logger.error(f"Failed to convert or save audio: {e}")
             raise

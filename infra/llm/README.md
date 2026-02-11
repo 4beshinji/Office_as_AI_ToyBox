@@ -25,14 +25,15 @@ AMD Radeon GPU (ROCm) 環境向けに最適化されています。
 
 3.  **動作確認**:
     ```bash
-    curl http://localhost:8000/v1/models
+    curl http://localhost:8001/v1/models
     ```
 
 ## メインシステムとの連携
 
 メインシステム（Brainサービス）からこのLLMを利用する場合は、Brainサービスの環境変数 `LLM_API_URL` を設定してください。
 
-*   **同一マシン内の場合**: `http://localhost:8000/v1` (またはDockerネットワーク経由)
+*   **同一マシン内の場合 (Host)**: `http://localhost:8001/v1`
+*   **同一マシン内の場合 (Docker Network)**: `http://llm-engine:8000/v1`
 *   **別マシンの場合**: `http://<LLM-Machine-IP>:8000/v1`
 
 ## 注意事項

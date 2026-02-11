@@ -15,7 +15,7 @@ class SpeechGenerator:
 - タイトル: {title}
 - 説明: {description}
 - 場所: {location}
-- 報酬: {bounty_gold}神保ポイント
+- 報酬: {bounty_gold}最適化承認スコア
 - 緊急度: {urgency}/4
 - エリア: {zone}
 
@@ -27,7 +27,7 @@ class SpeechGenerator:
 - 毎回異なる表現を使用してバリエーションを出す
 
 【出力例】
-お願いがあります。2階給湯室でコーヒー豆の補充をお願いします。50神保ポイントを獲得できます。
+お願いがあります。2階給湯室でコーヒー豆の補充をお願いします。50最適化承認スコアを獲得できます。
 """
     
     # Feedback prompt patterns for variety
@@ -45,7 +45,8 @@ class SpeechGenerator:
     
     def __init__(self, llm_api_url: str = None):
         self.llm_api_url = llm_api_url or os.getenv("LLM_API_URL", "http://brain:8000/llm")
-        logger.info(f"SpeechGenerator initialized with LLM URL: {self.llm_api_url}")
+        self.model = os.getenv("LLM_MODEL", "qwen2.5:14b")
+        logger.info(f"SpeechGenerator initialized with LLM URL: {self.llm_api_url}, model: {self.model}")
     
     async def generate_speech_text(self, task: Task) -> str:
         """
@@ -164,7 +165,7 @@ class SpeechGenerator:
             }
             
             payload = {
-                "model": "Qwen/Qwen2.5-32B-Instruct-AWQ",  # Or whatever model is running
+                "model": self.model,
                 "messages": [
                     {"role": "user", "content": prompt}
                 ],
@@ -201,4 +202,4 @@ class SpeechGenerator:
     def _generate_fallback(self, task: Task, urgency_prefix: str) -> str:
         """Generate fallback text when LLM fails."""
         location_text = f"{task.zone or ''}{task.location or ''}".strip() or "指定場所"
-        return f"{urgency_prefix}{location_text}で{task.title}をお願いします。{task.bounty_gold}神保ポイントです。"
+        return f"{urgency_prefix}{location_text}で{task.title}をお願いします。{task.bounty_gold}最適化承認スコアです。"

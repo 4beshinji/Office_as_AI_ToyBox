@@ -4,3 +4,4 @@ aiohttp==3.11.0
 pydantic==2.10.0
 loguru==0.7.3
 python-multipart==0.0.18
+pydub==0.25.1

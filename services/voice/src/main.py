@@ -49,7 +49,7 @@ async def announce_task(request: TaskAnnounceRequest):
         
         # 3. Save audio file
         audio_id = str(uuid.uuid4())
-        audio_filename = f"task_{audio_id}.wav"
+        audio_filename = f"task_{audio_id}.mp3"
         audio_path = AUDIO_DIR / audio_filename
         await voice_client.save_audio(audio_data, audio_path)
         
@@ -86,7 +86,7 @@ async def generate_feedback(feedback_type: str):
         
         # 3. Save
         audio_id = str(uuid.uuid4())
-        audio_filename = f"feedback_{audio_id}.wav"
+        audio_filename = f"feedback_{audio_id}.mp3"
         audio_path = AUDIO_DIR / audio_filename
         await voice_client.save_audio(audio_data, audio_path)
         
@@ -133,13 +133,13 @@ async def announce_task_with_completion(request: TaskAnnounceRequest):
         
         # 5. Save announcement audio
         announcement_id = str(uuid.uuid4())
-        announcement_filename = f"task_announce_{announcement_id}.wav"
+        announcement_filename = f"task_announce_{announcement_id}.mp3"
         announcement_path = AUDIO_DIR / announcement_filename
         await voice_client.save_audio(announcement_audio, announcement_path)
         
         # 6. Save completion audio
         completion_id = str(uuid.uuid4())
-        completion_filename = f"task_complete_{completion_id}.wav"
+        completion_filename = f"task_complete_{completion_id}.mp3"
         completion_path = AUDIO_DIR / completion_filename
         await voice_client.save_audio(completion_audio, completion_path)
         
@@ -171,10 +171,11 @@ async def serve_audio(filename: str):
     if not audio_path.exists():
         raise HTTPException(status_code=404, detail="Audio not found")
     
+    # We omit the filename argument to default to inline disposition,
+    # which is better for web playback in <audio> or Audio objects.
     return FileResponse(
         audio_path, 
-        media_type="audio/wav",
-        filename=filename
+        media_type="audio/mpeg"
     )
 
 if __name__ == "__main__":

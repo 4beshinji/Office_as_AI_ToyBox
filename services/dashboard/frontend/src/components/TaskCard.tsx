@@ -11,6 +11,10 @@ export interface Task {
     location?: string;
     bounty_gold: number;
     is_completed: boolean;
+    announcement_audio_url?: string;
+    announcement_text?: string;
+    completion_audio_url?: string;
+    completion_text?: string;
     created_at: string;
     completed_at?: string;
 }
@@ -84,10 +88,9 @@ export default function TaskCard({ task, onAccept, onComplete, onIgnore }: TaskC
                     </p>
                 )}
 
-                {/* Rewards */}
                 <div className="flex items-center gap-3">
                     <Badge variant="gold" icon={<Coins size={14} />}>
-                        {task.bounty_gold} 神保ポイント
+                        {task.bounty_gold} 最適化承認スコア
                     </Badge>
                 </div>
 

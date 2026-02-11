@@ -127,7 +127,7 @@ class DashboardClient:
             }
             
             async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=30)) as resp:
+                async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=180)) as resp:
                     if resp.status == 200:
                         result = await resp.json()
                         logger.info(f"Dual voice generated successfully")

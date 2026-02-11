@@ -15,6 +15,6 @@ docker volume create soms_db_data
 
 # 3. Build Containers
 echo "Building containers..."
-docker-compose -f ../docker-compose.yml build
+docker compose -f ../docker-compose.yml build
 
-echo "Setup Complete. Run 'docker-compose -f ../docker-compose.yml up' to start."
+echo "Setup Complete. Run 'docker compose -f ../docker-compose.yml up' to start."

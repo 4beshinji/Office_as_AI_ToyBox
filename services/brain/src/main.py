@@ -80,17 +80,43 @@ class Brain:
             if "coffee_machine" in msg["topic"] and msg["payload"].get("beans_level") == 0:
                 logger.info("Rule Triggered: Coffee Beans Empty -> Create Task")
                 await self.dashboard.create_task(
-                    title="Buy Coffee Beans",
-                    description="The machine in the kitchen is empty.",
+                    title="コーヒー豆を補充してください",
+                    description="キッチンのコーヒーマシンの豆が空っぽになっています。",
                     bounty=1000
                 )
                 self.message_buffer = [] # Clear handled messages
                 return
+
+            # NEW: High Temperature Rule
+            if "temperature" in msg["topic"]:
+                temp = msg["payload"].get("value")
+                if temp and isinstance(temp, (int, float)) and temp > 30:
+                    logger.info(f"Rule Triggered: High Temperature ({temp}°C) -> Create Task")
+                    await self.dashboard.create_task(
+                        title="室温を下げてください",
+                        description=f"高温（{temp}°C）を検知しました。エアコンをつけるか窓を開けてください。",
+                        bounty=1500
+                    )
+                    self.message_buffer = [] # Clear handled messages
+                    return
+
+            # NEW: Low Humidity Rule
+            if "humidity" in msg["topic"]:
+                hum = msg["payload"].get("value")
+                if hum and isinstance(hum, (int, float)) and hum < 30:
+                    logger.info(f"Rule Triggered: Low Humidity ({hum}%) -> Create Task")
+                    await self.dashboard.create_task(
+                        title="加湿と換気を行ってください",
+                        description=f"低湿度（{hum}%）を検知しました。加湿器を稼働させ、定期的な換気を行って快適な環境を保ちましょう。",
+                        bounty=1200
+                    )
+                    self.message_buffer = [] # Clear handled messages
+                    return
         # ---------------------------------------
 
         system_prompt = {
             "role": "system",
-            "content": "You are the Autonomous Office Manager..."
+            "content": "あなたは自律型オフィス管理AI「Brain」です。人々の活動や環境データを分析し、オフィスの快適さを維持するためのタスクを生成します。常に丁寧で自然な日本語で応答してください。"
         }
         
         # Use World Model context for LLM

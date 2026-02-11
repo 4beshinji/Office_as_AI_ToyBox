@@ -7,7 +7,8 @@ from typing import List, Dict, Any, Optional
 class LLMClient:
     def __init__(self, api_url: str = "http://localhost:8000/v1"):
         self.api_url = api_url
-        self.api_key = os.getenv("OPENAI_API_KEY", "EMPTY") # vLLM often uses dummy key
+        self.api_key = os.getenv("OPENAI_API_KEY", "EMPTY")
+        self.model = os.getenv("LLM_MODEL", "qwen2.5:14b")
         
     async def generate_response(
         self, 
@@ -24,7 +25,7 @@ class LLMClient:
         }
         
         payload = {
-            "model": "Qwen/Qwen2.5-32B-Instruct-AWQ", # Model name matching vLLM
+            "model": self.model,
             "messages": messages,
             "temperature": 0.7,
             "max_tokens": 1024,
