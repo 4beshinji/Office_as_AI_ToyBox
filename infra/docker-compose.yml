@@ -5,8 +5,8 @@ services:
     container_name: soms-mqtt
     restart: always
     ports:
-      - "192.168.128.161:1883:1883" # Exposed for Edge Devices
-      - "192.168.128.161:9001:9001" # Websocket
+      - "1883:1883" # Exposed for Edge Devices
+      - "9001:9001" # Websocket
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
       - soms_mqtt_data:/mosquitto/data
@@ -28,6 +28,7 @@ services:
       - LOG_LEVEL=INFO
       - LLM_API_URL=http://ollama:11434/v1 # Production with Ollama
       - LLM_MODEL=${LLM_MODEL}
+      - SEDENTARY_THRESHOLD_MINUTES=${SEDENTARY_THRESHOLD_MINUTES:-30}
     volumes:
       - ../services/brain/src:/app
     networks:
@@ -83,7 +84,7 @@ services:
       - voicevox
     environment:
       - VOICEVOX_URL=http://voicevox:50021
-      - LLM_API_URL=http://ollama:11434/v1
+      - LLM_API_URL=http://ollama:11434/v1 # Production with Ollama
       - LLM_MODEL=${LLM_MODEL}
     volumes:
       - ../services/voice/src:/app
@@ -107,14 +108,15 @@ services:
     networks:
       - soms-net
   # Using Mock LLM for development/testing (Commented out for Production)
-  # mock-llm:
-  #   build: ./mock_llm
-  #   container_name: soms-mock-llm
-  #   restart: unless-stopped
-  #   ports:
-  #     - "8001:8000"
-  #   networks:
-  #     - soms-net
+  # Using Mock LLM for development/testing
+  mock-llm:
+    build: ./mock_llm
+    container_name: soms-mock-llm
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    networks:
+      - soms-net
   # --- Perception Node (Optional/Distributed) ---
   # This container needs GPU access if running YOLO locally.
   # perception:

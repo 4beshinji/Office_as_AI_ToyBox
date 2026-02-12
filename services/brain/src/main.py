@@ -10,6 +10,7 @@ from sanitizer import Sanitizer
 from world_model import WorldModel
 from task_scheduling import TaskQueueManager
 from task_reminder import TaskReminder
+from monitors.activity_monitor import ActivityMonitor
 
 # Load environment variables
 load_dotenv()
@@ -34,6 +35,7 @@ class Brain:
         self.world_model = WorldModel()  # Initialize World Model
         self.task_queue = None  # Will be initialized after world_model
         self.task_reminder = TaskReminder()  # Initialize Task Reminder
+        self.activity_monitor = ActivityMonitor(self.world_model, self.dashboard) # Initialize Activity Monitor
 
     # ... (on_connect and on_message remain same)
 
@@ -67,6 +69,10 @@ class Brain:
         # Process task queue first
         if self.task_queue:
             await self.task_queue.process_queue()
+            
+        # Check Activity (Sedentary state)
+        if self.activity_monitor:
+            await self.activity_monitor.check_activity()
         
         if not self.message_buffer:
             return

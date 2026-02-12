@@ -67,6 +67,12 @@ function App() {
         const now = new Date().getTime();
         return (now - completedTime) / 1000 < COMPLETED_Display_SECONDS;
       }
+
+      // Filter out voice-only tasks from visual display
+      if (task.task_type && task.task_type.includes('voice_only')) {
+        return false;
+      }
+
       return true;
     })
     .sort((a, b) => {

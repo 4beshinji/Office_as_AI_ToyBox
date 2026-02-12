@@ -15,6 +15,9 @@ export interface Task {
     announcement_text?: string;
     completion_audio_url?: string;
     completion_text?: string;
+    dispatched_at?: string;
+    expires_at?: string;
+    task_type?: string[];
     created_at: string;
     completed_at?: string;
 }
