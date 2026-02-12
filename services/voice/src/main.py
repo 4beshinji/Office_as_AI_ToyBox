@@ -4,7 +4,7 @@ from pathlib import Path
 import uuid
 from loguru import logger
 
-from models import TaskAnnounceRequest, VoiceResponse, DualVoiceResponse
+from models import TaskAnnounceRequest, SynthesizeRequest, VoiceResponse, DualVoiceResponse
 from voicevox_client import VoicevoxClient
 from speech_generator import SpeechGenerator
 
@@ -26,6 +26,37 @@ AUDIO_DIR.mkdir(exist_ok=True)
 async def root():
     """Health check endpoint."""
     return {"service": "SOMS Voice Service", "status": "running"}
+
+@app.post("/api/voice/synthesize", response_model=VoiceResponse)
+async def synthesize_text(request: SynthesizeRequest):
+    """
+    Synthesize text directly to speech (skips LLM text generation).
+    Used by the speak tool where the Brain LLM has already generated the message.
+    """
+    try:
+        logger.info(f"Synthesizing text: {request.text[:50]}...")
+
+        # 1. Synthesize using VOICEVOX
+        audio_data = await voice_client.synthesize(request.text)
+
+        # 2. Save audio file
+        audio_id = str(uuid.uuid4())
+        audio_filename = f"speak_{audio_id}.mp3"
+        audio_path = AUDIO_DIR / audio_filename
+        await voice_client.save_audio(audio_data, audio_path)
+
+        # 3. Calculate duration
+        duration_seconds = len(audio_data) / (24000 * 2)
+
+        return VoiceResponse(
+            audio_url=f"/audio/{audio_filename}",
+            text_generated=request.text,
+            duration_seconds=round(duration_seconds, 2)
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to synthesize text: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/voice/announce", response_model=VoiceResponse)
 async def announce_task(request: TaskAnnounceRequest):

@@ -17,6 +17,7 @@ export interface Task {
     completion_text?: string;
     created_at: string;
     completed_at?: string;
+    task_type?: string[];
 }
 
 interface TaskCardProps {

@@ -86,6 +86,31 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "speak",
+            "description": "音声でオフィスの人に直接話しかける。タスク発行が不要な場面（健康アドバイス、軽い注意、観察報告など）で使用。ダッシュボードには表示されない。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "読み上げるメッセージ。自然な話し言葉で、70文字以内。"
+                    },
+                    "zone": {
+                        "type": "string",
+                        "description": "対象ゾーン"
+                    },
+                    "tone": {
+                        "type": "string",
+                        "description": "トーン: neutral(通常), caring(優しく), humorous(ユーモア), alert(注意喚起)"
+                    }
+                },
+                "required": ["message"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_active_tasks",
             "description": "現在アクティブなタスク一覧を取得する。重複タスク作成を防止するために、タスク作成前に確認すること。",
             "parameters": {

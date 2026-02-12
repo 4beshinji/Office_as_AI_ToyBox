@@ -10,6 +10,10 @@ class Task(BaseModel):
     urgency: int = 2  # 0-4
     zone: Optional[str] = None
 
+class SynthesizeRequest(BaseModel):
+    """Request model for direct text-to-speech synthesis."""
+    text: str
+
 class TaskAnnounceRequest(BaseModel):
     """Request model for task announcement."""
     task: Task

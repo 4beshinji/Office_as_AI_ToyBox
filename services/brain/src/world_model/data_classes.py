@@ -39,11 +39,17 @@ class OccupancyData(BaseModel):
     person_count: int = 0
     vision_count: int = 0  # From YOLO
     pir_detected: bool = False  # From PIR sensor
-    
+
     # Activity distribution (active/focused)
     activity_distribution: Dict[str, int] = Field(default_factory=dict)
     avg_motion_level: float = 0.0  # 0.0 - 1.0
-    
+
+    # Perception ActivityMonitor data
+    activity_level: float = 0.0            # 0.0-1.0 (short-term motion)
+    activity_class: str = "unknown"        # "idle"|"low"|"moderate"|"high"
+    posture_duration_sec: float = 0.0      # Current posture duration (seconds)
+    posture_status: str = "unknown"        # "changing"|"mostly_static"|"static"
+
     # Temporal statistics
     last_entry_time: Optional[float] = None
     last_exit_time: Optional[float] = None
@@ -108,6 +114,13 @@ class Event(BaseModel):
             return f"CO2濃度が{self.data.get('value', 0)}ppmに達しました（換気推奨）"
         elif self.event_type == "temp_spike":
             return f"気温が急上昇しました（{self.data.get('value', 0)}℃）"
+        elif self.event_type == "sedentary_alert":
+            minutes = int(self.data.get('duration_sec', 0) / 60)
+            return f"同じ姿勢で{minutes}分以上座り続けています"
+        elif self.event_type == "sensor_tamper":
+            channel = self.data.get('channel', '?')
+            change = self.data.get('change', 0)
+            return f"センサー異常: {channel}が急変({change:.1f}変化)"
         return f"イベント: {self.event_type}"
 
 
@@ -128,6 +141,8 @@ class ZoneState(BaseModel):
     # Internal cache for change detection
     _prev_occupancy: int = 0
     _prev_temperature: Optional[float] = None
+    _prev_humidity: Optional[float] = None
+    _prev_env_timestamps: Dict[str, float] = {}
     
     class Config:
         # Pydantic V2: Private attributes automatically work with underscore prefix

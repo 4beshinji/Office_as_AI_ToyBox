@@ -7,6 +7,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
   const [prevTaskIds, setPrevTaskIds] = useState<Set<number>>(new Set());
+  const [playedVoiceEventIds, setPlayedVoiceEventIds] = useState<Set<number>>(new Set());
 
   // Configuration
   const MAX_DISPLAY_TASKS = 10;
@@ -57,6 +58,32 @@ function App() {
     // Always sync the known IDs
     setPrevTaskIds(currentIds);
   }, [tasks, isAudioEnabled, loading]); // Remove prevTaskIds from deps to avoid infinite loops, we sync it inside
+
+  // Voice event polling (ephemeral speak messages from Brain)
+  useEffect(() => {
+    if (!isAudioEnabled) return;
+
+    const pollVoiceEvents = () => {
+      fetch('/api/voice-events/recent')
+        .then(res => res.json())
+        .then((events: { id: number; audio_url: string }[]) => {
+          for (const event of events) {
+            if (!playedVoiceEventIds.has(event.id) && event.audio_url) {
+              const audio = new Audio(event.audio_url);
+              audio.play().catch(e => {
+                console.warn("Voice event playback failed:", e);
+              });
+              setPlayedVoiceEventIds(prev => new Set(prev).add(event.id));
+            }
+          }
+        })
+        .catch(err => console.error("Failed to fetch voice events:", err));
+    };
+
+    pollVoiceEvents();
+    const interval = setInterval(pollVoiceEvents, 3000);
+    return () => clearInterval(interval);
+  }, [isAudioEnabled, playedVoiceEventIds]);
 
   // Sort and Filter Tasks
   const visibleTasks = tasks

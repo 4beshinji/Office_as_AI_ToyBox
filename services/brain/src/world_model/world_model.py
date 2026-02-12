@@ -58,6 +58,8 @@ class WorldModel:
             self._update_environment(zone, channel, payload, device_id)
         elif device_type == "camera":
             self._update_occupancy(zone, payload)
+        elif device_type == "activity":
+            self._update_activity(zone, payload)
         elif device_type in ["hvac", "light", "coffee_machine"]:
             self._update_device(zone, device_type, device_id, payload)
         
@@ -155,6 +157,23 @@ class WorldModel:
             pir_active=zone.occupancy.pir_detected
         )
     
+    def _update_activity(self, zone: ZoneState, payload: dict):
+        """Update activity data from Perception ActivityMonitor."""
+        if "person_count" in payload:
+            zone.occupancy.vision_count = payload["person_count"]
+            zone.occupancy.person_count = self.sensor_fusion.integrate_occupancy(
+                vision_count=payload["person_count"],
+                pir_active=zone.occupancy.pir_detected
+            )
+        if "activity_level" in payload:
+            zone.occupancy.activity_level = payload["activity_level"]
+        if "activity_class" in payload:
+            zone.occupancy.activity_class = payload["activity_class"]
+        if "posture_duration_sec" in payload:
+            zone.occupancy.posture_duration_sec = payload["posture_duration_sec"]
+        if "posture_status" in payload:
+            zone.occupancy.posture_status = payload["posture_status"]
+
     def _update_device(self, zone: ZoneState, device_type: str, device_id: str, payload: dict):
         """Update device state."""
         if device_id not in zone.devices:
@@ -178,7 +197,11 @@ class WorldModel:
     def _detect_events(self, zone: ZoneState):
         """Detect events based on state changes."""
         current_time = time.time()
-        
+
+        # Capture previous env values before they are updated below
+        saved_prev_temperature = zone._prev_temperature
+        saved_prev_humidity = zone._prev_humidity
+
         # Person count change
         if zone.occupancy.person_count != zone._prev_occupancy:
             if zone.occupancy.person_count > zone._prev_occupancy:
@@ -233,7 +256,69 @@ class WorldModel:
                 zone.events.append(event)
         
         zone._prev_temperature = zone.environment.temperature
-        
+
+        # Sedentary alert: static posture for >= 30 minutes with people present
+        if (zone.occupancy.person_count > 0
+                and zone.occupancy.posture_status == "static"
+                and zone.occupancy.posture_duration_sec >= 1800):
+            recent_sedentary = [
+                e for e in zone.events
+                if e.event_type == "sedentary_alert"
+                and current_time - e.timestamp < 3600  # 1 hour cooldown
+            ]
+            if not recent_sedentary:
+                event = Event(
+                    timestamp=current_time,
+                    event_type="sedentary_alert",
+                    severity="info",
+                    data={
+                        "duration_sec": zone.occupancy.posture_duration_sec,
+                        "person_count": zone.occupancy.person_count,
+                    }
+                )
+                zone.events.append(event)
+
+        # Sensor tamper: rapid environment change (use saved previous values)
+        for channel, prev_val, threshold in [
+            ("temperature", saved_prev_temperature, 5.0),
+            ("humidity", saved_prev_humidity, 20.0),
+        ]:
+            current_val = getattr(zone.environment, channel, None)
+            ts_key = channel
+            current_ts = zone.environment.timestamps.get(ts_key)
+            prev_ts = zone._prev_env_timestamps.get(ts_key)
+
+            if (current_val is not None and prev_val is not None
+                    and current_ts is not None and prev_ts is not None):
+                dt = current_ts - prev_ts
+                if 0 < dt <= 30:
+                    change = abs(current_val - prev_val)
+                    if change >= threshold:
+                        recent_tamper = [
+                            e for e in zone.events
+                            if e.event_type == "sensor_tamper"
+                            and current_time - e.timestamp < 300  # 5 min cooldown
+                        ]
+                        if not recent_tamper:
+                            event = Event(
+                                timestamp=current_time,
+                                event_type="sensor_tamper",
+                                severity="warning",
+                                data={
+                                    "channel": channel,
+                                    "change": change,
+                                    "duration_sec": dt,
+                                    "value": current_val,
+                                }
+                            )
+                            zone.events.append(event)
+
+            if current_val is not None:
+                if channel == "humidity":
+                    zone._prev_humidity = current_val
+            if current_ts is not None:
+                zone._prev_env_timestamps[ts_key] = current_ts
+
         # Limit event history size (keep last 50 events per zone)
         if len(zone.events) > 50:
             zone.events = zone.events[-50:]
@@ -267,6 +352,9 @@ class WorldModel:
                 summary += f"- 状態: {zone.occupancy.activity_summary}\n"
                 if zone.occupancy.avg_motion_level > 0:
                     summary += f"- 活動レベル: {zone.occupancy.avg_motion_level:.2f}\n"
+                if zone.occupancy.posture_status != "unknown":
+                    minutes = int(zone.occupancy.posture_duration_sec / 60)
+                    summary += f"- 姿勢状態: {zone.occupancy.posture_status} ({minutes}分間)\n"
             else:
                 summary += "- 状態: 無人\n"
             

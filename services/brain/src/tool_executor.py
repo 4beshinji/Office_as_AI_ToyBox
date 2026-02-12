@@ -2,7 +2,9 @@
 Tool Executor: Routes tool calls through Sanitizer validation to handlers.
 """
 import json
+import os
 from typing import Dict, Any
+import aiohttp
 from loguru import logger
 
 
@@ -13,6 +15,8 @@ class ToolExecutor:
         self.dashboard = dashboard_client
         self.world_model = world_model
         self.task_queue = task_queue
+        self.voice_url = os.getenv("VOICE_SERVICE_URL", "http://voice-service:8000")
+        self.dashboard_api_url = os.getenv("DASHBOARD_API_URL", "http://backend:8000")
 
     async def execute(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -32,6 +36,8 @@ class ToolExecutor:
                 return await self._handle_create_task(arguments)
             elif tool_name == "send_device_command":
                 return await self._handle_device_command(arguments)
+            elif tool_name == "speak":
+                return await self._handle_speak(arguments)
             elif tool_name == "get_zone_status":
                 return await self._handle_get_zone_status(arguments)
             elif tool_name == "get_active_tasks":
@@ -81,6 +87,50 @@ class ToolExecutor:
             }
         else:
             return {"success": False, "error": "タスクの作成に失敗しました"}
+
+    async def _handle_speak(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Synthesize speech and record as ephemeral voice event."""
+        message = args.get("message", "")
+        zone = args.get("zone")
+        tone = args.get("tone", "neutral")
+
+        # 1. Call voice service to synthesize text directly
+        audio_url = None
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{self.voice_url}/api/voice/synthesize",
+                    json={"text": message},
+                    timeout=aiohttp.ClientTimeout(total=60),
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        audio_url = data.get("audio_url")
+                    else:
+                        logger.warning(f"Voice synthesize failed: {resp.status}")
+        except Exception as e:
+            logger.warning(f"Voice synthesize error: {e}")
+
+        # 2. Record voice event in dashboard backend
+        try:
+            async with aiohttp.ClientSession() as session:
+                await session.post(
+                    f"{self.dashboard_api_url}/voice-events/",
+                    json={
+                        "message": message,
+                        "audio_url": audio_url or "",
+                        "zone": zone,
+                        "tone": tone,
+                    },
+                    timeout=aiohttp.ClientTimeout(total=10),
+                )
+        except Exception as e:
+            logger.warning(f"Failed to record voice event: {e}")
+
+        return {
+            "success": True,
+            "result": f"「{message}」を音声で通知しました",
+        }
 
     async def _handle_device_command(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Send command to edge device via MCPBridge."""

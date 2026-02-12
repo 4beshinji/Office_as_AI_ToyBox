@@ -40,6 +40,15 @@ class Task(Base):
     # Reminder tracking
     last_reminded_at = Column(DateTime(timezone=True), nullable=True)
 
+class VoiceEvent(Base):
+    __tablename__ = "voice_events"
+    id = Column(Integer, primary_key=True, index=True)
+    message = Column(String)
+    audio_url = Column(String)
+    zone = Column(String, nullable=True)
+    tone = Column(String, default="neutral")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)

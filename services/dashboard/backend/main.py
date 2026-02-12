@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
-from routers import tasks, users
+from routers import tasks, users, voice_events
 import models # Make sure models are registered
 
 app = FastAPI(title="SOMS Dashboard API")
@@ -25,6 +25,7 @@ async def startup():
 # Include Routers
 app.include_router(tasks.router)
 app.include_router(users.router)
+app.include_router(voice_events.router)
 
 @app.get("/")
 async def root():

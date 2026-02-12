@@ -26,6 +26,8 @@ class Sanitizer:
             return self._validate_create_task(args)
         elif tool_name == "send_device_command":
             return self._validate_device_command(args)
+        elif tool_name == "speak":
+            return self._validate_speak(args)
         elif tool_name in ("get_zone_status", "get_active_tasks"):
             return True, "Query tools are always allowed"
         else:
@@ -59,6 +61,13 @@ class Sanitizer:
         # Record this creation time (will be confirmed on successful execution)
         self._task_creation_times.append(now)
 
+        return True, "OK"
+
+    def _validate_speak(self, args: Dict[str, Any]) -> Tuple[bool, str]:
+        """Validate speak parameters."""
+        message = args.get("message", "")
+        if not message or not message.strip():
+            return False, "Message must not be empty"
         return True, "OK"
 
     def _validate_device_command(self, args: Dict[str, Any]) -> Tuple[bool, str]:

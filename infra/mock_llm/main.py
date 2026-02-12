@@ -98,6 +98,42 @@ async def chat_completions(request: Request):
             ]
         )
 
+    # Sedentary alert -> speak with caring tone
+    if "sedentary_alert" in full_text or "座り" in full_text or "姿勢" in full_text:
+        return _response(
+            content="長時間座り続けている方がいます。声をかけます。",
+            tool_calls=[
+                _make_tool_call("speak", {
+                    "message": "ずっと座りっぱなしみたいですね。少し立ち上がってストレッチしませんか？",
+                    "tone": "caring",
+                })
+            ]
+        )
+
+    # Sensor tamper -> speak with humorous tone
+    if "sensor_tamper" in full_text or "急変" in full_text or "いたずら" in full_text:
+        return _response(
+            content="センサーの急変を検知しました。いたずらの可能性があります。",
+            tool_calls=[
+                _make_tool_call("speak", {
+                    "message": "おや、センサーの値が急に変わりましたね。何かいたずらしてません？",
+                    "tone": "humorous",
+                })
+            ]
+        )
+
+    # Person entered -> speak welcome (optional)
+    if "person_entered" in full_text or "入室" in full_text:
+        return _response(
+            content="入室を検知しました。挨拶します。",
+            tool_calls=[
+                _make_tool_call("speak", {
+                    "message": "こんにちは！今日もお疲れさまです。快適な環境を整えておきますね。",
+                    "tone": "neutral",
+                })
+            ]
+        )
+
     # Normal status - no tool calls
     return _response(content="現在のオフィス環境は正常範囲内です。特に対応の必要はありません。")
 
