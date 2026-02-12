@@ -1,55 +1,130 @@
 from fastapi import FastAPI, Request
 import json
+import uuid
 
 app = FastAPI()
+
+
+def _make_tool_call(name: str, arguments: dict) -> dict:
+    """Helper to build an OpenAI-format tool_call."""
+    return {
+        "id": f"call_{uuid.uuid4().hex[:8]}",
+        "type": "function",
+        "function": {
+            "name": name,
+            "arguments": json.dumps(arguments, ensure_ascii=False),
+        }
+    }
+
 
 @app.post("/v1/chat/completions")
 async def chat_completions(request: Request):
     body = await request.json()
     messages = body.get("messages", [])
-    
-    # Simple Keyword Logic
-    # 1. Flatten messages to search for keywords
-    full_text = " ".join([m.get("content", "") for m in messages]).lower()
-    
-    content = "Status Normal."
-    tool_calls = None
+    tools = body.get("tools", [])
 
-    if "temperature" in full_text and "high" in full_text:
-        content = "Temperature is too high. Turning on AC."
-        # Hypothetical Tool Call Format (OpenAI style)
-        # Note: In our Brain implementation, we might parse JSON from content
-        # or use structured outputs. Let's assume Brain parses JSON from text for now.
-        content = json.dumps({
-            "thought": "Temperature is high triggered by sensor data.",
-            "action": "call_tool",
-            "tool_name": "turn_on_ac",
-            "arguments": {"temp": 24}
-        })
-    elif "ph" in full_text and "high" in full_text:
-        content = json.dumps({
-            "thought": "pH is high. Dosing pH Down.",
-            "action": "call_tool",
-            "tool_name": "dose_ph_down",
-            "arguments": {"amount_ml": 5}
-        })
+    # Check if this is a follow-up with tool results
+    has_tool_results = any(m.get("role") == "tool" for m in messages)
+    if has_tool_results:
+        # Tool results received -> respond with completion text
+        return _response(content="対応を実行しました。状況を引き続き監視します。")
+
+    # Flatten messages for keyword matching
+    full_text = " ".join([m.get("content", "") or "" for m in messages]).lower()
+
+    # High temperature detection
+    if ("温度" in full_text or "気温" in full_text or "temperature" in full_text) and (
+        "高" in full_text or "hot" in full_text or "暑" in full_text or "30" in full_text
+    ):
+        return _response(
+            content="高温を検知しました。タスクを作成します。",
+            tool_calls=[
+                _make_tool_call("create_task", {
+                    "title": "室温を下げてください",
+                    "description": "高温を検知しました。エアコンをつけるか窓を開けて室温を下げてください。",
+                    "bounty": 1500,
+                    "urgency": 3,
+                    "task_types": "environment,urgent",
+                })
+            ]
+        )
+
+    # High CO2 detection
+    if ("co2" in full_text or "二酸化炭素" in full_text) and (
+        "換気" in full_text or "1000" in full_text or "超" in full_text
+    ):
+        return _response(
+            content="CO2濃度が高いです。換気タスクを作成します。",
+            tool_calls=[
+                _make_tool_call("create_task", {
+                    "title": "換気を行ってください",
+                    "description": "CO2濃度が基準値を超えています。窓を開けて換気してください。",
+                    "bounty": 800,
+                    "urgency": 2,
+                    "task_types": "environment",
+                })
+            ]
+        )
+
+    # Coffee beans empty
+    if "コーヒー" in full_text and ("空" in full_text or "補充" in full_text or "0" in full_text):
+        return _response(
+            content="コーヒー豆が空です。補充タスクを作成します。",
+            tool_calls=[
+                _make_tool_call("create_task", {
+                    "title": "コーヒー豆を補充してください",
+                    "description": "キッチンのコーヒーマシンの豆が空です。補充をお願いします。",
+                    "bounty": 1000,
+                    "urgency": 1,
+                    "task_types": "supply",
+                })
+            ]
+        )
+
+    # Low humidity
+    if ("湿度" in full_text or "humidity" in full_text) and (
+        "低" in full_text or "乾燥" in full_text
+    ):
+        return _response(
+            content="低湿度を検知しました。加湿タスクを作成します。",
+            tool_calls=[
+                _make_tool_call("create_task", {
+                    "title": "加湿と換気を行ってください",
+                    "description": "低湿度を検知しました。加湿器を稼働させて快適な環境を保ちましょう。",
+                    "bounty": 1200,
+                    "urgency": 2,
+                    "task_types": "environment",
+                })
+            ]
+        )
+
+    # Normal status - no tool calls
+    return _response(content="現在のオフィス環境は正常範囲内です。特に対応の必要はありません。")
+
+
+def _response(content: str, tool_calls: list = None) -> dict:
+    """Build OpenAI-compatible chat completion response."""
+    message = {"role": "assistant", "content": content}
+
+    if tool_calls:
+        message["tool_calls"] = tool_calls
+        finish_reason = "tool_calls"
+    else:
+        finish_reason = "stop"
 
     return {
-        "id": "mock-response-id",
+        "id": f"mock-{uuid.uuid4().hex[:8]}",
         "object": "chat.completion",
         "created": 1234567890,
         "model": "mock-qwen",
         "choices": [{
             "index": 0,
-            "message": {
-                "role": "assistant",
-                "content": content,
-            },
-            "finish_reason": "stop"
+            "message": message,
+            "finish_reason": finish_reason,
         }],
         "usage": {
             "prompt_tokens": 10,
             "completion_tokens": 10,
-            "total_tokens": 20
+            "total_tokens": 20,
         }
     }

@@ -109,7 +109,43 @@ class DashboardClient:
         except Exception as e:
             logger.error(f"Error communicating with Dashboard API: {e}")
             return None
-    
+
+    async def get_active_tasks(self) -> list:
+        """Fetch active (non-completed) tasks from dashboard."""
+        url = f"{self.api_url}/tasks/"
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        tasks = await response.json()
+                        # Filter to non-completed tasks
+                        active = [
+                            t for t in tasks
+                            if t.get("status") != "completed"
+                        ]
+                        return active
+                    else:
+                        logger.error(f"Failed to fetch tasks: {response.status}")
+                        return []
+        except Exception as e:
+            logger.error(f"Error fetching active tasks: {e}")
+            return []
+
+    async def get_task_stats(self) -> dict:
+        """Fetch task statistics from dashboard."""
+        url = f"{self.api_url}/tasks/stats"
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        return await response.json()
+                    else:
+                        logger.warning(f"Failed to fetch task stats: {response.status}")
+                        return {}
+        except Exception as e:
+            logger.error(f"Error fetching task stats: {e}")
+            return {}
+
     async def _generate_dual_voice(self, task_data: dict) -> dict:
         """
         Call voice service to generate both announcement and completion voices.
