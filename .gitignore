@@ -58,3 +58,4 @@ Thumbs.db
 /logs/
 /infra/mosquitto/data/
 /infra/mosquitto/log/
+*.pt

@@ -12,12 +12,12 @@ class YOLOInference:
     _instance = None
     
     @classmethod
-    def get_instance(cls, model_path: str = "yolov11s.pt"):
+    def get_instance(cls, model_path: str = "yolo11s.pt"):
         if cls._instance is None:
             cls._instance = cls(model_path)
         return cls._instance
     
-    def __init__(self, model_path: str = "yolov11s.pt"):
+    def __init__(self, model_path: str = "yolo11s.pt"):
         logger.info(f"Loading YOLO model: {model_path}")
         self.model = YOLO(model_path)
         logger.info("YOLO model loaded successfully")

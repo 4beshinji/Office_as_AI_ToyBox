@@ -12,13 +12,14 @@ from state_publisher import StatePublisher
 logger = logging.getLogger(__name__)
 
 class OccupancyMonitor(MonitorBase):
-    def __init__(self, camera_id: str, zone_name: str = "meeting_room_a"):
+    def __init__(self, camera_id: str, zone_name: str = "meeting_room_a", image_source=None):
         super().__init__(
             name=f"OccupancyMonitor_{zone_name}",
             camera_id=camera_id,
             interval_sec=5.0,      # 5秒ごと
             resolution="QVGA",      # 320x240
-            quality=15              # 低品質でOK
+            quality=15,             # 低品質でOK
+            image_source=image_source,
         )
         self.zone_name = zone_name
         self.yolo = YOLOInference.get_instance()

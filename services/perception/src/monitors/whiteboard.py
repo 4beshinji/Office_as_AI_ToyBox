@@ -12,13 +12,14 @@ from state_publisher import StatePublisher
 logger = logging.getLogger(__name__)
 
 class WhiteboardMonitor(MonitorBase):
-    def __init__(self, camera_id: str, zone_name: str = "meeting_room_a"):
+    def __init__(self, camera_id: str, zone_name: str = "meeting_room_a", image_source=None):
         super().__init__(
             name=f"WhiteboardMonitor_{zone_name}",
             camera_id=camera_id,
             interval_sec=60.0,      # 60秒ごと
             resolution="VGA",       # 640x480 (汚れ検知には十分)
-            quality=10              # 中品質
+            quality=10,             # 中品質
+            image_source=image_source,
         )
         self.zone_name = zone_name
         self.publisher = StatePublisher.get_instance()
