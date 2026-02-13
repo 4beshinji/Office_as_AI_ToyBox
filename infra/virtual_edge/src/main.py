@@ -1,11 +1,15 @@
 
 import os
+import sys
 import time
 import logging
 import json
 import random
 import paho.mqtt.client as mqtt
 from device import VirtualDevice
+from swarm_transport import VirtualTransport
+from swarm_hub import VirtualSwarmHub
+from swarm_leaf import TempHumidityLeaf, PIRLeaf, DoorSensorLeaf
 
 # Config
 MQTT_BROKER = os.getenv("MQTT_BROKER", "mosquitto")
@@ -93,6 +97,25 @@ def main():
     devices.append(SensorNode(client))
     devices.append(HydroNode(client))
     devices.append(AquaNode(client))
+
+    # --- SensorSwarm ---
+    swarm_transport = VirtualTransport(name="swarm_main")
+
+    leaf_env = TempHumidityLeaf(leaf_id=1, transport=swarm_transport, report_interval=10)
+    leaf_env.name = "leaf_env_01"
+    leaf_pir = PIRLeaf(leaf_id=2, transport=swarm_transport, report_interval=5)
+    leaf_pir.name = "leaf_pir_01"
+    leaf_door = DoorSensorLeaf(leaf_id=3, transport=swarm_transport, report_interval=15)
+    leaf_door.name = "leaf_door_01"
+
+    swarm_hub = VirtualSwarmHub(
+        hub_id="swarm_hub_01",
+        zone="main",
+        mqtt_client=client,
+        transport=swarm_transport,
+        leaves=[leaf_env, leaf_pir, leaf_door],
+    )
+    devices.append(swarm_hub)
 
     # Connect
     while True:
