@@ -11,6 +11,7 @@ Scenario:
   4. Verify final state
 """
 import json
+import os
 import sys
 import time
 import urllib.request
@@ -18,6 +19,8 @@ import paho.mqtt.client as mqtt
 
 MQTT_BROKER = "localhost"
 MQTT_PORT = 1883
+MQTT_USER = os.getenv("MQTT_USER", "soms")
+MQTT_PASS = os.getenv("MQTT_PASS", "soms_dev_mqtt")
 API_URL = "http://localhost:8000"
 CYCLE_WAIT = 40  # Brain cycle=30s + batch delay + margin
 
@@ -63,6 +66,8 @@ def main():
     # -- Setup --
     print("\n[Setup] Connecting to MQTT...")
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="e2e_test")
+    if MQTT_USER:
+        client.username_pw_set(MQTT_USER, MQTT_PASS)
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
     client.loop_start()
     time.sleep(1)

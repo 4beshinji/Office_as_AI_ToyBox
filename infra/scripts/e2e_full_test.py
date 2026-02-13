@@ -16,6 +16,7 @@ Scenarios:
   7. Deduplication + cleanup
 """
 import json
+import os
 import sys
 import time
 import urllib.request
@@ -24,6 +25,8 @@ import paho.mqtt.client as mqtt
 
 MQTT_BROKER = "localhost"
 MQTT_PORT = 1883
+MQTT_USER = os.getenv("MQTT_USER", "soms")
+MQTT_PASS = os.getenv("MQTT_PASS", "soms_dev_mqtt")
 BACKEND_URL = "http://localhost:8000"
 VOICE_URL = "http://localhost:8002"
 AUDIO_BASE_URL = "http://localhost"  # nginx serves /audio/
@@ -132,6 +135,8 @@ def test_1_health_checks():
     # MQTT
     try:
         c = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="e2e_health")
+        if MQTT_USER:
+            c.username_pw_set(MQTT_USER, MQTT_PASS)
         c.connect(MQTT_BROKER, MQTT_PORT, 5)
         c.disconnect()
         print(f"    MQTT OK - connected to {MQTT_BROKER}:{MQTT_PORT}")
@@ -480,6 +485,8 @@ def main():
     # Connect MQTT
     print("[Setup] Connecting MQTT...")
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="e2e_full_test")
+    if MQTT_USER:
+        client.username_pw_set(MQTT_USER, MQTT_PASS)
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
     client.loop_start()
     time.sleep(1)

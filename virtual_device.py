@@ -8,6 +8,8 @@ import sys
 # Configuration
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
+MQTT_USER = os.getenv("MQTT_USER", "soms")
+MQTT_PASS = os.getenv("MQTT_PASS", "soms_dev_mqtt")
 TOPIC = "office/meeting_room/sensor/temp_01/temperature"
 
 def on_connect(client, userdata, flags, rc, properties=None):
@@ -19,6 +21,8 @@ def on_connect(client, userdata, flags, rc, properties=None):
 def main():
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     client.on_connect = on_connect
+    if MQTT_USER:
+        client.username_pw_set(MQTT_USER, MQTT_PASS)
 
     print(f"Connecting to MQTT Broker at {MQTT_BROKER}:{MQTT_PORT}...")
     try:

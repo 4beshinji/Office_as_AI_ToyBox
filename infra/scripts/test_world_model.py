@@ -3,11 +3,15 @@
 Test script to verify World Model data flow.
 Simulates various edge devices sending sensor data to test integration.
 """
+import os
 import paho.mqtt.client as mqtt
 import json
 import time
 import random
 from datetime import datetime
+
+MQTT_USER = os.getenv("MQTT_USER", "soms")
+MQTT_PASS = os.getenv("MQTT_PASS", "soms_dev_mqtt")
 
 
 class MockEdgeDevice:
@@ -121,7 +125,9 @@ def main():
     # Connect to MQTT
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="test_edge_device")
     client.on_connect = on_connect
-    
+    if MQTT_USER:
+        client.username_pw_set(MQTT_USER, MQTT_PASS)
+
     try:
         client.connect("localhost", 1883, 60)
         client.loop_start()

@@ -3,6 +3,7 @@
 Camera Node Simulator - テスト用のカメラノードシミュレータ
 実際のESP32がなくてもVision Serviceをテストできる
 """
+import os
 import paho.mqtt.client as mqtt
 import json
 import base64
@@ -17,6 +18,10 @@ class CameraNodeSimulator:
         self.broker = broker
         self.port = port
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        mqtt_user = os.getenv("MQTT_USER")
+        mqtt_pass = os.getenv("MQTT_PASS")
+        if mqtt_user:
+            self.client.username_pw_set(mqtt_user, mqtt_pass)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         

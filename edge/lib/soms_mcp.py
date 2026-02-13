@@ -42,6 +42,8 @@ class MCPDevice:
         self.password = cfg["wifi_password"]
         self.broker = cfg["mqtt_broker"]
         self.port = cfg.get("mqtt_port", 1883)
+        self.mqtt_user = cfg.get("mqtt_user", None)
+        self.mqtt_pass = cfg.get("mqtt_pass", None)
         self.report_interval = cfg.get("report_interval", 30)
 
         # Derive MQTT topic prefix: office/{zone}/sensor/{device_id}
@@ -88,7 +90,10 @@ class MCPDevice:
     # ---- MQTT ----
 
     def _connect_mqtt(self):
-        self.client = MQTTClient(self.device_id, self.broker, port=self.port)
+        self.client = MQTTClient(
+            self.device_id, self.broker, port=self.port,
+            user=self.mqtt_user, password=self.mqtt_pass,
+        )
         self.client.set_callback(self._mqtt_callback)
         self.client.connect()
         self.client.subscribe(f"mcp/{self.device_id}/request/call_tool")
