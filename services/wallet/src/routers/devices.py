@@ -1,11 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import func as sa_func
 from typing import List
 
 from database import get_db
 from models import Device
-from schemas import DeviceCreate, DeviceUpdate, DeviceResponse
+from schemas import (
+    DeviceCreate, DeviceUpdate, DeviceResponse,
+    DeviceXpGrantRequest, DeviceXpResponse, DeviceXpStatsResponse,
+)
+from services.xp_scorer import grant_xp_to_zone
 
 router = APIRouter(prefix="/devices", tags=["devices"])
 

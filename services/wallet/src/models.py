@@ -57,6 +57,7 @@ class Device(Base):
     registered_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True)
     last_heartbeat_at = Column(DateTime(timezone=True), nullable=True)
+    xp = Column(BigInteger, default=0, nullable=False)  # device experience points
 
 
 class RewardRate(Base):

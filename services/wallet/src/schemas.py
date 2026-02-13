@@ -81,9 +81,24 @@ class DeviceResponse(BaseModel):
     registered_at: datetime
     is_active: bool
     last_heartbeat_at: Optional[datetime] = None
+    xp: int = 0
 
     class Config:
         from_attributes = True
+
+
+# Device XP
+class DeviceXpGrantRequest(BaseModel):
+    zone: str
+    task_id: int
+    xp_amount: int = 10  # XP per device
+    event_type: str = "task_created"  # task_created / task_completed
+
+
+class DeviceXpResponse(BaseModel):
+    devices_awarded: int
+    total_xp_granted: int
+    device_ids: List[str]
 
 
 # Reward Rate
@@ -99,6 +114,13 @@ class RewardRateResponse(BaseModel):
 class RewardRateUpdate(BaseModel):
     rate_per_hour: int
     min_uptime_for_reward: Optional[int] = None
+
+
+# Device XP Stats
+class DeviceXpStatsResponse(BaseModel):
+    total_device_xp: int
+    active_devices: int
+    top_devices: List[DeviceResponse]
 
 
 # Supply
