@@ -10,6 +10,9 @@ services:
     environment:
       - MQTT_BROKER=mosquitto
       - MQTT_PORT=1883
+    volumes:
+      - ./virtual_edge/src:/app
+      - ../edge/lib:/edge_lib
     networks:
       - soms-net
 

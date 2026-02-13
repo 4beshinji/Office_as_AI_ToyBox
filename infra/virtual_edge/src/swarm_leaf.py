@@ -10,7 +10,9 @@ import time
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "edge", "lib"))
+for _p in ["/edge_lib", os.path.join(os.path.dirname(__file__), "..", "..", "..", "edge", "lib")]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 from swarm.message import (
     encode, decode,
     encode_sensor_report, encode_heartbeat, encode_register,
