@@ -31,12 +31,6 @@ class Task(Base):
     is_queued = Column(Boolean, default=False)
     dispatched_at = Column(DateTime(timezone=True), nullable=True)
     
-    # Voice announcement fields
-    announcement_audio_url = Column(String, nullable=True)
-    announcement_text = Column(String, nullable=True)
-    completion_audio_url = Column(String, nullable=True)
-    completion_text = Column(String, nullable=True)
-    
     # Reminder tracking
     last_reminded_at = Column(DateTime(timezone=True), nullable=True)
 
