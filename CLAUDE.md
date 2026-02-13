@@ -228,6 +228,17 @@ When working as one of multiple concurrent Claude Code workers, read these docum
 - `docs/parallel-dev/WORKER_GUIDE.md` — Lane definitions, file ownership, git workflow
 - `docs/parallel-dev/API_CONTRACTS.md` — Inter-service API contracts and mocking guidance
 
+### Worktree (必須)
+
+並行開発では **git worktree** を使用する。メインディレクトリ (`Office_as_AI_ToyBox`) で `git checkout` を実行してはならない。
+
+```
+/home/sin/code/Office_as_AI_ToyBox     → main (監視・統合専用)
+/home/sin/code/soms-worktrees/L{N}     → lane/L{N}-* (各ワーカーの作業用)
+```
+
+ワーカー起動時は自分のレーンの worktree パスを working directory に指定すること。
+
 ## Environment Configuration
 
 Key variables in `.env` (see `env.example`):

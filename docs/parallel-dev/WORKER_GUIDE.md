@@ -70,6 +70,35 @@ Shared files that require coordination:
 
 ## Git Workflow
 
+### Worktree (必須)
+
+各ワーカーは専用の worktree で作業する。**メインディレクトリ (`Office_as_AI_ToyBox`) で `git checkout` は禁止。**
+
+| レーン | ワーキングツリー | ブランチ |
+|-------|---------------|---------|
+| Main (監視/統合) | `/home/sin/code/Office_as_AI_ToyBox` | `main` |
+| L3 | `/home/sin/code/soms-worktrees/L3` | `lane/L3-*` |
+| L4 | `/home/sin/code/soms-worktrees/L4` | `lane/L4-*` |
+| L5 | `/home/sin/code/soms-worktrees/L5` | `lane/L5-*` |
+| L6 | `/home/sin/code/soms-worktrees/L6` | `lane/L6-*` |
+| L7 | `/home/sin/code/soms-worktrees/L7` | `lane/L7-*` |
+| L9 | `/home/sin/code/soms-worktrees/L9` | `lane/L9-*` |
+
+**ワーカー起動時の手順:**
+1. Claude Code の working directory を自分の worktree パスに設定する
+2. `git branch --show-current` で正しいブランチにいることを確認
+3. 他の worktree のファイルを直接編集しない
+
+**新しいレーンを追加する場合:**
+```bash
+git worktree add /home/sin/code/soms-worktrees/L{N} lane/L{N}-{description}
+```
+
+**worktree を確認:**
+```bash
+git worktree list
+```
+
 ### Branch Naming
 
 ```

@@ -1,23 +1,34 @@
-# Worker Dispatch — 2026-02-13 Session I (監視 #3)
+# Worker Dispatch — 2026-02-13 Session I (worktree 導入後)
 
 全ワーカーは作業開始前にこのファイルと [WORKER_GUIDE.md](./WORKER_GUIDE.md) を読むこと。
 
-## ⚠ 重大問題: 共有ワーキングツリーの競合
+## ✅ Worktree 導入済み
 
-複数ワーカーが同じ .git で git checkout を同時実行。ブランチ間で作業が混入している。
-**コミット前に必ず `git branch --show-current` と `git diff --cached --stat` で確認すること。**
+Session I で発生した共有ワーキングツリー問題（ブランチ間作業混入）を解決するため、
+**全レーンに永続 worktree を配置済み。** 詳細は WORKER_GUIDE.md を参照。
 
-## main HEAD: `74f5fe6`
+| レーン | worktree パス | ブランチ |
+|-------|--------------|---------|
+| Main | `/home/sin/code/Office_as_AI_ToyBox` | `main` |
+| L3 | `/home/sin/code/soms-worktrees/L3` | `lane/L3-voice-model-and-fixes` |
+| L4 | `/home/sin/code/soms-worktrees/L4` | `lane/L4-error-boundary-and-users` |
+| L5 | `/home/sin/code/soms-worktrees/L5` | `lane/L5-wallet-integration-test` |
+| L6 | `/home/sin/code/soms-worktrees/L6` | `lane/L6-brain-fixes` |
+| L7 | `/home/sin/code/soms-worktrees/L7` | `lane/L7-infra-cleanup` |
+| L9 | `/home/sin/code/soms-worktrees/L9` | `lane/L9-wallet-app` |
 
-## ブランチ状態 (監視 #3)
+**ルール**: メインディレクトリで `git checkout` 禁止。各自の worktree パスで作業すること。
+
+## ブランチ状態 (監視 #3 + worktree 移行)
 
 | ブランチ | +N | 状態 | 備考 |
 |---------|---|------|------|
-| L3 | +0 | 未着手 | 作業は L7(54391c1) と L6(f82633e) に混入 |
-| L4 | +2 | **完了** | acfd450 ErrorBoundary + a1778eb Users CRUD |
-| L6 | +3 | 混入あり | 51df20c H-5修正(本来) + L7/L3混入2件 |
-| L7 | +6 | 混入あり | 4af92c3,d9b0601,6896c08(本来) + L3/L6/L9混入3件 |
-| L9 | +0 | 未着手 | 作業は L7(54391c1+52cd986) に混入 |
+| L3 | +1 | worktree移行済 | voice model 拡張完了 |
+| L4 | +2 | worktree移行済 | ErrorBoundary + Users CRUD 完了 |
+| L5 | +0 | worktree移行済 | 起動確認、実作業未確認 |
+| L6 | +4 | worktree移行済 | H-5修正 + task_report + action history |
+| L7 | +3 | worktree移行済 | healthchecks + virtual_camera + env |
+| L9 | +1 | worktree移行済 | wallet app 全ページ実装 |
 
 ## L6 コミット詳細
 - f82633e feat(L3) ← 混入
