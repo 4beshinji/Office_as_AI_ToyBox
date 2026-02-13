@@ -129,6 +129,9 @@ class ToolExecutor:
         except Exception as e:
             logger.warning(f"Failed to record voice event: {e}")
 
+        # Record successful speak for cooldown tracking (H-5 fix)
+        self.sanitizer.record_speak(zone=zone or "general")
+
         return {
             "success": True,
             "result": f"「{message}」を音声で通知しました",

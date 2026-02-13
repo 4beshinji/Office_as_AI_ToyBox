@@ -83,8 +83,11 @@ class Sanitizer:
             logger.warning(f"REJECTED: speak cooldown for zone {zone} ({remaining}s remaining)")
             return False, f"Speak cooldown: wait {remaining}s for zone {zone}"
 
-        self._speak_history[zone] = now
         return True, "OK"
+
+    def record_speak(self, zone: str = "general"):
+        """Record a successful speak execution for cooldown tracking."""
+        self._speak_history[zone] = time.time()
 
     def _validate_device_command(self, args: Dict[str, Any]) -> Tuple[bool, str]:
         """Validate send_device_command parameters."""

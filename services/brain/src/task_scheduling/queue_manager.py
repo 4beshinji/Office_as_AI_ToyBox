@@ -144,20 +144,16 @@ class TaskQueueManager:
             logger.error(f"Failed to dispatch task {task.task_id}: {e}")
     
     async def _update_task_queue_status(self, task_id: int, is_queued: bool):
-        """Update task queue status in dashboard."""
-        import aiohttp
-        
+        """Update task queue status in dashboard using shared session."""
         url = f"{self.dashboard.api_url}/tasks/{task_id}/dispatch"
         
         if is_queued:
-            # Mark as queued (PUT to a hypothetical endpoint)
-            # For now, we'll skip this since we don't have a "queue" endpoint
-            # The task creation already handles is_queued
+            # Mark as queued — task creation already handles is_queued flag
             pass
         else:
-            # Dispatch task
+            # Dispatch task via dashboard client's shared session
             try:
-                async with aiohttp.ClientSession() as session:
+                async with self.dashboard._get_session() as session:
                     async with session.put(url) as response:
                         if response.status == 200:
                             logger.debug(f"Task {task_id} dispatch status updated")

@@ -113,10 +113,18 @@ class Brain:
         # Collect recent events (last 5 minutes)
         now = time.time()
         recent_events = []
+        actionable_reports = []  # task_reports needing follow-up
         for zone_id, zone in self.world_model.zones.items():
             for event in zone.events:
                 if now - event.timestamp < 300:
                     recent_events.append(f"[{zone_id}] {event.description}")
+                    # Highlight task reports that need action
+                    if event.event_type == "task_report":
+                        status = event.data.get("report_status", "")
+                        if status in ("needs_followup", "cannot_resolve"):
+                            actionable_reports.append(
+                                f"[{zone_id}] {event.description} (要対応)"
+                            )
 
         # Fetch active tasks to prevent duplicates
         active_tasks = await self.dashboard.get_active_tasks()
@@ -126,6 +134,9 @@ class Brain:
         user_content = f"## 現在のオフィス状態\n{llm_context}"
         if recent_events:
             user_content += f"\n\n## 直近のイベント\n" + "\n".join(recent_events)
+        if actionable_reports:
+            user_content += "\n\n## ⚠ 対応が必要なタスク報告\n" + "\n".join(actionable_reports)
+            user_content += "\n上記のタスク報告にはフォローアップが必要です。内容を確認し適切に対応してください。"
 
         # Inject active tasks so LLM knows what already exists
         if active_tasks:
@@ -146,9 +157,13 @@ class Brain:
         recent_actions = [a for a in self._action_history if a["time"] > cutoff]
         if recent_actions:
             user_content += "\n\n## 直近のBrainアクション履歴（重複注意）\n"
-            for a in recent_actions[-10:]:
+            for a in recent_actions[-8:]:
                 mins_ago = int((now - a["time"]) / 60)
-                user_content += f"- {mins_ago}分前: {a['tool']}({a.get('summary', '')})\n"
+                status = "✓" if a.get("success", True) else "✗失敗"
+                user_content += f"- {mins_ago}分前: {a['tool']}({a.get('summary', '')}) [{status}]\n"
+            failed = [a for a in recent_actions if not a.get("success", True)]
+            if failed:
+                user_content += "失敗したアクションと同じ操作を再試行しないでください。\n"
             user_content += "上記と同じアクションを短期間で繰り返さないでください。特にspeakは同じ内容を30分以内に再送しないこと。\n"
 
         user_msg = {"role": "user", "content": user_content}
