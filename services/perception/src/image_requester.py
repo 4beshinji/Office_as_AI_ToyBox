@@ -17,9 +17,9 @@ class ImageRequester:
     _instance = None
     
     @classmethod
-    def get_instance(cls):
+    def get_instance(cls, broker: str = "localhost", port: int = 1883):
         if cls._instance is None:
-            cls._instance = cls()
+            cls._instance = cls(broker, port)
         return cls._instance
     
     def __init__(self, broker: str = "localhost", port: int = 1883):
