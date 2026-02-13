@@ -2,9 +2,9 @@
 
 **Symbiotic Office Management System**
 
-分散型ローカルLLMによる自律的空間知能。1つのオフィスから都市全体へスケールする Core Hub アーキテクチャの Phase 0 実装。
+分散型ローカルLLMによる自律的空間管理。1つのオフィスから都市全体へスケールする Core Hub アーキテクチャの Phase 0 実装。
 
-センサーデータとカメラ映像をもとにローカルLLMがリアルタイムで自律判断し、APIで操作できない物理タスクは人間に経済的インセンティブで委託する。全処理がGPUサーバー1台で完結し、生データは一切クラウドに送信しない (**50,000:1** のデータ圧縮)。
+センサーデータとカメラ映像をもとにローカルLLMがリアルタイムで自律判断し、APIで操作できない物理タスクは人間に経済的インセンティブで委託する。全処理がGPUサーバー1台で完結し、生データは一切クラウドに送信しない (50,000:1 のデータ圧縮)。
 
 ## Core Hub ビジョン
 
@@ -23,7 +23,7 @@
          Phase 0 実装     同一アーキテクチャ、異なるプロンプトとセンサー
 ```
 
-各 Core Hub は独立したローカルLLM+GPUを持ち、ネットワーク切断時も自律動作を継続する。接続するセンサーとシステムプロンプト（憲法）を変えるだけで、オフィス・農場・店舗・公共施設に展開できる。
+各 Core Hub は独立したローカルLLM+GPUを持ち、ネットワーク切断時も自律動作を継続する。システムプロンプト（行動原則）とセンサー構成の差し替えでオフィス・農場・店舗・公共施設に展開可能。
 
 ## Phase 0 アーキテクチャ (SOMS)
 
@@ -68,7 +68,7 @@
 
 | Layer | Directory | Description |
 |-------|-----------|-------------|
-| Central Intelligence | `services/brain/` | LLM-driven ReAct 認知ループ (Think→Act→Observe, 5ツール, 多層安全機構) |
+| Central Intelligence | `services/brain/` | LLM-driven ReAct 認知ループ (Think→Act→Observe, 5ツール, 3層安全機構) |
 | Perception | `services/perception/` | YOLOv11 — 在室検知, ホワイトボード, 活動分析 (4層姿勢バッファ) |
 | Communication | MQTT (Mosquitto) | MCP over MQTT — JSON-RPC 2.0 でエッジデバイスを直接制御 |
 | Edge | `edge/` | SensorSwarm Hub-Leaf 2層ネットワーク (ESP-NOW/UART/I2C/BLE) |
@@ -138,12 +138,12 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed setup. See [CITY_SCALE_VISION.md
 - **Backend**: Python 3.11, FastAPI, SQLAlchemy (async), PostgreSQL 16 (asyncpg) / SQLite fallback
 - **Frontend**: React 19, TypeScript, Vite 7, Tailwind CSS 4, Framer Motion
 - **Vision**: YOLOv11 (yolo11s.pt + yolo11s-pose.pt), OpenCV, PyTorch (ROCm)
-- **TTS**: VOICEVOX (Japanese, Speaker ID 47: ナースロボ_タイプT)
+- **TTS**: VOICEVOX (Japanese, Speaker ID 47)
 - **Edge**: ESP32 MicroPython + SensorSwarm (Hub-Leaf, binary protocol) + PlatformIO C++
 - **Economy**: Double-entry ledger, demurrage 2%/day, 5% burn, device XP multiplier
 - **Infra**: Docker Compose (11 services), Mosquitto MQTT, nginx
 
-ミドルウェア不使用。Python + MQTT による純粋なイベント駆動アーキテクチャ。
+Python + MQTT による純粋なイベント駆動アーキテクチャ。重量級ミドルウェア不使用。
 
 ## Testing
 

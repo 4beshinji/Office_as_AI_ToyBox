@@ -149,8 +149,8 @@ section::after {
 ;">
 <h1 id="%E9%83%BD%E5%B8%82%E3%82%92ai%E5%8C%96%E3%81%99%E3%82%8B%E3%82%A2%E3%83%BC%E3%82%AD%E3%83%86%E3%82%AF%E3%83%81%E3%83%A3">都市をAI化するアーキテクチャ</h1>
 <p><strong>SOMS — Symbiotic Office Management System</strong></p>
-<p>分散型ローカルLLMが、建物を「考える空間」に変える。<br />
-1つのオフィスから都市全体へ。Core Hub アーキテクチャの実証。</p>
+<p>各建物にローカルLLM+GPUを配置し、都市を自律的に思考する空間に変える。<br />
+Core Hub アーキテクチャの Phase 0 実証。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="2" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -290,37 +290,36 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="11">
-<h1 id="%E5%95%8F%E9%A1%8C-%E9%83%BD%E5%B8%82%E3%81%AF%E3%81%BE%E3%81%A0%E3%82%B9%E3%83%9E%E3%83%BC%E3%83%88%E3%81%A7%E3%81%AF%E3%81%AA%E3%81%84">問題: 都市はまだ「スマート」ではない</h1>
-<p>現代の「スマートシティ」の構造的欠陥:</p>
+;" data-marpit-pagination-total="17">
+<h1 id="%E3%82%B9%E3%83%9E%E3%83%BC%E3%83%88%E3%82%B7%E3%83%86%E3%82%A3%E3%81%AE%E6%A7%8B%E9%80%A0%E7%9A%84%E8%AA%B2%E9%A1%8C">スマートシティの構造的課題</h1>
+<p>現在の「スマートシティ」には、繰り返し指摘される共通の問題がある。</p>
 <table>
 <thead>
 <tr>
-<th>表向きの主張</th>
+<th>標榜</th>
 <th>実態</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>データ駆動の都市経営</td>
-<td>データはクラウドに吸い上げられ、都市はAPI料金を払う</td>
+<td>センサーデータはクラウドに集約。自治体はAPI経由で自身のデータを購入する</td>
 </tr>
 <tr>
-<td>AIによる最適化</td>
-<td>中央集権的な推論、ネット障害で全機能停止</td>
+<td>AIによるリアルタイム最適化</td>
+<td>推論はクラウド上。ネットワーク障害で全機能が停止する</td>
 </tr>
 <tr>
 <td>市民のための技術</td>
-<td>映像は外部クラウドに保存、プライバシー主権なし</td>
+<td>カメラ映像の保管・アクセス権限が外部企業に帰属する</td>
 </tr>
 <tr>
 <td>リアルタイム分析</td>
-<td>クラウド往復で数百ms〜秒の遅延</td>
+<td>クラウド往復で数百ms〜秒の遅延。エッジ処理との差は桁違い</td>
 </tr>
 </tbody>
 </table>
-<p><strong>核心</strong>: データの生成場所（都市）と処理場所（クラウド）の分離<br />
-= <strong>データ主権の喪失</strong> = 都市が自律的に思考する能力の放棄</p>
+<p>データが生まれる場所（建物）と処理される場所（クラウド）が物理的に分離している。ローカルGPUによるLLM推論が実用水準に達した現在、この構造を見直す余地がある。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="3" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -460,11 +459,11 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="11">
-<h1 id="%E8%A7%A3%E6%B1%BA%E7%AD%96-core-hub--%E5%BB%BA%E7%89%A9%E3%81%ABai%E3%81%AE%E8%84%B3%E3%82%92%E4%B8%8E%E3%81%88%E3%82%8B">解決策: Core Hub — 建物にAIの脳を与える</h1>
+;" data-marpit-pagination-total="17">
+<h1 id="core-hub-%E5%BB%BA%E7%89%A9%E5%8D%98%E4%BD%8D%E3%81%AE%E8%87%AA%E5%BE%8Bai%E6%8B%A0%E7%82%B9">Core Hub: 建物単位の自律AI拠点</h1>
 <pre is="marp-pre" data-auto-scaling="downscale-only"><code>                      ┌──────────────────┐
-                      │   City Data Hub  │  集約統計のみ受信
-                      └────────┬─────────┘  (~1MB/Hub/日)
+                      │   City Data Hub  │ 受信: 集約統計のみ (~1MB/Hub/日)
+                      └────────┬─────────┘
                                │
               ┌────────────────┼────────────────┐
               │                │                │
@@ -474,11 +473,7 @@ section::after {
         │  LLM+GPU  │   │  LLM+GPU  │   │  LLM+GPU  │
         └───────────┘   └───────────┘   └───────────┘
 </code></pre>
-<ul>
-<li>各建物がGPU1台で <strong>独立して思考</strong> — ネットワーク切断でも自律動作</li>
-<li>接続センサーとプロンプト（憲法）を変えるだけで <strong>領域特化</strong></li>
-<li>外部送信は <strong>集約統計のみ</strong> — 生データは建物の外に出ない</li>
-</ul>
+<p>各建物にGPU1台のサーバーを配置し、センサーとカメラの全データをローカルで処理する。Hub間で生データの交換は行わない。システムプロンプト（行動原則）とセンサー構成を差し替えるだけで、オフィス・農場・店舗・公共施設に展開可能。ネットワーク切断時も自律動作を継続する。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="4" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -618,24 +613,35 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="11">
-<h1 id="soms-core-hub-%E3%81%AE-phase-0-%E5%AE%9F%E8%A3%85">SOMS: Core Hub の Phase 0 実装</h1>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>┌───────────────────────────────────────┐
-│       人間インターフェース層            │
-│  ダッシュボード │ 音声合成 │ ウォレットPWA│
-├───────────────────────────────────────┤
-│          中央知能層                    │
-│   LLM &quot;脳&quot;  │ 状態認識 │ 多層安全機構  │
-├───────────────────────────────────────┤
-│           知覚層                      │
-│   YOLO物体検出 │ 姿勢推定 │ 活動分析   │
-├───────────────────────────────────────┤
-│          エッジ層                     │
-│ SensorSwarm (Hub+Leaf) │ デバイス制御  │
-└───────────────────────────────────────┘
-         <img class="emoji" draggable="false" alt="↕" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/2195.svg" data-marp-twemoji=""/> 全層が MQTT + MCP で疎結合に接続
-</code></pre>
-<p>GPU サーバー1台で <strong>11サービス</strong> が完結。クラウド不要。</p>
+;" data-marpit-pagination-total="17">
+<h1 id="%E4%B8%89%E5%B1%A4%E3%83%87%E3%83%BC%E3%82%BF%E5%87%A6%E7%90%86-500001-%E3%81%AE%E5%9C%A7%E7%B8%AE">三層データ処理: 50,000:1 の圧縮</h1>
+<table>
+<thead>
+<tr>
+<th>層</th>
+<th>データ量 (1拠点/日)</th>
+<th>処理内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Layer 0: 物理信号</td>
+<td>~50 GB</td>
+<td>カメラ映像 + 全センサー生値。RAM上で処理、ディスク保存なし</td>
+</tr>
+<tr>
+<td>Layer 1: Core Hub</td>
+<td>~500 MB</td>
+<td>ローカルLLM + YOLOで構造化JSON生成。元データの99%を破棄</td>
+</tr>
+<tr>
+<td>Layer 2: City Data Hub</td>
+<td>~1 MB</td>
+<td>1時間集約の統計値のみ。気温平均、CO2ピーク、在室率</td>
+</tr>
+</tbody>
+</table>
+<p>映像はYOLO推論完了と同時に破棄される。Hub本体を物理的に撤去すれば全生データが消失する。GDPRコンプライアンスの最も確実な実現方法: データを送信しないこと。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="5" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -775,19 +781,51 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="11">
-<h1 id="%E3%83%87%E3%83%A2-%E3%82%BB%E3%83%B3%E3%82%B5%E3%83%BC-%E2%86%92-ai%E5%88%A4%E6%96%AD-%E2%86%92-%E4%BA%BA%E9%96%93%E5%8D%94%E5%83%8D">デモ: センサー → AI判断 → 人間協働</h1>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>[T+0s]   センサー: CO2 = 1050ppm (閾値超過)
-[T+3s]   LLM判断: 「3人在室中。換気が必要」
-[T+4s]   タスク生成 + 音声通知 (VOICEVOX)
-[T+10s]  ダッシュボードに報酬付きタスクカード表示
-   ...
-[T+60s]  人間が受諾 → 窓を開ける → 完了報告
-         → 複式簿記でクレジット付与
-</code></pre>
-<p><strong>センサー検知 → AI判断 → 人間協働 → 解決。</strong></p>
-<p>全自動ではなく、人間の自由意志を尊重した <strong>共生</strong> モデル。<br />
-APIで操作できない物理タスクを、経済的インセンティブで解決する。</p>
+;" data-marpit-pagination-total="17">
+<h1 id="soms-phase-0--1%E3%81%A4%E3%81%AE%E3%82%AA%E3%83%95%E3%82%A3%E3%82%B9%E3%81%A7%E5%85%A8%E6%A9%9F%E8%83%BD%E3%82%92%E5%AE%9F%E8%A8%BC">SOMS: Phase 0 — 1つのオフィスで全機能を実証</h1>
+<p>SOMS は Core Hub アーキテクチャの最初の実装。オフィス1部屋を対象に、GPU1台 + Docker 11サービスで全フローを動作検証する。クラウド月額費用 $0。</p>
+<table>
+<thead>
+<tr>
+<th>機能</th>
+<th>技術</th>
+<th>状態</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>自律判断 (脳)</td>
+<td>Qwen2.5 14B, ReActループ (5ツール, 最大5反復, 3層安全機構)</td>
+<td>稼働</td>
+</tr>
+<tr>
+<td>メッセージバス (神経系)</td>
+<td>MQTT + MCP (JSON-RPC 2.0 over MQTT)</td>
+<td>稼働</td>
+</tr>
+<tr>
+<td>画像認識 (視覚)</td>
+<td>YOLOv11 物体検出 + 姿勢推定, 4層活動分析</td>
+<td>稼働</td>
+</tr>
+<tr>
+<td>環境センサー (触覚)</td>
+<td>SensorSwarm Hub+Leaf (4種トランスポート), 6種ドライバ</td>
+<td>稼働</td>
+</tr>
+<tr>
+<td>音声合成 (声)</td>
+<td>VOICEVOX, 拒否ストック100件事前生成, 4トーン</td>
+<td>稼働</td>
+</tr>
+<tr>
+<td>タスク報酬 (経済)</td>
+<td>複式簿記, デマレッジ2%/日, 5%焼却, PWAウォレット</td>
+<td>稼働</td>
+</tr>
+</tbody>
+</table>
+<p>設計方針: Node-RED・LangChain・Kubernetesを使わない。Python + MQTTによる純粋なイベント駆動。LLM自身がシステム構造を理解できる透明性を優先した。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="6" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -927,40 +965,23 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="11">
-<h1 id="%E3%83%87%E3%83%BC%E3%82%BF%E4%B8%BB%E6%A8%A9-500001-%E5%9C%A7%E7%B8%AE">データ主権: 50,000:1 圧縮</h1>
-<table>
-<thead>
-<tr>
-<th>原則</th>
-<th>実装</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>生データは外に出ない</td>
-<td>映像はRAM上で処理・即時破棄</td>
-</tr>
-<tr>
-<td>推論はローカルで完結</td>
-<td>各拠点が独自のLLMを持ち自律判断</td>
-</tr>
-<tr>
-<td>集約は構造化データのみ</td>
-<td>外部送信は1時間平均の統計値のみ</td>
-</tr>
-<tr>
-<td>ネットワーク切断耐性</td>
-<td>各拠点は孤立状態でも独立動作</td>
-</tr>
-<tr>
-<td>物理的データ主権</td>
-<td>サーバー撤去 = 全生データ消失</td>
-</tr>
-</tbody>
-</table>
-<p><strong>50 GB → 1 MB = 50,000:1</strong></p>
-<p>GDPR / 個人情報保護法への最強のコンプライアンス: <strong>データを送らない</strong>。</p>
+;" data-marpit-pagination-total="17">
+<h1 id="%E3%82%A2%E3%83%BC%E3%82%AD%E3%83%86%E3%82%AF%E3%83%81%E3%83%A3%E6%A6%82%E8%A6%81">アーキテクチャ概要</h1>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code>┌────────────────────────────────────────────────────────────┐
+│               人間インターフェース層                          │
+│  Dashboard (React 19)  |  Voice (VOICEVOX)  |  Wallet (PWA) │
+├────────────────────────────────────────────────────────────┤
+│                     中央知能層                               │
+│  Brain: ReAct Loop | WorldModel | ToolExecutor | Sanitizer  │
+├────────────────────────────────────────────────────────────┤
+│                     知覚層                                  │
+│  YOLOv11 (検出/姿勢) | カメラ自動検出 | 4層活動分析          │
+├────────────────────────────────────────────────────────────┤
+│                     エッジ層                                │
+│  SensorSwarm (Hub+Leaf) | unified-node | 6種ドライバ | MCP  │
+└────────────────────────────────────────────────────────────┘
+</code></pre>
+<p>全層がMQTT (Mosquitto) で疎結合に接続。MCP (Model Context Protocol) を MQTT上に実装し、ESP32のような省電力マイコンでもLLMのツール呼び出しに直接応答できる。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="7" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -1100,18 +1121,25 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="11">
-<h1 id="%E9%83%BD%E5%B8%82%E3%81%AE%E5%91%BC%E5%90%B8%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3-%E5%88%86%E6%95%A3%E8%A6%B3%E6%B8%AC%E3%81%8B%E3%82%89%E9%83%BD%E5%B8%82%E7%9F%A5%E8%83%BD%E3%81%B8">都市の呼吸パターン: 分散観測から都市知能へ</h1>
-<p>単一拠点の環境監視が、都市規模の <strong>知能</strong> になる。</p>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>Hub-A (オフィス街): CO2ピーク 9:00, 13:00
-Hub-B (商業施設):   CO2ピーク 11:00, 15:00, 19:00
-Hub-C (住宅街):     CO2ピーク 7:00, 20:00
+;" data-marpit-pagination-total="17">
+<h1 id="%E5%8B%95%E4%BD%9C%E3%83%87%E3%83%A2-co2%E6%A4%9C%E7%9F%A5%E3%81%8B%E3%82%89%E8%A7%A3%E6%B1%BA%E3%81%BE%E3%81%A7">動作デモ: CO2検知から解決まで</h1>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code>[T+0s]   ESP32センサー: CO2 = 1050ppm (閾値超過)
+         → MQTT: office/kitchen/sensor/co2_01/co2 → {&quot;value&quot;: 1050}
+
+[T+3s]   ReActサイクル開始 (イベントバッチ遅延完了)
+         → LLM: &quot;CO2が高い。3人在室、換気が必要&quot;
+
+[T+4s]   LLM → get_active_tasks() → 既存の換気タスクなし
+         → create_task(title=&quot;キッチンの換気&quot;, bounty=1500, urgency=3)
+
+[T+5s]   Sanitizer検証通過 → タスク作成 + VOICEVOX音声合成
+
+[T+10s]  ダッシュボードにカード表示 + 音声自動再生
+
+[T+??s]  人間が受諾 → 窓を開ける → 完了報告 → Wallet: 1500ポイント振替
 </code></pre>
-<p>→ <strong>人の流れ</strong> が可視化される:<br />
-住宅街(朝) → オフィス街(日中) → 商業施設(夕方) → 住宅街(夜)</p>
-<p>この洞察を得るために送信したデータ:<br />
-各Hubの <strong>1時間平均CO2値のみ</strong> (数バイト/Hub/時間)</p>
-<p>都市計画 (換気設備配置・緑地計画) への入力データとなる。</p>
+<p>APIで操作できない物理タスクを、経済的インセンティブで解決する。<br />
+全自動ではなく、人間の自由意志を尊重した共生モデル。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="8" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -1251,17 +1279,42 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="11">
-<h1 id="%E7%AB%B6%E5%90%88%E5%84%AA%E4%BD%8D%E6%80%A7-%E3%81%AA%E3%81%9C-core-hub-%E3%81%8B">競合優位性: なぜ Core Hub か</h1>
-<h3 id="1-%E8%87%AA%E5%BE%8B%E7%9A%84%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%ABai">1. 自律的ローカルAI</h3>
-<p>各建物がGPU1台で自律思考。クラウド月額費用 <strong>$0</strong>。</p>
-<h3 id="2-500001-%E3%83%87%E3%83%BC%E3%82%BF%E4%B8%BB%E6%A8%A9">2. 50,000:1 データ主権</h3>
-<p>50GBの生データから1MBの構造化情報のみ送信。物理的プライバシー保証。</p>
-<h3 id="3-%E3%82%B9%E3%82%B1%E3%83%BC%E3%83%A9%E3%83%96%E3%83%AB%E3%82%A8%E3%83%83%E3%82%B8">3. スケーラブルエッジ</h3>
-<p>SensorSwarm (Hub+Leaf) で建物全体を高密度カバー。WiFi不要のLeafノード。</p>
-<h3 id="4-%E7%89%A9%E7%90%86%E3%82%BF%E3%82%B9%E3%82%AF%E7%B5%8C%E6%B8%88">4. 物理タスク経済</h3>
-<p>APIで操作できないタスクを人間との経済的協働で解決。<br />
-複式簿記 + デマレッジで持続可能な経済圏。</p>
+;" data-marpit-pagination-total="17">
+<h1 id="sensorswarm-%E5%BB%BA%E7%89%A9%E5%85%A8%E4%BD%93%E3%81%AE%E9%AB%98%E5%AF%86%E5%BA%A6%E3%82%AB%E3%83%90%E3%83%AC%E3%83%83%E3%82%B8">SensorSwarm: 建物全体の高密度カバレッジ</h1>
+<p>WiFi接続のセンサーだけではAP帯域とチャネル干渉がボトルネックになる。SensorSwarmは Hub+Leaf の2層構造でこの制約を回避する。</p>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code>[Brain] ←MQTT→ [SwarmHub (ESP32, WiFi+MQTT)]
+                    ├── ESP-NOW → [Leaf: 温湿度] 無線200m, バッテリー駆動
+                    ├── UART    → [Leaf: PIR+照度] 有線, Pi Pico
+                    ├── I2C     → [Leaf: ドアセンサー] 有線, ATtiny
+                    └── BLE     → [Leaf: 計画中] nRF54ターゲット
+</code></pre>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Hub</th>
+<th>Leaf</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WiFi</td>
+<td>あり (MQTT接続)</td>
+<td>不要 (Hub経由)</td>
+</tr>
+<tr>
+<td>プロトコル</td>
+<td>MCP (JSON-RPC 2.0)</td>
+<td>バイナリ (5-245B, XOR checksum)</td>
+</tr>
+<tr>
+<td>デバイスID</td>
+<td><code>swarm_hub_01</code></td>
+<td><code>swarm_hub_01.leaf_env_01</code></td>
+</tr>
+</tbody>
+</table>
+<p>LeafはWiFiスタック不要で消費電力が低い。バッテリー駆動が実用的になる。Hubが集約してMQTTに発行するため、Brain側からは各Leafが独立したセンサーとして見える。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="9" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -1401,7 +1454,852 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="11">
+;" data-marpit-pagination-total="17">
+<h1 id="%E7%89%A9%E7%90%86%E3%82%BF%E3%82%B9%E3%82%AF%E7%B5%8C%E6%B8%88-ai%E3%81%A8%E4%BA%BA%E9%96%93%E3%81%AE%E5%85%B1%E7%94%9F">物理タスク経済: AIと人間の共生</h1>
+<p>AIが自律判断できても、物理世界への介入手段は限られる。窓を閉める、コーヒーを淹れる、ホワイトボードを拭く——こうした作業はAPIで操作できない。</p>
+<p>SOMSの設計: LLMが状況を判断し、タスクを生成し、報酬を提示する。人間が自由意志で受諾し、遂行する。</p>
+<table>
+<thead>
+<tr>
+<th>要素</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>タスク報酬</td>
+<td>500〜5000ポイント (難易度・緊急度に比例)</td>
+</tr>
+<tr>
+<td>台帳</td>
+<td>複式簿記 (1取引 = DEBIT + CREDIT の2行)</td>
+</tr>
+<tr>
+<td>デフレ機構</td>
+<td>送金手数料5%焼却 + デマレッジ2%/日</td>
+</tr>
+<tr>
+<td>XP乗数</td>
+<td>デバイス運用貢献に応じて報酬1.0x〜3.0x</td>
+</tr>
+<tr>
+<td>ダッシュボード</td>
+<td>アカウント不要のキオスク (タスク表示 + 報酬バッジ + 音声通知)</td>
+</tr>
+<tr>
+<td>ウォレットPWA</td>
+<td>スマートフォンで残高管理・QRスキャン受取・P2P送金</td>
+</tr>
+</tbody>
+</table>
+<p>農場Hubなら「収穫タスク」、店舗Hubなら「品出しタスク」——同じ経済フレームワークが領域を問わず機能する。</p>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="10" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+h3 {
+  color: #334155;
+  font-size: 1.0em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="10" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+h3 {
+  color: #334155;
+  font-size: 1.0em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="17">
+<h1 id="%E3%83%87%E3%83%BC%E3%82%BF%E4%B8%BB%E6%A8%A9-%E7%89%A9%E7%90%86%E7%9A%84%E3%81%AA%E4%BF%9D%E8%A8%BC">データ主権: 物理的な保証</h1>
+<table>
+<thead>
+<tr>
+<th>データ分類</th>
+<th>処理場所</th>
+<th>保存</th>
+<th>外部送信</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>カメラ映像</td>
+<td>Core Hub RAM</td>
+<td>なし (推論後即破棄)</td>
+<td>不可</td>
+</tr>
+<tr>
+<td>音声波形</td>
+<td>Core Hub RAM</td>
+<td>なし</td>
+<td>不可</td>
+</tr>
+<tr>
+<td>生テレメトリ</td>
+<td>Core Hub</td>
+<td>Event Store (90日)</td>
+<td>不可</td>
+</tr>
+<tr>
+<td>LLM判断ログ</td>
+<td>Core Hub</td>
+<td>Event Store (90日)</td>
+<td>不可</td>
+</tr>
+<tr>
+<td>集約統計</td>
+<td>Core Hub</td>
+<td>Data Mart</td>
+<td>City Hub送信</td>
+</tr>
+</tbody>
+</table>
+<p>暗号化: WPA3 + MQTT over TLS (Sensor→Hub) / TLS 1.3 + mTLS (Hub→City Hub)</p>
+<p>ネットワーク障害時はローカルキューに蓄積し、復旧後に一括送信。自律動作は通信状態に依存しない。Hub撤去 = 全生データ消失。これが物理的なデータ主権の保証となる。</p>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="11" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+h3 {
+  color: #334155;
+  font-size: 1.0em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="11" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+h3 {
+  color: #334155;
+  font-size: 1.0em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="17">
+<h1 id="%E9%83%BD%E5%B8%82%E3%81%AE%E5%91%BC%E5%90%B8%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3-%E5%88%86%E6%95%A3%E8%A6%B3%E6%B8%AC%E3%81%8B%E3%82%89%E9%83%BD%E5%B8%82%E7%9F%A5%E8%83%BD%E3%81%B8">都市の呼吸パターン: 分散観測から都市知能へ</h1>
+<p>複数のCore Hubが稼働するPhase 2以降、単一拠点では見えなかったパターンが浮かび上がる。</p>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code>Hub-A (オフィス街):  CO2ピーク 9:00, 13:00
+Hub-B (商業施設):    CO2ピーク 11:00, 15:00, 19:00
+Hub-C (住宅街):      CO2ピーク 7:00, 20:00
+</code></pre>
+<p>City Data Hubの時空間分析で人流が可視化される:<br />
+住宅街 (朝7時) → オフィス街 (9時) → 商業施設 (昼・夕方) → 住宅街 (夜20時)</p>
+<p>この洞察を得るために送信したデータ: 各Hubの1時間平均CO2値のみ（数バイト/Hub/時間）。都市計画（換気設備配置、緑地計画）への入力データとなる。</p>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="12" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+h3 {
+  color: #334155;
+  font-size: 1.0em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="12" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+h3 {
+  color: #334155;
+  font-size: 1.0em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="17">
+<h1 id="%E9%A0%98%E5%9F%9F%E7%89%B9%E5%8C%96-%E5%90%8C%E4%B8%80%E3%82%A2%E3%83%BC%E3%82%AD%E3%83%86%E3%82%AF%E3%83%81%E3%83%A3%E3%81%AE%E5%A4%9A%E9%A0%98%E5%9F%9F%E5%B1%95%E9%96%8B">領域特化: 同一アーキテクチャの多領域展開</h1>
+<table>
+<thead>
+<tr>
+<th>Hub種別</th>
+<th>センサー構成</th>
+<th>LLMの行動原則</th>
+<th>タスク例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>オフィス (SOMS)</td>
+<td>温湿度, CO2, カメラ</td>
+<td>快適性・健康・生産性</td>
+<td>換気, 清掃, 備品補充</td>
+</tr>
+<tr>
+<td>農業</td>
+<td>pH, EC, 水温, 照度</td>
+<td>水耕栽培の生育環境</td>
+<td>養液調整, 収穫判断</td>
+</tr>
+<tr>
+<td>水槽</td>
+<td>水温, pH, TDS</td>
+<td>水生生物の環境管理</td>
+<td>給餌, 水換え</td>
+</tr>
+<tr>
+<td>店舗</td>
+<td>人流カメラ, 温湿度</td>
+<td>顧客体験と在庫</td>
+<td>品出し, 陳列変更</td>
+</tr>
+<tr>
+<td>公共施設</td>
+<td>騒音, 振動, 気象</td>
+<td>安全管理と設備保全</td>
+<td>点検, 修繕</td>
+</tr>
+</tbody>
+</table>
+<p>全Hubが共通のMCP over MQTTプロトコルとData Martスキーマを使用。City Data Hubは異種Hubのデータを統一的に集約・分析できる。</p>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="13" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+h3 {
+  color: #334155;
+  font-size: 1.0em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="13" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+h3 {
+  color: #334155;
+  font-size: 1.0em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="17">
+<h1 id="%E7%AB%B6%E5%90%88%E5%84%AA%E4%BD%8D%E6%80%A7">競合優位性</h1>
+<h3 id="1-%E8%87%AA%E5%BE%8B%E7%9A%84%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%ABai">1. 自律的ローカルAI</h3>
+<p>各建物がGPU1台で自律的に判断する。クラウド月額費用 $0。ネットワーク切断時も動作を継続。</p>
+<h3 id="2-500001-%E3%83%87%E3%83%BC%E3%82%BF%E4%B8%BB%E6%A8%A9">2. 50,000:1 データ主権</h3>
+<p>50GBの生データから1MBの構造化統計のみ送信。映像はRAM処理・即時破棄。物理的なプライバシー保証。</p>
+<h3 id="3-%E3%82%B9%E3%82%B1%E3%83%BC%E3%83%A9%E3%83%96%E3%83%AB%E3%81%AA%E3%82%A8%E3%83%83%E3%82%B8">3. スケーラブルなエッジ</h3>
+<p>SensorSwarm Hub+Leafで建物全体を高密度にカバー。WiFi不要のLeafノードはバッテリー駆動が可能。</p>
+<h3 id="4-%E7%89%A9%E7%90%86%E3%82%BF%E3%82%B9%E3%82%AF%E7%B5%8C%E6%B8%88">4. 物理タスク経済</h3>
+<p>APIで操作できない物理タスクを、人間との経済的な協働で解決する。複式簿記 + デマレッジで経済圏を持続可能に運用。</p>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="14" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+h3 {
+  color: #334155;
+  font-size: 1.0em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="14" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+h3 {
+  color: #334155;
+  font-size: 1.0em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="17">
 <h1 id="%E3%83%AD%E3%83%BC%E3%83%89%E3%83%9E%E3%83%83%E3%83%97-1%E3%82%AA%E3%83%95%E3%82%A3%E3%82%B9%E3%81%8B%E3%82%89%E9%83%BD%E5%B8%82%E3%81%B8">ロードマップ: 1オフィスから都市へ</h1>
 <table>
 <thead>
@@ -1409,39 +2307,219 @@ section::after {
 <th>Phase</th>
 <th>内容</th>
 <th>規模</th>
+<th>完了条件</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>0</strong> (現在)</td>
-<td>単一オフィスで E2E 実証</td>
+<td>単一オフィスでE2E実証</td>
 <td>1 Hub</td>
+<td>24h連続稼働, E2E &lt;10秒, 適切判断 &gt;80%</td>
 </tr>
 <tr>
 <td><strong>1</strong></td>
-<td>多ゾーン化、Data Lake 実装</td>
-<td>1 Hub, 10+ ノード</td>
+<td>多ゾーン + Data Lake</td>
+<td>1 Hub, 10+ノード</td>
+<td>10+同時接続, 30日蓄積, 月5件の洞察</td>
 </tr>
 <tr>
 <td><strong>2</strong></td>
-<td>複数拠点 Core Hub + City Data Hub</td>
+<td>複数Core Hub + City Data Hub</td>
 <td>2-3 Hub</td>
+<td>Hub間通信99.9%, 孤立72h, クロスHub分析3件+</td>
 </tr>
 <tr>
 <td><strong>3</strong></td>
-<td>都市内展開、ゼロタッチ配備</td>
+<td>都市展開 + ゼロタッチ配備</td>
 <td>10+ Hub</td>
+<td>外部送信0B, 都市計画入力1件+</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Phase 0 達成済み</strong>:<br />
-ReAct認知ループ (5ツール, 3層安全機構) / センサーフュージョン /<br />
-MCP over MQTT / AI画像認識 (YOLOv11 + 4層姿勢分析) /<br />
-SensorSwarm (Hub-Leaf, 4種トランスポート) /<br />
-ダッシュボード + 音声合成 + ウォレットPWA /<br />
-複式簿記経済 / 仮想テスト環境 / E2E統合テスト</p>
+<p>Phase 0で検証した設計要素 — MCP over MQTT, ReActループ, WorldModel, 憲法的AI, per-channelテレメトリ, タスク経済 — はPhase 3の都市展開まで変更不要。</p>
 </section>
-</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="10" data-theme="default" data-style="section {
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="15" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+h3 {
+  color: #334155;
+  font-size: 1.0em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="15" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+h3 {
+  color: #334155;
+  font-size: 1.0em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="17">
+<h1 id="phase-0-%E3%81%AE%E9%81%94%E6%88%90%E7%8A%B6%E6%B3%81%E3%81%A8%E5%AE%9F%E6%B8%AC%E3%83%91%E3%83%95%E3%82%A9%E3%83%BC%E3%83%9E%E3%83%B3%E3%82%B9">Phase 0 の達成状況と実測パフォーマンス</h1>
+<table>
+<thead>
+<tr>
+<th>コンポーネント</th>
+<th>状態</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ReAct認知ループ (5ツール, 3層安全機構)</td>
+<td>稼働</td>
+</tr>
+<tr>
+<td>WorldModel (指数減衰加重平均, 4種イベント検知)</td>
+<td>稼働</td>
+</tr>
+<tr>
+<td>MCP over MQTT (JSON-RPC 2.0, ESP32実機通信済み)</td>
+<td>稼働</td>
+</tr>
+<tr>
+<td>Perception (YOLOv11 検出+姿勢, 4層活動分析, カメラ自動検出)</td>
+<td>稼働</td>
+</tr>
+<tr>
+<td>SensorSwarm (Hub+Leaf, ESP-NOW/UART/I2C, バイナリプロトコル)</td>
+<td>稼働</td>
+</tr>
+<tr>
+<td>Dashboard + Voice + Wallet + PWA</td>
+<td>稼働</td>
+</tr>
+<tr>
+<td>仮想テスト環境 + E2E統合テスト (7シナリオ)</td>
+<td>稼働</td>
+</tr>
+</tbody>
+</table>
+<p>AMD RX 9700 (RDNA4) + Qwen2.5 14B (Q4_K_M): LLM推論 ~51 tok/s, 正常時応答 3.3秒, ツール呼び出し 6.6秒</p>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="16" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
   font-size: 22px;
   padding: 40px 60px;
@@ -1582,13 +2660,13 @@ section::after {
 ;">
 <h1 id="%E9%83%BD%E5%B8%82%E3%82%92ai%E5%8C%96%E3%81%99%E3%82%8B%E3%82%A2%E3%83%BC%E3%82%AD%E3%83%86%E3%82%AF%E3%83%81%E3%83%A3-1">都市をAI化するアーキテクチャ</h1>
 <blockquote>
-<p>クラウドにデータを送ることは、都市の情報化ではない。<br />
-都市が自ら考えることが、本当の情報化だ。</p>
+<p>データの処理を建物内で完結させ、最小限の構造化情報だけを共有する。<br />
+単一拠点では見えなかった都市規模のパターンが、そこから浮かび上がる。</p>
 </blockquote>
-<p>分散型ローカルLLM × IoT × 人間経済 × データ主権</p>
-<p><strong>1つのオフィスから始まる、都市をAI化するためのアーキテクチャ。</strong></p>
+<p>GPU1台。Docker 11サービス。クラウド月額 $0。50,000:1 のデータ圧縮。</p>
+<p>1つのオフィスから始まる、都市のAI化。</p>
 </section>
-</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="11" data-paginate="true" data-theme="default" data-style="section {
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="17" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
   font-size: 22px;
   padding: 40px 60px;
@@ -1657,7 +2735,7 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-" lang="en-US" data-marpit-pagination="11" style="--paginate:true;--theme:default;--style:section {
+" lang="en-US" data-marpit-pagination="17" style="--paginate:true;--theme:default;--style:section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
   font-size: 22px;
   padding: 40px 60px;
@@ -1726,7 +2804,7 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="11">
+;" data-marpit-pagination-total="17">
 <p><strong>GitHub</strong>: <code>Office_as_AI_ToyBox</code></p>
 </section>
 <script>!function(){"use strict";const t={h1:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"1"},style:"display: block; font-size: 2em; margin-block-start: 0.67em; margin-block-end: 0.67em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h2:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"2"},style:"display: block; font-size: 1.5em; margin-block-start: 0.83em; margin-block-end: 0.83em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h3:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"3"},style:"display: block; font-size: 1.17em; margin-block-start: 1em; margin-block-end: 1em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h4:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"4"},style:"display: block; margin-block-start: 1.33em; margin-block-end: 1.33em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h5:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"5"},style:"display: block; font-size: 0.83em; margin-block-start: 1.67em; margin-block-end: 1.67em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h6:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"6"},style:"display: block; font-size: 0.67em; margin-block-start: 2.33em; margin-block-end: 2.33em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},span:{proto:()=>HTMLSpanElement},pre:{proto:()=>HTMLElement,style:"display: block; font-family: monospace; white-space: pre; margin: 1em 0; --marp-auto-scaling-white-space: pre;"}},e="data-marp-auto-scaling-wrapper",i="data-marp-auto-scaling-svg",n="data-marp-auto-scaling-container";class s extends HTMLElement{container;containerSize;containerObserver;svg;svgComputedStyle;svgPreserveAspectRatio="xMinYMid meet";wrapper;wrapperSize;wrapperObserver;constructor(){super();const t=t=>([e])=>{const{width:i,height:n}=e.contentRect;this[t]={width:i,height:n},this.updateSVGRect()};this.attachShadow({mode:"open"}),this.containerObserver=new ResizeObserver(t("containerSize")),this.wrapperObserver=new ResizeObserver((...e)=>{t("wrapperSize")(...e),this.flushSvgDisplay()})}static get observedAttributes(){return["data-downscale-only"]}connectedCallback(){this.shadowRoot.innerHTML=`\n<style>\n  svg[${i}] { display: block; width: 100%; height: auto; vertical-align: top; }\n  span[${n}] { display: table; white-space: var(--marp-auto-scaling-white-space, nowrap); width: max-content; }\n</style>\n<div ${e}>\n  <svg part="svg" ${i}>\n    <foreignObject><span ${n}><slot></slot></span></foreignObject>\n  </svg>\n</div>\n    `.split(/\n\s*/).join(""),this.wrapper=this.shadowRoot.querySelector(`div[${e}]`)??void 0;const t=this.svg;this.svg=this.wrapper?.querySelector(`svg[${i}]`)??void 0,this.svg!==t&&(this.svgComputedStyle=this.svg?window.getComputedStyle(this.svg):void 0),this.container=this.svg?.querySelector(`span[${n}]`)??void 0,this.observe()}disconnectedCallback(){this.svg=void 0,this.svgComputedStyle=void 0,this.wrapper=void 0,this.container=void 0,this.observe()}attributeChangedCallback(){this.observe()}flushSvgDisplay(){const{svg:t}=this;t&&(t.style.display="inline",requestAnimationFrame(()=>{t.style.display=""}))}observe(){this.containerObserver.disconnect(),this.wrapperObserver.disconnect(),this.wrapper&&this.wrapperObserver.observe(this.wrapper),this.container&&this.containerObserver.observe(this.container),this.svgComputedStyle&&this.observeSVGStyle(this.svgComputedStyle)}observeSVGStyle(t){const e=()=>{const i=(()=>{const e=t.getPropertyValue("--preserve-aspect-ratio");if(e)return e.trim();return`x${(({textAlign:t,direction:e})=>{if(t.endsWith("left"))return"Min";if(t.endsWith("right"))return"Max";if("start"===t||"end"===t){let i="rtl"===e;return"end"===t&&(i=!i),i?"Max":"Min"}return"Mid"})(t)}YMid meet`})();i!==this.svgPreserveAspectRatio&&(this.svgPreserveAspectRatio=i,this.updateSVGRect()),t===this.svgComputedStyle&&requestAnimationFrame(e)};e()}updateSVGRect(){let t=Math.ceil(this.containerSize?.width??0);const e=Math.ceil(this.containerSize?.height??0);void 0!==this.dataset.downscaleOnly&&(t=Math.max(t,this.wrapperSize?.width??0));const i=this.svg?.querySelector(":scope > foreignObject");if(i?.setAttribute("width",`${t}`),i?.setAttribute("height",`${e}`),this.svg&&(this.svg.setAttribute("viewBox",`0 0 ${t} ${e}`),this.svg.setAttribute("preserveAspectRatio",this.svgPreserveAspectRatio),this.svg.style.height=t<=0||e<=0?"0":""),this.container){const t=this.svgPreserveAspectRatio.toLowerCase();this.container.style.marginLeft=t.startsWith("xmid")||t.startsWith("xmax")?"auto":"0",this.container.style.marginRight=t.startsWith("xmi")?"auto":"0"}}}const r=(t,{attrs:e={},style:i})=>class extends t{constructor(...t){super(...t);for(const[t,i]of Object.entries(e))this.hasAttribute(t)||this.setAttribute(t,i);this._shadow()}static get observedAttributes(){return["data-auto-scaling"]}connectedCallback(){this._update()}attributeChangedCallback(){this._update()}_shadow(){if(!this.shadowRoot)try{this.attachShadow({mode:"open"})}catch(t){if(!(t instanceof Error&&"NotSupportedError"===t.name))throw t}return this.shadowRoot}_update(){const t=this._shadow();if(t){const e=i?`<style>:host { ${i} }</style>`:"";let n="<slot></slot>";const{autoScaling:s}=this.dataset;if(void 0!==s){n=`<marp-auto-scaling exportparts="svg:auto-scaling" ${"downscale-only"===s?"data-downscale-only":""}>${n}</marp-auto-scaling>`}t.innerHTML=e+n}}};let o;const a=Symbol(),l=()=>o??(o=!!document.createElement("div",{is:"marp-auto-scaling"}).outerHTML.startsWith("<div is"),o);let c;const d="marpitSVGPolyfill:setZoomFactor,",h=Symbol(),g=Symbol();const p=()=>{const t="Apple Computer, Inc."===navigator.vendor,e=t?[v]:[],i={then:e=>(t?(async()=>{if(void 0===c){const t=document.createElement("canvas");t.width=10,t.height=10;const e=t.getContext("2d"),i=new Image(10,10),n=new Promise(t=>{i.addEventListener("load",()=>t())});i.crossOrigin="anonymous",i.src="data:image/svg+xml;charset=utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2210%22%20height%3D%2210%22%20viewBox%3D%220%200%201%201%22%3E%3CforeignObject%20width%3D%221%22%20height%3D%221%22%20requiredExtensions%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxhtml%22%3E%3Cdiv%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxhtml%22%20style%3D%22width%3A%201px%3B%20height%3A%201px%3B%20background%3A%20red%3B%20position%3A%20relative%22%3E%3C%2Fdiv%3E%3C%2FforeignObject%3E%3C%2Fsvg%3E",await n,e.drawImage(i,0,0),c=e.getImageData(5,5,1,1).data[3]<128}return c})().then(t=>{null==e||e(t?[v]:[])}):null==e||e([]),i)};return Object.assign(e,i)};let m,u;function v(t){const e="object"==typeof t&&t.target||document,i="object"==typeof t?t.zoom:t;window[g]||(Object.defineProperty(window,g,{configurable:!0,value:!0}),document.body.style.zoom=1.0001,document.body.offsetHeight,document.body.style.zoom=1,window.addEventListener("message",({data:t,origin:e})=>{if(e===window.origin)try{if(t&&"string"==typeof t&&t.startsWith(d)){const[,e]=t.split(","),i=Number.parseFloat(e);Number.isNaN(i)||(u=i)}}catch(t){console.error(t)}}));let n=!1;Array.from(e.querySelectorAll("svg[data-marpit-svg]"),t=>{var e,s,r,o;t.style.transform||(t.style.transform="translateZ(0)");const a=i||u||t.currentScale||1;m!==a&&(m=a,n=a);const l=t.getBoundingClientRect(),{length:c}=t.children;for(let i=0;i<c;i+=1){const n=t.children[i];if(n.getScreenCTM){const t=n.getScreenCTM();if(t){const i=null!==(s=null===(e=n.x)||void 0===e?void 0:e.baseVal.value)&&void 0!==s?s:0,c=null!==(o=null===(r=n.y)||void 0===r?void 0:r.baseVal.value)&&void 0!==o?o:0,d=n.children.length;for(let e=0;e<d;e+=1){const s=n.children[e];if("SECTION"===s.tagName){const{style:e}=s;e.transformOrigin||(e.transformOrigin=`${-i}px ${-c}px`),e.transform=`scale(${a}) matrix(${t.a}, ${t.b}, ${t.c}, ${t.d}, ${t.e-l.left}, ${t.f-l.top}) translateZ(0.0001px)`;break}}}}}}),!1!==n&&Array.from(e.querySelectorAll("iframe"),({contentWindow:t})=>{null==t||t.postMessage(`${d}${n}`,"null"===window.origin?"*":window.origin)})}function w({once:t=!1,target:e=document}={}){const i=function(t=document){if(t[h])return t[h];let e=!0;const i=()=>{e=!1,delete t[h]};Object.defineProperty(t,h,{configurable:!0,value:i});let n=[],s=!1;(async()=>{try{n=await p()}finally{s=!0}})();const r=()=>{for(const e of n)e({target:t});s&&0===n.length||e&&window.requestAnimationFrame(r)};return r(),i}(e);return t?(i(),()=>{}):i}m=1,u=void 0;const b=Symbol(),y=(e=document)=>{if("undefined"==typeof window)throw new Error("Marp Core's browser script is valid only in browser context.");if(((e=document)=>{const i=window[a];i||customElements.define("marp-auto-scaling",s);for(const n of Object.keys(t)){const s=`marp-${n}`,o=t[n].proto();l()&&o!==HTMLElement?i||customElements.define(s,r(o,{style:t[n].style}),{extends:n}):(i||customElements.define(s,r(HTMLElement,t[n])),e.querySelectorAll(`${n}[is="${s}"]`).forEach(t=>{t.outerHTML=t.outerHTML.replace(new RegExp(`^<${n}`,"i"),`<${s}`).replace(new RegExp(`</${n}>$`,"i"),`</${s}>`)}))}window[a]=!0})(e),e[b])return e[b];const i=w({target:e}),n=()=>{i(),delete e[b]},o=Object.assign(n,{cleanup:n,update:()=>y(e)});return Object.defineProperty(e,b,{configurable:!0,value:o}),o},f=document.currentScript;y(f?f.getRootNode():document)}();

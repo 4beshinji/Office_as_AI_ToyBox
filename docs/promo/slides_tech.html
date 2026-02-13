@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en-US"><head><title>都市のAI化 — 分散型ローカルLLMアーキテクチャの技術的実証</title><meta property="og:title" content="都市のAI化 — 分散型ローカルLLMアーキテクチャの技術的実証"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,height=device-height,initial-scale=1.0"><meta name="apple-mobile-web-app-capable" content="yes"><meta http-equiv="X-UA-Compatible" content="ie=edge"><meta property="og:type" content="website"><meta name="twitter:card" content="summary"><style>@media screen{body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button,body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container button,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container button{appearance:none;background-color:initial;border:0;color:inherit;cursor:pointer;font-size:inherit;opacity:.8;outline:none;padding:0;transition:opacity .2s linear;-webkit-tap-highlight-color:transparent}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button:disabled,body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button:disabled,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container button:disabled,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container button:disabled{cursor:not-allowed;opacity:.15!important}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button:hover,body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button:hover,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container button:hover,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container button:hover{opacity:1}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button:hover:active,body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button:hover:active,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container button:hover:active,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container button:hover:active{opacity:.6}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button:hover:not(:disabled),body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button:hover:not(:disabled),body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container button:hover:not(:disabled),body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container button:hover:not(:disabled){transition:none}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=prev],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=prev],body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container button.bespoke-marp-presenter-info-page-prev{background:#0000 url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSI1IiBkPSJNNjggOTAgMjggNTBsNDAtNDAiLz48L3N2Zz4=") no-repeat 50%;background-size:contain;overflow:hidden;text-indent:100%;white-space:nowrap}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=next],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=next],body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container button.bespoke-marp-presenter-info-page-next{background:#0000 url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSI1IiBkPSJtMzIgOTAgNDAtNDAtNDAtNDAiLz48L3N2Zz4=") no-repeat 50%;background-size:contain;overflow:hidden;text-indent:100%;white-space:nowrap}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=fullscreen],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=fullscreen]{background:#0000 url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48c3R5bGU+LmF7ZmlsbDpub25lO3N0cm9rZTojZmZmO3N0cm9rZS1saW5lY2FwOnJvdW5kO3N0cm9rZS1saW5lam9pbjpyb3VuZDtzdHJva2Utd2lkdGg6NXB4fTwvc3R5bGU+PC9kZWZzPjxyZWN0IHdpZHRoPSI4MCIgaGVpZ2h0PSI2MCIgeD0iMTAiIHk9IjIwIiBjbGFzcz0iYSIgcng9IjUuNjciLz48cGF0aCBkPSJNNDAgNzBIMjBWNTBtMjAgMEwyMCA3MG00MC00MGgyMHYyMG0tMjAgMCAyMC0yMCIgY2xhc3M9ImEiLz48L3N2Zz4=") no-repeat 50%;background-size:contain;overflow:hidden;text-indent:100%;white-space:nowrap}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button.exit[data-bespoke-marp-osc=fullscreen],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button.exit[data-bespoke-marp-osc=fullscreen]{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48c3R5bGU+LmF7ZmlsbDpub25lO3N0cm9rZTojZmZmO3N0cm9rZS1saW5lY2FwOnJvdW5kO3N0cm9rZS1saW5lam9pbjpyb3VuZDtzdHJva2Utd2lkdGg6NXB4fTwvc3R5bGU+PC9kZWZzPjxyZWN0IHdpZHRoPSI4MCIgaGVpZ2h0PSI2MCIgeD0iMTAiIHk9IjIwIiBjbGFzcz0iYSIgcng9IjUuNjciLz48cGF0aCBkPSJNMjAgNTBoMjB2MjBtLTIwIDAgMjAtMjBtNDAgMEg2MFYzMG0yMCAwTDYwIDUwIiBjbGFzcz0iYSIvPjwvc3ZnPg==")}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=presenter],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=presenter]{background:#0000 url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSI1IiBkPSJNODcuOCA0Ny41Qzg5IDUwIDg3LjcgNTIgODUgNTJIMzVhOC43IDguNyAwIDAgMS03LjItNC41bC0xNS42LTMxQzExIDE0IDEyLjIgMTIgMTUgMTJoNTBhOC44IDguOCAwIDAgMSA3LjIgNC41ek02MCA1MnYzNm0tMTAgMGgyME00NSA0MmgyMCIvPjwvc3ZnPg==") no-repeat 50%;background-size:contain;overflow:hidden;text-indent:100%;white-space:nowrap}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container button.bespoke-marp-presenter-note-bigger{background:#0000 url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBzdHJva2U9IiNmZmYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSI1IiBkPSJNMTIgNTBoODBNNTIgOTBWMTAiLz48L3N2Zz4=") no-repeat 50%;background-size:contain;overflow:hidden;text-indent:100%;white-space:nowrap}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container button.bespoke-marp-presenter-note-smaller{background:#0000 url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSI1IiBkPSJNMTIgNTBoODAiLz48L3N2Zz4=") no-repeat 50%;background-size:contain;overflow:hidden;text-indent:100%;white-space:nowrap}}@keyframes __bespoke_marp_transition_reduced_outgoing__{0%{opacity:1}to{opacity:0}}@keyframes __bespoke_marp_transition_reduced_incoming__{0%{mix-blend-mode:plus-lighter;opacity:0}to{mix-blend-mode:plus-lighter;opacity:1}}.bespoke-marp-note,.bespoke-marp-osc,.bespoke-progress-parent{display:none;transition:none}@media screen{::view-transition-group(*){animation-duration:var(--marp-bespoke-transition-animation-duration,.5s);animation-timing-function:ease}::view-transition-new(*),::view-transition-old(*){animation-delay:0s;animation-direction:var(--marp-bespoke-transition-animation-direction,normal);animation-duration:var(--marp-bespoke-transition-animation-duration,.5s);animation-fill-mode:both;animation-name:var(--marp-bespoke-transition-animation-name,var(--marp-bespoke-transition-animation-name-fallback,__bespoke_marp_transition_no_animation__));mix-blend-mode:normal}::view-transition-old(*){--marp-bespoke-transition-animation-name-fallback:__bespoke_marp_transition_reduced_outgoing__;animation-timing-function:ease}::view-transition-new(*){--marp-bespoke-transition-animation-name-fallback:__bespoke_marp_transition_reduced_incoming__;animation-timing-function:ease}::view-transition-new(root),::view-transition-old(root){animation-timing-function:linear}::view-transition-new(__bespoke_marp_transition_osc__),::view-transition-old(__bespoke_marp_transition_osc__){animation-duration:0s!important;animation-name:__bespoke_marp_transition_osc__!important}::view-transition-new(__bespoke_marp_transition_osc__){opacity:0!important}.bespoke-marp-transition-warming-up::view-transition-group(*),.bespoke-marp-transition-warming-up::view-transition-new(*),.bespoke-marp-transition-warming-up::view-transition-old(*){animation-play-state:paused!important}body,html{height:100%;margin:0}body{background:#000;overflow:hidden}svg.bespoke-marp-slide{content-visibility:hidden;opacity:0;pointer-events:none;z-index:-1}svg.bespoke-marp-slide:not(.bespoke-marp-active) *{view-transition-name:none!important}svg.bespoke-marp-slide.bespoke-marp-active{content-visibility:visible;opacity:1;pointer-events:auto;z-index:0}svg.bespoke-marp-slide.bespoke-marp-active.bespoke-marp-active-ready *{animation-name:__bespoke_marp__!important}@supports not (content-visibility:hidden){svg.bespoke-marp-slide[data-bespoke-marp-load=hideable]{display:none}svg.bespoke-marp-slide[data-bespoke-marp-load=hideable].bespoke-marp-active{display:block}}}@media screen and (prefers-reduced-motion:reduce){svg.bespoke-marp-slide *{view-transition-name:none!important}}@media screen{[data-bespoke-marp-fragment=inactive]{visibility:hidden}body[data-bespoke-view=""] .bespoke-marp-parent,body[data-bespoke-view=next] .bespoke-marp-parent{inset:0;position:absolute}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc,body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc{background:#000000a6;border-radius:7px;bottom:50px;color:#fff;contain:paint;display:block;font-family:Helvetica,Arial,sans-serif;font-size:16px;left:50%;line-height:0;opacity:1;padding:12px;position:absolute;touch-action:manipulation;transform:translateX(-50%);transition:opacity .2s linear;-webkit-user-select:none;user-select:none;white-space:nowrap;will-change:transform;z-index:1;view-transition-name:__bespoke_marp_transition_osc__}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>*,body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>*{margin-left:6px}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>:first-child,body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>:first-child{margin-left:0}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>span,body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>span{opacity:.8}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>span[data-bespoke-marp-osc=page],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>span[data-bespoke-marp-osc=page]{display:inline-block;min-width:140px;text-align:center}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=fullscreen],body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=next],body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=presenter],body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=prev],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=fullscreen],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=next],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=presenter],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=prev]{height:32px;line-height:32px;width:32px}body[data-bespoke-view=""] .bespoke-marp-parent.bespoke-marp-inactive,body[data-bespoke-view=next] .bespoke-marp-parent.bespoke-marp-inactive{cursor:none}body[data-bespoke-view=""] .bespoke-marp-parent.bespoke-marp-inactive>.bespoke-marp-osc,body[data-bespoke-view=next] .bespoke-marp-parent.bespoke-marp-inactive>.bespoke-marp-osc{opacity:0;pointer-events:none}body[data-bespoke-view=""] svg.bespoke-marp-slide,body[data-bespoke-view=next] svg.bespoke-marp-slide{height:100%;left:0;position:absolute;top:0;width:100%}body[data-bespoke-view=""] .bespoke-progress-parent{background:#222;display:flex;height:5px;width:100%}body[data-bespoke-view=""] .bespoke-progress-parent+.bespoke-marp-parent{top:5px}body[data-bespoke-view=""] .bespoke-progress-parent .bespoke-progress-bar{background:#0288d1;flex:0 0 0;transition:flex-basis .2s cubic-bezier(0,1,1,1)}body[data-bespoke-view=next]{background:#0000}body[data-bespoke-view=presenter]{background:#161616}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container{display:grid;font-family:Helvetica,Arial,sans-serif;grid-template:"current dragbar next" minmax(140px,1fr) "current dragbar note" 2fr "info    dragbar note" 3em;grid-template-columns:minmax(3px,var(--bespoke-marp-presenter-split-ratio,66%)) 0 minmax(3px,1fr);height:100%;left:0;position:absolute;top:0;width:100%}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-parent{grid-area:current;overflow:hidden;position:relative}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-parent svg.bespoke-marp-slide{height:calc(100% - 40px);left:20px;pointer-events:none;position:absolute;top:20px;-webkit-user-select:none;user-select:none;width:calc(100% - 40px)}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-parent svg.bespoke-marp-slide.bespoke-marp-active{filter:drop-shadow(0 3px 10px rgba(0,0,0,.5))}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-dragbar-container{background:#0288d1;cursor:col-resize;grid-area:dragbar;margin-left:-3px;opacity:0;position:relative;transition:opacity .4s linear .1s;width:6px;z-index:10}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-dragbar-container:hover{opacity:1}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-dragbar-container.active{opacity:1;transition-delay:0s}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-next-container{background:#222;cursor:pointer;display:none;grid-area:next;overflow:hidden;position:relative}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-next-container.active{display:block}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-next-container iframe.bespoke-marp-presenter-next{background:#0000;border:0;display:block;filter:drop-shadow(0 3px 10px rgba(0,0,0,.5));height:calc(100% - 40px);left:20px;pointer-events:none;position:absolute;top:20px;-webkit-user-select:none;user-select:none;width:calc(100% - 40px)}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container{background:#222;color:#eee;grid-area:note;position:relative;z-index:1}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container button{height:1.5em;line-height:1.5em;width:1.5em}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-presenter-note-wrapper{display:block;inset:0;position:absolute}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-presenter-note-buttons{background:#000000a6;border-radius:4px;bottom:0;display:flex;gap:4px;margin:12px;opacity:0;padding:6px;pointer-events:none;position:absolute;right:0;transition:opacity .2s linear}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-presenter-note-buttons:focus-within,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-presenter-note-wrapper:focus-within+.bespoke-marp-presenter-note-buttons,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container:hover .bespoke-marp-presenter-note-buttons{opacity:1;pointer-events:auto}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-note{box-sizing:border-box;font-size:calc(1.1em*var(--bespoke-marp-note-font-scale, 1));height:calc(100% - 40px);margin:20px;overflow:auto;padding-right:3px;white-space:pre-wrap;width:calc(100% - 40px);word-wrap:break-word;scrollbar-color:#eeeeee80 #0000;scrollbar-width:thin}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-note::-webkit-scrollbar{width:6px}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-note::-webkit-scrollbar-track{background:#0000}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-note::-webkit-scrollbar-thumb{background:#eeeeee80;border-radius:6px}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-note:empty{pointer-events:none}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-note.active{display:block}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-note p:first-child{margin-top:0}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-note p:last-child{margin-bottom:0}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container{align-items:center;box-sizing:border-box;color:#eee;display:flex;flex-wrap:nowrap;grid-area:info;justify-content:center;overflow:hidden;padding:0 10px}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container .bespoke-marp-presenter-info-page,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container .bespoke-marp-presenter-info-time,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container .bespoke-marp-presenter-info-timer{box-sizing:border-box;display:block;padding:0 10px;white-space:nowrap;width:100%}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container button{height:1.5em;line-height:1.5em;width:1.5em}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container .bespoke-marp-presenter-info-page{order:2;text-align:center}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container .bespoke-marp-presenter-info-page .bespoke-marp-presenter-info-page-text{display:inline-block;min-width:120px;text-align:center}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container .bespoke-marp-presenter-info-time{color:#999;order:1;text-align:left}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container .bespoke-marp-presenter-info-timer{color:#999;order:3;text-align:right}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container .bespoke-marp-presenter-info-timer:hover{cursor:pointer}}@media print{.bespoke-marp-presenter-info-container,.bespoke-marp-presenter-next-container,.bespoke-marp-presenter-note-container{display:none}}</style><style>div#\:\$p > svg > foreignObject > section{width:1280px;height:720px;box-sizing:border-box;overflow:hidden;position:relative;scroll-snap-align:center center;-webkit-text-size-adjust:100%;text-size-adjust:100%}div#\:\$p > svg > foreignObject > section::after{bottom:0;content:attr(data-marpit-pagination);padding:inherit;pointer-events:none;position:absolute;right:0}div#\:\$p > svg > foreignObject > section:not([data-marpit-pagination])::after{display:none}div#\:\$p > svg > foreignObject > section :is(h1, marp-h1){font-size:2em;margin-block:0.67em}div#\:\$p > svg > foreignObject > section video::-webkit-media-controls{will-change:transform}@page {size:1280px 720px;margin:0}@media print{html, body{background-color:#fff;margin:0;page-break-inside:avoid;break-inside:avoid-page}div#\:\$p > svg > foreignObject > section{page-break-before:always;break-before:page}div#\:\$p > svg > foreignObject > section, div#\:\$p > svg > foreignObject > section *{-webkit-print-color-adjust:exact!important;animation-delay:0s!important;animation-duration:0s!important;color-adjust:exact!important;print-color-adjust:exact!important;transition:none!important}div#\:\$p > svg[data-marpit-svg]{display:block;height:100vh;width:100vw}}div#\:\$p > svg > foreignObject > :where(section){container-type:size}div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"]{direction:ltr}div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"] > svg{overflow:visible;min-height:1px;min-width:1px}div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"] > svg a{fill:blue;stroke:blue}div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"][display="true"]{display:block;text-align:center;margin:1em 0}div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"][display="true"][width="full"]{display:flex}div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"][justify="left"]{text-align:left}div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"][justify="right"]{text-align:right}div#\:\$p > svg > foreignObject > section g[data-mml-node="merror"] > g{fill:red;stroke:red}div#\:\$p > svg > foreignObject > section g[data-mml-node="merror"] > rect[data-background]{fill:yellow;stroke:none}div#\:\$p > svg > foreignObject > section g[data-mml-node="mtable"] > line[data-line], div#\:\$p > svg > foreignObject > section svg[data-table] > g > line[data-line]{stroke-width:70px;fill:none}div#\:\$p > svg > foreignObject > section g[data-mml-node="mtable"] > rect[data-frame], div#\:\$p > svg > foreignObject > section svg[data-table] > g > rect[data-frame]{stroke-width:70px;fill:none}div#\:\$p > svg > foreignObject > section g[data-mml-node="mtable"] > .mjx-dashed, div#\:\$p > svg > foreignObject > section svg[data-table] > g > .mjx-dashed{stroke-dasharray:140}div#\:\$p > svg > foreignObject > section g[data-mml-node="mtable"] > .mjx-dotted, div#\:\$p > svg > foreignObject > section svg[data-table] > g > .mjx-dotted{stroke-linecap:round;stroke-dasharray:0,140}div#\:\$p > svg > foreignObject > section g[data-mml-node="mtable"] > g > svg{overflow:visible}div#\:\$p > svg > foreignObject > section [jax="SVG"] mjx-tool{display:inline-block;position:relative;width:0;height:0}div#\:\$p > svg > foreignObject > section [jax="SVG"] mjx-tool > mjx-tip{position:absolute;top:0;left:0}div#\:\$p > svg > foreignObject > section mjx-tool > mjx-tip{display:inline-block;padding:.2em;border:1px solid #888;font-size:70%;background-color:#F8F8F8;color:black;box-shadow:2px 2px 5px #AAAAAA}div#\:\$p > svg > foreignObject > section g[data-mml-node="maction"][data-toggle]{cursor:pointer}div#\:\$p > svg > foreignObject > section mjx-status{display:block;position:fixed;left:1em;bottom:1em;min-width:25%;padding:.2em .4em;border:1px solid #888;font-size:90%;background-color:#F8F8F8;color:black}div#\:\$p > svg > foreignObject > section foreignObject[data-mjx-xml]{font-family:initial;line-height:normal;overflow:visible}div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"] path[data-c], div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"] use[data-c]{stroke-width:3}@media print{div#\:\$p > svg > foreignObject > section mjx-container[jax=SVG] path[data-c],div#\:\$p > svg > foreignObject > section mjx-container[jax=SVG] use[data-c]{stroke-width:0}}div#\:\$p > svg > foreignObject > section img[data-marp-twemoji]{background:transparent;height:1em;margin:0 .05em 0 .1em;vertical-align:-.1em;width:1em}div#\:\$p > svg > foreignObject > section{--focus-outlineColor:light-dark(#0969da, #1f6feb);--fgColor-default:light-dark(#1f2328, #f0f6fc);--fgColor-muted:light-dark(#59636e, #9198a1);--fgColor-accent:light-dark(#0969da, #4493f8);--fgColor-success:light-dark(#1a7f37, #3fb950);--fgColor-attention:light-dark(#9a6700, #d29922);--fgColor-danger:light-dark(#d1242f, #f85149);--fgColor-done:light-dark(#8250df, #ab7df8);--bgColor-default:light-dark(#fff, #0d1117);--bgColor-muted:light-dark(#f6f8fa, #151b23);--bgColor-neutral-muted:light-dark(#818b981f, #656c7633);--bgColor-attention-muted:light-dark(#fff8c5, #bb800926);--borderColor-default:light-dark(#d1d9e0, #3d444d);--borderColor-muted:light-dark(#d1d9e0b3, #3d444db3);--borderColor-neutral-muted:light-dark(#d1d9e0b3, #3d444db3);--borderColor-accent-emphasis:light-dark(#0969da, #1f6feb);--borderColor-success-emphasis:light-dark(#1a7f37, #238636);--borderColor-attention-emphasis:light-dark(#9a6700, #9e6a03);--borderColor-danger-emphasis:light-dark(#cf222e, #da3633);--borderColor-done-emphasis:light-dark(#8250df, #8957e5);--color-prettylights-syntax-comment:light-dark(#59636e, #9198a1);--color-prettylights-syntax-constant:light-dark(#0550ae, #79c0ff);--color-prettylights-syntax-constant-other-reference-link:light-dark(#0a3069, #a5d6ff);--color-prettylights-syntax-entity:light-dark(#6639ba, #d2a8ff);--color-prettylights-syntax-storage-modifier-import:light-dark(#1f2328, #f0f6fc);--color-prettylights-syntax-entity-tag:light-dark(#0550ae, #7ee787);--color-prettylights-syntax-keyword:light-dark(#cf222e, #ff7b72);--color-prettylights-syntax-string:light-dark(#0a3069, #a5d6ff);--color-prettylights-syntax-variable:light-dark(#953800, #ffa657);--color-prettylights-syntax-brackethighlighter-unmatched:light-dark(#82071e, #f85149);--color-prettylights-syntax-brackethighlighter-angle:light-dark(#59636e, #9198a1);--color-prettylights-syntax-invalid-illegal-text:light-dark(#f6f8fa, #f0f6fc);--color-prettylights-syntax-invalid-illegal-bg:light-dark(#82071e, #8e1519);--color-prettylights-syntax-carriage-return-text:light-dark(#f6f8fa, #f0f6fc);--color-prettylights-syntax-carriage-return-bg:light-dark(#cf222e, #b62324);--color-prettylights-syntax-string-regexp:light-dark(#116329, #7ee787);--color-prettylights-syntax-markup-list:light-dark(#3b2300, #f2cc60);--color-prettylights-syntax-markup-heading:light-dark(#0550ae, #1f6feb);--color-prettylights-syntax-markup-italic:light-dark(#1f2328, #f0f6fc);--color-prettylights-syntax-markup-bold:light-dark(#1f2328, #f0f6fc);--color-prettylights-syntax-markup-deleted-text:light-dark(#82071e, #ffdcd7);--color-prettylights-syntax-markup-deleted-bg:light-dark(#ffebe9, #67060c);--color-prettylights-syntax-markup-inserted-text:light-dark(#116329, #aff5b4);--color-prettylights-syntax-markup-inserted-bg:light-dark(#dafbe1, #033a16);--color-prettylights-syntax-markup-changed-text:light-dark(#953800, #ffdfb6);--color-prettylights-syntax-markup-changed-bg:light-dark(#ffd8b5, #5a1e02);--color-prettylights-syntax-markup-ignored-text:light-dark(#d1d9e0, #f0f6fc);--color-prettylights-syntax-markup-ignored-bg:light-dark(#0550ae, #1158c7);--color-prettylights-syntax-meta-diff-range:light-dark(#8250df, #d2a8ff);--color-prettylights-syntax-sublimelinter-gutter-mark:light-dark(#818b98, #3d444d);--base-size-4:calc(var(--marpit-root-font-size, 1rem) * 0.25);--base-size-8:calc(var(--marpit-root-font-size, 1rem) * 0.5);--base-size-16:calc(var(--marpit-root-font-size, 1rem) * 1);--base-size-24:calc(var(--marpit-root-font-size, 1rem) * 1.5);--base-size-40:calc(var(--marpit-root-font-size, 1rem) * 2.5);--base-text-weight-normal:400;--base-text-weight-medium:500;--base-text-weight-semibold:600;--fontStack-monospace:ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;--fgColor-accent:Highlight;}/*!
+<!DOCTYPE html><html lang="en-US"><head><title>都市のAI化 — 分散ローカルLLMによる空間知能アーキテクチャ</title><meta property="og:title" content="都市のAI化 — 分散ローカルLLMによる空間知能アーキテクチャ"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,height=device-height,initial-scale=1.0"><meta name="apple-mobile-web-app-capable" content="yes"><meta http-equiv="X-UA-Compatible" content="ie=edge"><meta property="og:type" content="website"><meta name="twitter:card" content="summary"><style>@media screen{body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button,body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container button,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container button{appearance:none;background-color:initial;border:0;color:inherit;cursor:pointer;font-size:inherit;opacity:.8;outline:none;padding:0;transition:opacity .2s linear;-webkit-tap-highlight-color:transparent}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button:disabled,body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button:disabled,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container button:disabled,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container button:disabled{cursor:not-allowed;opacity:.15!important}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button:hover,body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button:hover,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container button:hover,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container button:hover{opacity:1}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button:hover:active,body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button:hover:active,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container button:hover:active,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container button:hover:active{opacity:.6}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button:hover:not(:disabled),body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button:hover:not(:disabled),body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container button:hover:not(:disabled),body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container button:hover:not(:disabled){transition:none}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=prev],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=prev],body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container button.bespoke-marp-presenter-info-page-prev{background:#0000 url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSI1IiBkPSJNNjggOTAgMjggNTBsNDAtNDAiLz48L3N2Zz4=") no-repeat 50%;background-size:contain;overflow:hidden;text-indent:100%;white-space:nowrap}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=next],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=next],body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container button.bespoke-marp-presenter-info-page-next{background:#0000 url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSI1IiBkPSJtMzIgOTAgNDAtNDAtNDAtNDAiLz48L3N2Zz4=") no-repeat 50%;background-size:contain;overflow:hidden;text-indent:100%;white-space:nowrap}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=fullscreen],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=fullscreen]{background:#0000 url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48c3R5bGU+LmF7ZmlsbDpub25lO3N0cm9rZTojZmZmO3N0cm9rZS1saW5lY2FwOnJvdW5kO3N0cm9rZS1saW5lam9pbjpyb3VuZDtzdHJva2Utd2lkdGg6NXB4fTwvc3R5bGU+PC9kZWZzPjxyZWN0IHdpZHRoPSI4MCIgaGVpZ2h0PSI2MCIgeD0iMTAiIHk9IjIwIiBjbGFzcz0iYSIgcng9IjUuNjciLz48cGF0aCBkPSJNNDAgNzBIMjBWNTBtMjAgMEwyMCA3MG00MC00MGgyMHYyMG0tMjAgMCAyMC0yMCIgY2xhc3M9ImEiLz48L3N2Zz4=") no-repeat 50%;background-size:contain;overflow:hidden;text-indent:100%;white-space:nowrap}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button.exit[data-bespoke-marp-osc=fullscreen],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button.exit[data-bespoke-marp-osc=fullscreen]{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48c3R5bGU+LmF7ZmlsbDpub25lO3N0cm9rZTojZmZmO3N0cm9rZS1saW5lY2FwOnJvdW5kO3N0cm9rZS1saW5lam9pbjpyb3VuZDtzdHJva2Utd2lkdGg6NXB4fTwvc3R5bGU+PC9kZWZzPjxyZWN0IHdpZHRoPSI4MCIgaGVpZ2h0PSI2MCIgeD0iMTAiIHk9IjIwIiBjbGFzcz0iYSIgcng9IjUuNjciLz48cGF0aCBkPSJNMjAgNTBoMjB2MjBtLTIwIDAgMjAtMjBtNDAgMEg2MFYzMG0yMCAwTDYwIDUwIiBjbGFzcz0iYSIvPjwvc3ZnPg==")}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=presenter],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=presenter]{background:#0000 url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSI1IiBkPSJNODcuOCA0Ny41Qzg5IDUwIDg3LjcgNTIgODUgNTJIMzVhOC43IDguNyAwIDAgMS03LjItNC41bC0xNS42LTMxQzExIDE0IDEyLjIgMTIgMTUgMTJoNTBhOC44IDguOCAwIDAgMSA3LjIgNC41ek02MCA1MnYzNm0tMTAgMGgyME00NSA0MmgyMCIvPjwvc3ZnPg==") no-repeat 50%;background-size:contain;overflow:hidden;text-indent:100%;white-space:nowrap}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container button.bespoke-marp-presenter-note-bigger{background:#0000 url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBzdHJva2U9IiNmZmYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSI1IiBkPSJNMTIgNTBoODBNNTIgOTBWMTAiLz48L3N2Zz4=") no-repeat 50%;background-size:contain;overflow:hidden;text-indent:100%;white-space:nowrap}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container button.bespoke-marp-presenter-note-smaller{background:#0000 url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSI1IiBkPSJNMTIgNTBoODAiLz48L3N2Zz4=") no-repeat 50%;background-size:contain;overflow:hidden;text-indent:100%;white-space:nowrap}}@keyframes __bespoke_marp_transition_reduced_outgoing__{0%{opacity:1}to{opacity:0}}@keyframes __bespoke_marp_transition_reduced_incoming__{0%{mix-blend-mode:plus-lighter;opacity:0}to{mix-blend-mode:plus-lighter;opacity:1}}.bespoke-marp-note,.bespoke-marp-osc,.bespoke-progress-parent{display:none;transition:none}@media screen{::view-transition-group(*){animation-duration:var(--marp-bespoke-transition-animation-duration,.5s);animation-timing-function:ease}::view-transition-new(*),::view-transition-old(*){animation-delay:0s;animation-direction:var(--marp-bespoke-transition-animation-direction,normal);animation-duration:var(--marp-bespoke-transition-animation-duration,.5s);animation-fill-mode:both;animation-name:var(--marp-bespoke-transition-animation-name,var(--marp-bespoke-transition-animation-name-fallback,__bespoke_marp_transition_no_animation__));mix-blend-mode:normal}::view-transition-old(*){--marp-bespoke-transition-animation-name-fallback:__bespoke_marp_transition_reduced_outgoing__;animation-timing-function:ease}::view-transition-new(*){--marp-bespoke-transition-animation-name-fallback:__bespoke_marp_transition_reduced_incoming__;animation-timing-function:ease}::view-transition-new(root),::view-transition-old(root){animation-timing-function:linear}::view-transition-new(__bespoke_marp_transition_osc__),::view-transition-old(__bespoke_marp_transition_osc__){animation-duration:0s!important;animation-name:__bespoke_marp_transition_osc__!important}::view-transition-new(__bespoke_marp_transition_osc__){opacity:0!important}.bespoke-marp-transition-warming-up::view-transition-group(*),.bespoke-marp-transition-warming-up::view-transition-new(*),.bespoke-marp-transition-warming-up::view-transition-old(*){animation-play-state:paused!important}body,html{height:100%;margin:0}body{background:#000;overflow:hidden}svg.bespoke-marp-slide{content-visibility:hidden;opacity:0;pointer-events:none;z-index:-1}svg.bespoke-marp-slide:not(.bespoke-marp-active) *{view-transition-name:none!important}svg.bespoke-marp-slide.bespoke-marp-active{content-visibility:visible;opacity:1;pointer-events:auto;z-index:0}svg.bespoke-marp-slide.bespoke-marp-active.bespoke-marp-active-ready *{animation-name:__bespoke_marp__!important}@supports not (content-visibility:hidden){svg.bespoke-marp-slide[data-bespoke-marp-load=hideable]{display:none}svg.bespoke-marp-slide[data-bespoke-marp-load=hideable].bespoke-marp-active{display:block}}}@media screen and (prefers-reduced-motion:reduce){svg.bespoke-marp-slide *{view-transition-name:none!important}}@media screen{[data-bespoke-marp-fragment=inactive]{visibility:hidden}body[data-bespoke-view=""] .bespoke-marp-parent,body[data-bespoke-view=next] .bespoke-marp-parent{inset:0;position:absolute}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc,body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc{background:#000000a6;border-radius:7px;bottom:50px;color:#fff;contain:paint;display:block;font-family:Helvetica,Arial,sans-serif;font-size:16px;left:50%;line-height:0;opacity:1;padding:12px;position:absolute;touch-action:manipulation;transform:translateX(-50%);transition:opacity .2s linear;-webkit-user-select:none;user-select:none;white-space:nowrap;will-change:transform;z-index:1;view-transition-name:__bespoke_marp_transition_osc__}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>*,body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>*{margin-left:6px}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>:first-child,body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>:first-child{margin-left:0}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>span,body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>span{opacity:.8}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>span[data-bespoke-marp-osc=page],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>span[data-bespoke-marp-osc=page]{display:inline-block;min-width:140px;text-align:center}body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=fullscreen],body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=next],body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=presenter],body[data-bespoke-view=""] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=prev],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=fullscreen],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=next],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=presenter],body[data-bespoke-view=next] .bespoke-marp-parent>.bespoke-marp-osc>button[data-bespoke-marp-osc=prev]{height:32px;line-height:32px;width:32px}body[data-bespoke-view=""] .bespoke-marp-parent.bespoke-marp-inactive,body[data-bespoke-view=next] .bespoke-marp-parent.bespoke-marp-inactive{cursor:none}body[data-bespoke-view=""] .bespoke-marp-parent.bespoke-marp-inactive>.bespoke-marp-osc,body[data-bespoke-view=next] .bespoke-marp-parent.bespoke-marp-inactive>.bespoke-marp-osc{opacity:0;pointer-events:none}body[data-bespoke-view=""] svg.bespoke-marp-slide,body[data-bespoke-view=next] svg.bespoke-marp-slide{height:100%;left:0;position:absolute;top:0;width:100%}body[data-bespoke-view=""] .bespoke-progress-parent{background:#222;display:flex;height:5px;width:100%}body[data-bespoke-view=""] .bespoke-progress-parent+.bespoke-marp-parent{top:5px}body[data-bespoke-view=""] .bespoke-progress-parent .bespoke-progress-bar{background:#0288d1;flex:0 0 0;transition:flex-basis .2s cubic-bezier(0,1,1,1)}body[data-bespoke-view=next]{background:#0000}body[data-bespoke-view=presenter]{background:#161616}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container{display:grid;font-family:Helvetica,Arial,sans-serif;grid-template:"current dragbar next" minmax(140px,1fr) "current dragbar note" 2fr "info    dragbar note" 3em;grid-template-columns:minmax(3px,var(--bespoke-marp-presenter-split-ratio,66%)) 0 minmax(3px,1fr);height:100%;left:0;position:absolute;top:0;width:100%}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-parent{grid-area:current;overflow:hidden;position:relative}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-parent svg.bespoke-marp-slide{height:calc(100% - 40px);left:20px;pointer-events:none;position:absolute;top:20px;-webkit-user-select:none;user-select:none;width:calc(100% - 40px)}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-parent svg.bespoke-marp-slide.bespoke-marp-active{filter:drop-shadow(0 3px 10px rgba(0,0,0,.5))}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-dragbar-container{background:#0288d1;cursor:col-resize;grid-area:dragbar;margin-left:-3px;opacity:0;position:relative;transition:opacity .4s linear .1s;width:6px;z-index:10}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-dragbar-container:hover{opacity:1}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-dragbar-container.active{opacity:1;transition-delay:0s}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-next-container{background:#222;cursor:pointer;display:none;grid-area:next;overflow:hidden;position:relative}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-next-container.active{display:block}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-next-container iframe.bespoke-marp-presenter-next{background:#0000;border:0;display:block;filter:drop-shadow(0 3px 10px rgba(0,0,0,.5));height:calc(100% - 40px);left:20px;pointer-events:none;position:absolute;top:20px;-webkit-user-select:none;user-select:none;width:calc(100% - 40px)}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container{background:#222;color:#eee;grid-area:note;position:relative;z-index:1}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container button{height:1.5em;line-height:1.5em;width:1.5em}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-presenter-note-wrapper{display:block;inset:0;position:absolute}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-presenter-note-buttons{background:#000000a6;border-radius:4px;bottom:0;display:flex;gap:4px;margin:12px;opacity:0;padding:6px;pointer-events:none;position:absolute;right:0;transition:opacity .2s linear}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-presenter-note-buttons:focus-within,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-presenter-note-wrapper:focus-within+.bespoke-marp-presenter-note-buttons,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container:hover .bespoke-marp-presenter-note-buttons{opacity:1;pointer-events:auto}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-note{box-sizing:border-box;font-size:calc(1.1em*var(--bespoke-marp-note-font-scale, 1));height:calc(100% - 40px);margin:20px;overflow:auto;padding-right:3px;white-space:pre-wrap;width:calc(100% - 40px);word-wrap:break-word;scrollbar-color:#eeeeee80 #0000;scrollbar-width:thin}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-note::-webkit-scrollbar{width:6px}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-note::-webkit-scrollbar-track{background:#0000}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-note::-webkit-scrollbar-thumb{background:#eeeeee80;border-radius:6px}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-note:empty{pointer-events:none}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-note.active{display:block}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-note p:first-child{margin-top:0}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-note-container .bespoke-marp-note p:last-child{margin-bottom:0}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container{align-items:center;box-sizing:border-box;color:#eee;display:flex;flex-wrap:nowrap;grid-area:info;justify-content:center;overflow:hidden;padding:0 10px}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container .bespoke-marp-presenter-info-page,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container .bespoke-marp-presenter-info-time,body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container .bespoke-marp-presenter-info-timer{box-sizing:border-box;display:block;padding:0 10px;white-space:nowrap;width:100%}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container button{height:1.5em;line-height:1.5em;width:1.5em}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container .bespoke-marp-presenter-info-page{order:2;text-align:center}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container .bespoke-marp-presenter-info-page .bespoke-marp-presenter-info-page-text{display:inline-block;min-width:120px;text-align:center}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container .bespoke-marp-presenter-info-time{color:#999;order:1;text-align:left}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container .bespoke-marp-presenter-info-timer{color:#999;order:3;text-align:right}body[data-bespoke-view=presenter] .bespoke-marp-presenter-container .bespoke-marp-presenter-info-container .bespoke-marp-presenter-info-timer:hover{cursor:pointer}}@media print{.bespoke-marp-presenter-info-container,.bespoke-marp-presenter-next-container,.bespoke-marp-presenter-note-container{display:none}}</style><style>div#\:\$p > svg > foreignObject > section{width:1280px;height:720px;box-sizing:border-box;overflow:hidden;position:relative;scroll-snap-align:center center;-webkit-text-size-adjust:100%;text-size-adjust:100%}div#\:\$p > svg > foreignObject > section::after{bottom:0;content:attr(data-marpit-pagination);padding:inherit;pointer-events:none;position:absolute;right:0}div#\:\$p > svg > foreignObject > section:not([data-marpit-pagination])::after{display:none}div#\:\$p > svg > foreignObject > section :is(h1, marp-h1){font-size:2em;margin-block:0.67em}div#\:\$p > svg > foreignObject > section video::-webkit-media-controls{will-change:transform}@page {size:1280px 720px;margin:0}@media print{html, body{background-color:#fff;margin:0;page-break-inside:avoid;break-inside:avoid-page}div#\:\$p > svg > foreignObject > section{page-break-before:always;break-before:page}div#\:\$p > svg > foreignObject > section, div#\:\$p > svg > foreignObject > section *{-webkit-print-color-adjust:exact!important;animation-delay:0s!important;animation-duration:0s!important;color-adjust:exact!important;print-color-adjust:exact!important;transition:none!important}div#\:\$p > svg[data-marpit-svg]{display:block;height:100vh;width:100vw}}div#\:\$p > svg > foreignObject > :where(section){container-type:size}div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"]{direction:ltr}div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"] > svg{overflow:visible;min-height:1px;min-width:1px}div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"] > svg a{fill:blue;stroke:blue}div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"][display="true"]{display:block;text-align:center;margin:1em 0}div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"][display="true"][width="full"]{display:flex}div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"][justify="left"]{text-align:left}div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"][justify="right"]{text-align:right}div#\:\$p > svg > foreignObject > section g[data-mml-node="merror"] > g{fill:red;stroke:red}div#\:\$p > svg > foreignObject > section g[data-mml-node="merror"] > rect[data-background]{fill:yellow;stroke:none}div#\:\$p > svg > foreignObject > section g[data-mml-node="mtable"] > line[data-line], div#\:\$p > svg > foreignObject > section svg[data-table] > g > line[data-line]{stroke-width:70px;fill:none}div#\:\$p > svg > foreignObject > section g[data-mml-node="mtable"] > rect[data-frame], div#\:\$p > svg > foreignObject > section svg[data-table] > g > rect[data-frame]{stroke-width:70px;fill:none}div#\:\$p > svg > foreignObject > section g[data-mml-node="mtable"] > .mjx-dashed, div#\:\$p > svg > foreignObject > section svg[data-table] > g > .mjx-dashed{stroke-dasharray:140}div#\:\$p > svg > foreignObject > section g[data-mml-node="mtable"] > .mjx-dotted, div#\:\$p > svg > foreignObject > section svg[data-table] > g > .mjx-dotted{stroke-linecap:round;stroke-dasharray:0,140}div#\:\$p > svg > foreignObject > section g[data-mml-node="mtable"] > g > svg{overflow:visible}div#\:\$p > svg > foreignObject > section [jax="SVG"] mjx-tool{display:inline-block;position:relative;width:0;height:0}div#\:\$p > svg > foreignObject > section [jax="SVG"] mjx-tool > mjx-tip{position:absolute;top:0;left:0}div#\:\$p > svg > foreignObject > section mjx-tool > mjx-tip{display:inline-block;padding:.2em;border:1px solid #888;font-size:70%;background-color:#F8F8F8;color:black;box-shadow:2px 2px 5px #AAAAAA}div#\:\$p > svg > foreignObject > section g[data-mml-node="maction"][data-toggle]{cursor:pointer}div#\:\$p > svg > foreignObject > section mjx-status{display:block;position:fixed;left:1em;bottom:1em;min-width:25%;padding:.2em .4em;border:1px solid #888;font-size:90%;background-color:#F8F8F8;color:black}div#\:\$p > svg > foreignObject > section foreignObject[data-mjx-xml]{font-family:initial;line-height:normal;overflow:visible}div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"] path[data-c], div#\:\$p > svg > foreignObject > section mjx-container[jax="SVG"] use[data-c]{stroke-width:3}@media print{div#\:\$p > svg > foreignObject > section mjx-container[jax=SVG] path[data-c],div#\:\$p > svg > foreignObject > section mjx-container[jax=SVG] use[data-c]{stroke-width:0}}div#\:\$p > svg > foreignObject > section img[data-marp-twemoji]{background:transparent;height:1em;margin:0 .05em 0 .1em;vertical-align:-.1em;width:1em}div#\:\$p > svg > foreignObject > section{--focus-outlineColor:light-dark(#0969da, #1f6feb);--fgColor-default:light-dark(#1f2328, #f0f6fc);--fgColor-muted:light-dark(#59636e, #9198a1);--fgColor-accent:light-dark(#0969da, #4493f8);--fgColor-success:light-dark(#1a7f37, #3fb950);--fgColor-attention:light-dark(#9a6700, #d29922);--fgColor-danger:light-dark(#d1242f, #f85149);--fgColor-done:light-dark(#8250df, #ab7df8);--bgColor-default:light-dark(#fff, #0d1117);--bgColor-muted:light-dark(#f6f8fa, #151b23);--bgColor-neutral-muted:light-dark(#818b981f, #656c7633);--bgColor-attention-muted:light-dark(#fff8c5, #bb800926);--borderColor-default:light-dark(#d1d9e0, #3d444d);--borderColor-muted:light-dark(#d1d9e0b3, #3d444db3);--borderColor-neutral-muted:light-dark(#d1d9e0b3, #3d444db3);--borderColor-accent-emphasis:light-dark(#0969da, #1f6feb);--borderColor-success-emphasis:light-dark(#1a7f37, #238636);--borderColor-attention-emphasis:light-dark(#9a6700, #9e6a03);--borderColor-danger-emphasis:light-dark(#cf222e, #da3633);--borderColor-done-emphasis:light-dark(#8250df, #8957e5);--color-prettylights-syntax-comment:light-dark(#59636e, #9198a1);--color-prettylights-syntax-constant:light-dark(#0550ae, #79c0ff);--color-prettylights-syntax-constant-other-reference-link:light-dark(#0a3069, #a5d6ff);--color-prettylights-syntax-entity:light-dark(#6639ba, #d2a8ff);--color-prettylights-syntax-storage-modifier-import:light-dark(#1f2328, #f0f6fc);--color-prettylights-syntax-entity-tag:light-dark(#0550ae, #7ee787);--color-prettylights-syntax-keyword:light-dark(#cf222e, #ff7b72);--color-prettylights-syntax-string:light-dark(#0a3069, #a5d6ff);--color-prettylights-syntax-variable:light-dark(#953800, #ffa657);--color-prettylights-syntax-brackethighlighter-unmatched:light-dark(#82071e, #f85149);--color-prettylights-syntax-brackethighlighter-angle:light-dark(#59636e, #9198a1);--color-prettylights-syntax-invalid-illegal-text:light-dark(#f6f8fa, #f0f6fc);--color-prettylights-syntax-invalid-illegal-bg:light-dark(#82071e, #8e1519);--color-prettylights-syntax-carriage-return-text:light-dark(#f6f8fa, #f0f6fc);--color-prettylights-syntax-carriage-return-bg:light-dark(#cf222e, #b62324);--color-prettylights-syntax-string-regexp:light-dark(#116329, #7ee787);--color-prettylights-syntax-markup-list:light-dark(#3b2300, #f2cc60);--color-prettylights-syntax-markup-heading:light-dark(#0550ae, #1f6feb);--color-prettylights-syntax-markup-italic:light-dark(#1f2328, #f0f6fc);--color-prettylights-syntax-markup-bold:light-dark(#1f2328, #f0f6fc);--color-prettylights-syntax-markup-deleted-text:light-dark(#82071e, #ffdcd7);--color-prettylights-syntax-markup-deleted-bg:light-dark(#ffebe9, #67060c);--color-prettylights-syntax-markup-inserted-text:light-dark(#116329, #aff5b4);--color-prettylights-syntax-markup-inserted-bg:light-dark(#dafbe1, #033a16);--color-prettylights-syntax-markup-changed-text:light-dark(#953800, #ffdfb6);--color-prettylights-syntax-markup-changed-bg:light-dark(#ffd8b5, #5a1e02);--color-prettylights-syntax-markup-ignored-text:light-dark(#d1d9e0, #f0f6fc);--color-prettylights-syntax-markup-ignored-bg:light-dark(#0550ae, #1158c7);--color-prettylights-syntax-meta-diff-range:light-dark(#8250df, #d2a8ff);--color-prettylights-syntax-sublimelinter-gutter-mark:light-dark(#818b98, #3d444d);--base-size-4:calc(var(--marpit-root-font-size, 1rem) * 0.25);--base-size-8:calc(var(--marpit-root-font-size, 1rem) * 0.5);--base-size-16:calc(var(--marpit-root-font-size, 1rem) * 1);--base-size-24:calc(var(--marpit-root-font-size, 1rem) * 1.5);--base-size-40:calc(var(--marpit-root-font-size, 1rem) * 2.5);--base-text-weight-normal:400;--base-text-weight-medium:500;--base-text-weight-semibold:600;--fontStack-monospace:ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;--fgColor-accent:Highlight;}/*!
  * Marp default theme.
  *
  * @theme default
@@ -139,9 +139,9 @@ section::after {
   font-size: 0.65em;
 }
 ;">
-<h1 id="%E9%83%BD%E5%B8%82%E3%81%AEai%E5%8C%96--%E5%88%86%E6%95%A3%E5%9E%8B%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%ABllm%E3%82%A2%E3%83%BC%E3%82%AD%E3%83%86%E3%82%AF%E3%83%81%E3%83%A3%E3%81%AE%E6%8A%80%E8%A1%93%E7%9A%84%E5%AE%9F%E8%A8%BC">都市のAI化 — 分散型ローカルLLMアーキテクチャの技術的実証</h1>
-<h2 id="soms-symbiotic-office-management-system">SOMS: Symbiotic Office Management System</h2>
-<p><strong>Core Hub Phase 0 — 1つのオフィスから都市全体へ</strong></p>
+<h1 id="%E9%83%BD%E5%B8%82%E3%81%AEai%E5%8C%96--%E5%88%86%E6%95%A3%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%ABllm%E3%81%AB%E3%82%88%E3%82%8B%E7%A9%BA%E9%96%93%E7%9F%A5%E8%83%BD%E3%82%A2%E3%83%BC%E3%82%AD%E3%83%86%E3%82%AF%E3%83%81%E3%83%A3">都市のAI化 — 分散ローカルLLMによる空間知能アーキテクチャ</h1>
+<h2 id="soms-symbiotic-office-management-system">SOMS (Symbiotic Office Management System)</h2>
+<p>Core Hub Phase 0 技術実証</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="2" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -273,40 +273,35 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="18">
-<h1 id="%E5%95%8F%E9%A1%8C%E6%8F%90%E8%B5%B7-%E9%83%BD%E5%B8%82%E3%81%AE%E6%83%85%E5%A0%B1%E5%8C%96%E3%81%AE%E6%A7%8B%E9%80%A0%E7%9A%84%E6%AC%A0%E9%99%A5">問題提起: 都市の情報化の構造的欠陥</h1>
+;" data-marpit-pagination-total="31">
+<h1 id="%E7%8F%BE%E8%A1%8C%E3%82%B9%E3%83%9E%E3%83%BC%E3%83%88%E3%82%B7%E3%83%86%E3%82%A3%E3%81%AE%E6%A7%8B%E9%80%A0%E7%9A%84%E8%AA%B2%E9%A1%8C">現行スマートシティの構造的課題</h1>
 <table>
 <thead>
 <tr>
-<th>現在のスマートシティ</th>
-<th>Core Hub アーキテクチャ</th>
+<th>標榜</th>
+<th>実態</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>データ → クラウドに吸い上げ</td>
-<td>データ → <strong>ローカルLLMが即座に処理</strong></td>
+<td>データ駆動の都市経営</td>
+<td>センサーデータはクラウドベンダーに集約され、自治体はAPI経由で自身のデータを購入する構造</td>
 </tr>
 <tr>
-<td>API料金を払って自分のデータにアクセス</td>
-<td><strong>自身の計算資源で完結</strong></td>
+<td>AIによるリアルタイム最適化</td>
+<td>推論サーバーはクラウド上。ネットワーク障害時に全機能が停止する単一障害点</td>
 </tr>
 <tr>
-<td>ネット切断 → 全機能停止</td>
-<td><strong>孤立状態でも自律動作継続</strong></td>
+<td>市民のための技術</td>
+<td>カメラ映像の保管・アクセス権限が外部企業に帰属。データ主権が自治体にない</td>
 </tr>
 <tr>
-<td>カメラ映像が外部サーバーに保存</td>
-<td><strong>RAM上で処理・即時破棄</strong></td>
-</tr>
-<tr>
-<td>数百ms〜秒のクラウド遅延</td>
-<td><strong>3-7秒でローカルLLM応答</strong></td>
+<td>リアルタイム分析</td>
+<td>クラウド往復による数百ms〜秒の遅延。エッジ処理との差は桁違い</td>
 </tr>
 </tbody>
 </table>
-<p><strong>核心的問い</strong>: データが生成される場所（建物）で処理されないのは、なぜか？</p>
-<p>→ 答え: ローカルでLLM推論できるGPUが安価になったのは最近だから。<strong>今なら可能。</strong></p>
+<p>共通する構造的問題: データの生成場所（建物）と処理場所（クラウド）の物理的分離。ローカルGPUによるLLM推論が実用水準に達した現在、この前提を見直す時期にある。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="3" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -438,10 +433,10 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="18">
-<h1 id="core-hub-%E5%BB%BA%E7%89%A9%E3%83%AC%E3%83%99%E3%83%AB%E3%81%AE%E8%87%AA%E5%BE%8Bai">Core Hub: 建物レベルの自律AI</h1>
+;" data-marpit-pagination-total="31">
+<h1 id="core-hub-%E3%82%A2%E3%83%BC%E3%82%AD%E3%83%86%E3%82%AF%E3%83%81%E3%83%A3-%E5%BB%BA%E7%89%A9%E5%8D%98%E4%BD%8D%E3%81%AE%E8%87%AA%E5%BE%8Bai%E6%8B%A0%E7%82%B9">Core Hub アーキテクチャ: 建物単位の自律AI拠点</h1>
 <pre is="marp-pre" data-auto-scaling="downscale-only"><code>                      ┌──────────────────┐
-                      │   City Data Hub  │  集約統計のみ受信 (~1MB/Hub/日)
+                      │   City Data Hub  │ 受信: 集約統計のみ (~1MB/Hub/日)
                       └────────┬─────────┘
                                │
               ┌────────────────┼────────────────┐
@@ -450,12 +445,9 @@ section::after {
         │  Office   │   │   Farm    │   │  Public   │
         │  Hub      │   │   Hub     │   │  Facility │
         │  LLM+GPU  │   │  LLM+GPU  │   │  LLM+GPU  │
-        └─────┬─────┘   └─────┬─────┘   └─────┬─────┘
-           [S][C]          [S][S]          [S][C]
-
-S = Sensor (SensorSwarm)   C = Camera (YOLO)
+        └───────────┘   └───────────┘   └───────────┘
 </code></pre>
-<p>各 Core Hub は <strong>同一アーキテクチャ</strong> — プロンプト（憲法）とセンサーの変更だけで領域特化。</p>
+<p>各建物にGPU1台のサーバーを配置し、センサーとカメラの全データをローカルで処理する。Hub間で生データの交換は行わない。システムプロンプト（行動原則）とセンサー構成の差し替えだけで、オフィス・農場・店舗・公共施設に展開できる。ネットワーク切断時も72時間の自律動作を継続する設計。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="4" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -587,25 +579,35 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="18">
-<h1 id="%E4%B8%89%E5%B1%A4%E3%83%87%E3%83%BC%E3%82%BF%E5%87%A6%E7%90%86%E3%83%A2%E3%83%87%E3%83%AB">三層データ処理モデル</h1>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>Layer 0: 物理世界 (Raw Signal)
-  │  センサー電圧値、カメラRGBピクセル
-  │  → 量が膨大、意味不明、保存不要
-  ▼
-Layer 1: Core Hub (Local Intelligence)
-  │  ローカルLLMがリアルタイム解釈
-  │  → 構造化JSON、イベントログ、判断記録
-  │  → この層でデータの 99% は破棄 (意味だけ抽出)
-  ▼
-Layer 2: City Data Hub (Aggregation)
-  │  複数 Core Hub の構造化データを集約
-  │  → 時空間分析、パターン抽出、都市規模の最適化
-  ▼
-Layer 3: 洞察と行動 (Insight &amp; Action)
-     都市計画への入力、政策提言、資源配分最適化
-</code></pre>
-<p><strong>50 GB → 1 MB = 50,000:1</strong> — これがデータ主権の技術的保証。</p>
+;" data-marpit-pagination-total="31">
+<h1 id="%E4%B8%89%E5%B1%A4%E3%83%87%E3%83%BC%E3%82%BF%E5%87%A6%E7%90%86%E3%83%A2%E3%83%87%E3%83%AB-500001-%E5%9C%A7%E7%B8%AE">三層データ処理モデル: 50,000:1 圧縮</h1>
+<table>
+<thead>
+<tr>
+<th>層</th>
+<th>データ量 (1拠点/日)</th>
+<th>処理内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Layer 0: 物理信号</td>
+<td>~50 GB</td>
+<td>カメラ映像(VGA 3fps) + 全センサー生値。RAM上で処理、ディスク保存なし</td>
+</tr>
+<tr>
+<td>Layer 1: Core Hub</td>
+<td>~500 MB</td>
+<td>ローカルLLM + YOLOによるリアルタイム解釈。構造化JSON・イベントログ・判断記録として保持。元データの99%を破棄</td>
+</tr>
+<tr>
+<td>Layer 2: City Data Hub</td>
+<td>~1 MB</td>
+<td>1時間集約の統計値のみ受信。気温平均、CO2ピーク、在室率、タスク完了数</td>
+</tr>
+</tbody>
+</table>
+<p>GDPRコンプライアンスの観点で注目すべき点: カメラ映像はYOLOの推論完了と同時に破棄される。Hub本体を物理的に撤去すれば、その拠点の全生データが消失する。「データを送信しない」が最も確実なプライバシー保護となる。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="5" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -737,14 +739,14 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="18">
-<h1 id="soms-core-hub-phase-0-%E3%81%AE%E6%9C%89%E6%A9%9F%E4%BD%93%E3%83%A1%E3%82%BF%E3%83%95%E3%82%A1%E3%83%BC">SOMS: Core Hub Phase 0 の有機体メタファー</h1>
-<p>システム全体を一つの <strong>有機体</strong> として設計する。</p>
+;" data-marpit-pagination-total="31">
+<h1 id="soms-core-hub-phase-0-%E3%81%AE%E5%85%A8%E4%BD%93%E6%A7%8B%E6%88%90">SOMS: Core Hub Phase 0 の全体構成</h1>
+<p>SOMS はオフィス1部屋を対象にした最初のCore Hub実装。GPU1台、Docker 11サービスで全機能が稼働する。</p>
 <table>
 <thead>
 <tr>
-<th>生物学的機能</th>
-<th>SOMS コンポーネント</th>
+<th>生体アナロジー</th>
+<th>コンポーネント</th>
 <th>技術</th>
 <th>実装状況</th>
 </tr>
@@ -752,48 +754,43 @@ section::after {
 <tbody>
 <tr>
 <td>脳</td>
-<td>中央知能 (ReAct推論)</td>
-<td>LLM (Qwen2.5 14B)</td>
-<td>5ツール, 3層安全機構</td>
+<td>ReAct認知ループ</td>
+<td>Qwen2.5 14B (Ollama, ROCm)</td>
+<td>5ツール, 最大5反復, 3層安全機構</td>
 </tr>
 <tr>
 <td>神経系</td>
 <td>メッセージバス</td>
-<td>MQTT + MCP (JSON-RPC 2.0)</td>
-<td>ESP32実通信済み</td>
+<td>MQTT (Mosquitto) + MCP (JSON-RPC 2.0)</td>
+<td>QoS 1, ESP32実機通信済み</td>
 </tr>
 <tr>
-<td>感覚器</td>
-<td>環境センシング</td>
-<td>BME680, MH-Z19C, YOLOv11</td>
-<td>3モニター, 4層姿勢分析</td>
+<td>視覚</td>
+<td>コンピュータビジョン</td>
+<td>YOLOv11 (検出+姿勢推定)</td>
+<td>3モニター, 4層活動分析, カメラ自動発見</td>
 </tr>
 <tr>
-<td>手足</td>
-<td>エッジデバイス</td>
-<td>SensorSwarm (Hub+Leaf)</td>
-<td>4種トランスポート</td>
+<td>触覚</td>
+<td>環境センサー</td>
+<td>BME680, MH-Z19C 他6種ドライバ</td>
+<td>SensorSwarm Hub+Leaf (4種トランスポート)</td>
 </tr>
 <tr>
 <td>声</td>
 <td>音声合成</td>
-<td>VOICEVOX + LLMテキスト生成</td>
-<td>拒否ストック100件事前生成</td>
+<td>VOICEVOX (Speaker 47)</td>
+<td>拒否ストック100件事前生成, 4トーン</td>
 </tr>
 <tr>
-<td>経済</td>
-<td>タスク経済</td>
-<td>複式簿記 + デマレッジ</td>
-<td>PWAウォレットアプリ</td>
-</tr>
-<tr>
-<td>外部協力者</td>
-<td>人間</td>
-<td>ダッシュボード (キオスク)</td>
-<td>2段階重複検知</td>
+<td>経済系</td>
+<td>タスク報酬</td>
+<td>複式簿記 (PostgreSQL)</td>
+<td>デマレッジ2%/日, 5%焼却, PWAウォレット</td>
 </tr>
 </tbody>
 </table>
+<p>設計方針: Node-RED・LangChain・Kubernetesを排し、Python + MQTT による純粋なイベント駆動。LLMがシステムのソースコードを直接理解できる透明性を優先。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="6" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -925,25 +922,56 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="18">
-<h1 id="react-%E8%AA%8D%E7%9F%A5%E3%83%AB%E3%83%BC%E3%83%97--%E5%A4%9A%E5%B1%A4%E5%AE%89%E5%85%A8%E6%A9%9F%E6%A7%8B">ReAct 認知ループ + 多層安全機構</h1>
-<p><strong>Think → Act → Observe</strong> を最大5反復。30秒サイクル or イベント駆動。</p>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>[トリガー] ← MQTT イベント (3秒バッチ) or 30秒定期
-    ▼
-[THINK]    WorldModel → LLM に状態 + 行動原則を送信
-    ▼
-[ACT]      LLM が判断 → ツール呼び出し → 安全検証 → 実行
-    ▼
-[OBSERVE]  結果をフィードバック → 追加行動を判断 (最大5反復)
-    ▼
-[完了]     追加行動不要 → ループ終了
+;" data-marpit-pagination-total="31">
+<h1 id="4%E5%B1%A4%E3%82%A2%E3%83%BC%E3%82%AD%E3%83%86%E3%82%AF%E3%83%81%E3%83%A3%E3%81%A86%E3%81%A4%E3%81%AE%E8%A8%AD%E8%A8%88%E5%8E%9F%E5%89%87">4層アーキテクチャと6つの設計原則</h1>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code>┌────────────────────────────────────────────────────────────┐
+│               人間インターフェース層                          │
+│  Dashboard (React 19)  |  Voice (VOICEVOX)  |  Wallet (PWA) │
+├────────────────────────────────────────────────────────────┤
+│                     中央知能層                               │
+│  Brain: ReAct Loop | WorldModel | ToolExecutor | Sanitizer  │
+├────────────────────────────────────────────────────────────┤
+│                     知覚層                                  │
+│  YOLOv11 (検出/姿勢) | カメラ自動検出 | 4層活動分析          │
+├────────────────────────────────────────────────────────────┤
+│                     エッジ層                                │
+│  SensorSwarm (Hub+Leaf) | unified-node | 6種ドライバ | MCP  │
+└────────────────────────────────────────────────────────────┘
 </code></pre>
-<p><strong>3層安全機構</strong> (Phase 0 で実装済み):</p>
-<ul>
-<li><strong>Layer 3</strong>: 重複検知フィルタ + speak レート制限 (1回/サイクル)</li>
-<li><strong>Layer 4</strong>: サイクルレート制限 (最小25秒間隔)</li>
-<li><strong>Layer 5</strong>: 行動履歴追跡 (30分窓、反復行動を抑止)</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>原則</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>自律性 &gt; 自動化</td>
+<td>IF-THENルールではなく、LLM推論による目的関数指向の判断</td>
+</tr>
+<tr>
+<td>憲法的AI + 安全弁</td>
+<td>言語原則(システムプロンプト) + ハードコード制約(Sanitizer)の二重構造</td>
+</tr>
+<tr>
+<td>イベント駆動</td>
+<td>Python + MQTT のみ。重量級ミドルウェアを排除</td>
+</tr>
+<tr>
+<td>コードファースト</td>
+<td>ビジュアルプログラミング不使用。全ロジックをコードで記述</td>
+</tr>
+<tr>
+<td>善意モデル</td>
+<td>認証なし・性善説。報酬は緊急度と感謝のシグナル</td>
+</tr>
+<tr>
+<td>ローカルファースト</td>
+<td>全処理オンプレミス。クラウド送信ゼロ</td>
+</tr>
+</tbody>
+</table>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="7" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -1075,45 +1103,51 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="18">
-<h1 id="mcp-over-mqtt-ai-%E3%83%87%E3%83%90%E3%82%A4%E3%82%B9%E9%80%9A%E4%BF%A1%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%AB">MCP over MQTT: AI-デバイス通信プロトコル</h1>
-<p><strong>MCP</strong> (Model Context Protocol) を MQTT 上に実装。</p>
+;" data-marpit-pagination-total="31">
+<h1 id="react-%E8%AA%8D%E7%9F%A5%E3%83%AB%E3%83%BC%E3%83%97">ReAct 認知ループ</h1>
+<p>30秒の定期サイクル、またはMQTTイベント到着時にバッチ遅延3秒で起動。</p>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code>[トリガー] ← MQTT イベント (3秒バッチ) or 30秒定期
+    ▼
+[THINK]  WorldModelからゾーン状態取得 → LLMに送信
+         (温度, CO2, 湿度, 照度, 在室人数, 活動レベル, 姿勢, 直近イベント50件)
+    ▼
+[ACT]    LLMがツール呼び出し (0〜複数) → Sanitizer安全検証 → 実行
+    ▼
+[OBSERVE] 実行結果をLLMにフィードバック → 追加行動を判断
+    ▼
+[完了]   追加行動不要と判断 → サイクル終了 (最大5反復で打ち切り)
+</code></pre>
 <table>
 <thead>
 <tr>
-<th>特性</th>
-<th>HTTP</th>
-<th>MQTT</th>
+<th>パラメータ</th>
+<th>値</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>通信モデル</td>
-<td>リクエスト/レスポンス</td>
-<td>パブリッシュ/サブスクライブ</td>
+<td>最大反復回数</td>
+<td>5回/サイクル</td>
 </tr>
 <tr>
-<td>LLM推論とデバイスの時間差</td>
-<td>タイムアウトリスク</td>
-<td>ブローカーが吸収</td>
+<td>LLMタイムアウト</td>
+<td>120秒</td>
 </tr>
 <tr>
-<td>マイコン実装</td>
-<td>重い</td>
-<td>軽量 (最小ヘッダ)</td>
+<td>MCPデバイス応答</td>
+<td>10秒</td>
 </tr>
 <tr>
-<td>耐障害性</td>
-<td>再実装が必要</td>
-<td>QoS + LWT 組み込み</td>
+<td>最小サイクル間隔</td>
+<td>25秒</td>
+</tr>
+<tr>
+<td>イベントバッチ遅延</td>
+<td>3秒</td>
 </tr>
 </tbody>
 </table>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>Brain → mcp/{device_id}/request/call_tool   (JSON-RPC 2.0)
-Edge  → mcp/{device_id}/response/{req_id}   (JSON-RPC 2.0)
-Telemetry → office/{zone}/sensor/{device_id}/{channel} → {&quot;value&quot;: X}
-</code></pre>
-<p>Phase 3 (都市展開) まで <strong>プロトコル変更不要</strong> — 設計の正しさが実証された。</p>
+<p>正常時は「何もしない」で1反復で終了する。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="8" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -1245,54 +1279,75 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="18">
-<h1 id="sensorswarm-%E3%82%B9%E3%82%B1%E3%83%BC%E3%83%A9%E3%83%96%E3%83%AB%E3%81%AA%E3%82%A8%E3%83%83%E3%82%B8%E5%B1%A4">SensorSwarm: スケーラブルなエッジ層</h1>
-<p>都市AI化の精度は末端センシングの密度に比例する。</p>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>[Core Hub / Brain]
-       │ MQTT
-  ┌────┴────┐
-  │ SwarmHub│ (WiFi + MQTT, MCP対応)
-  └──┬──┬──┬┘
-     │  │  │  ESP-NOW / UART / I2C / BLE
-   [L] [L] [L]  Leaf nodes (WiFi不要, 低消費電力)
+;" data-marpit-pagination-total="31">
+<h1 id="worldmodel-%E3%82%BB%E3%83%B3%E3%82%B5%E3%83%BC%E3%83%95%E3%83%A5%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3%E3%81%A8%E3%82%A4%E3%83%99%E3%83%B3%E3%83%88%E6%A4%9C%E7%9F%A5">WorldModel: センサーフュージョンとイベント検知</h1>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-python">WorldModel
+├── zones: <span class="hljs-type">Dict</span>[zone_id] → ZoneState
+│   ├── environment: { temperature, humidity, co2, illuminance }
+│   ├── occupancy: { person_count, activity_class, posture_status }
+│   ├── devices: <span class="hljs-type">Dict</span>[device_id] → { power_state, specific_state }
+│   └── events: <span class="hljs-type">List</span>[Event]  <span class="hljs-comment"># 直近50件</span>
+└── sensor_fusion: 指数減衰加重平均
 </code></pre>
+<p><strong>センサーフュージョン</strong>: 複数センサーの読み取り値を指数減衰加重平均で統合。</p>
 <table>
 <thead>
 <tr>
-<th>特性</th>
-<th>Hub</th>
-<th>Leaf</th>
+<th>センサー</th>
+<th>半減期</th>
+<th>設計意図</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>WiFi</td>
-<td>あり (MQTT接続)</td>
-<td><strong>不要</strong> (Hub経由)</td>
+<td>温度</td>
+<td>120秒</td>
+<td>空調効果の時定数に合わせた平滑化</td>
 </tr>
 <tr>
-<td>プロトコル</td>
-<td>MCP (JSON-RPC 2.0)</td>
-<td>バイナリ (5-245B, XOR checksum)</td>
+<td>CO2</td>
+<td>60秒</td>
+<td>窓開閉・人の出入りへの追従性確保</td>
 </tr>
 <tr>
-<td>デバイスID</td>
-<td><code>swarm_hub_01</code></td>
-<td><code>swarm_hub_01.leaf_env_01</code> (ドット表記)</td>
-</tr>
-<tr>
-<td>トランスポート</td>
-<td>WiFi</td>
-<td>ESP-NOW / UART / I2C / BLE (4種)</td>
-</tr>
-<tr>
-<td>消費電力</td>
-<td>通常</td>
-<td><strong>極低</strong> (WiFiスタック不要)</td>
+<td>在室人数</td>
+<td>30秒</td>
+<td>YOLO検出結果の即時反映</td>
 </tr>
 </tbody>
 </table>
-<p>Hub経由でBrainからは各Leafが独立センサーとして見える → <strong>建物全体を安価に高密度カバー</strong></p>
+<p><strong>イベント検知</strong>: 状態変化を検出し、クールダウン付きで発火。</p>
+<table>
+<thead>
+<tr>
+<th>イベント</th>
+<th>条件</th>
+<th>クールダウン</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CO2閾値超過</td>
+<td>&gt; 1000ppm</td>
+<td>10分</td>
+</tr>
+<tr>
+<td>温度急変</td>
+<td>3度以上/短時間</td>
+<td>なし</td>
+</tr>
+<tr>
+<td>長時間座位</td>
+<td>同姿勢30分以上</td>
+<td>1時間</td>
+</tr>
+<tr>
+<td>センサー改竄疑い</td>
+<td>急激な値変動</td>
+<td>5分</td>
+</tr>
+</tbody>
+</table>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="9" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -1424,59 +1479,73 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="18">
-<h1 id="worldmodel-%E3%82%BB%E3%83%B3%E3%82%B5%E3%83%BC%E3%83%95%E3%83%A5%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3">WorldModel: センサーフュージョン</h1>
-<p>複数センサーを <strong>指数減衰加重平均</strong> で統合。新しい値ほど重みが大きい。</p>
+;" data-marpit-pagination-total="31">
+<h1 id="llm%E3%83%84%E3%83%BC%E3%83%AB-5%E7%A8%AE%E3%81%AE%E6%A9%9F%E8%83%BD%E3%81%A8%E4%BD%BF%E3%81%84%E5%88%86%E3%81%91">LLMツール: 5種の機能と使い分け</h1>
 <table>
 <thead>
 <tr>
-<th>センサー</th>
-<th>半減期</th>
-<th>設計意図</th>
+<th>ツール</th>
+<th>機能</th>
+<th>副作用</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>温度</td>
-<td>120秒</td>
-<td>緩やかな変化を安定的に追従</td>
+<td><code>create_task</code></td>
+<td>ダッシュボードにタスク掲示 + 音声告知</td>
+<td>人間への依頼発生</td>
 </tr>
 <tr>
-<td>CO2</td>
-<td>60秒</td>
-<td>在室状況の変化に敏感に反応</td>
+<td><code>send_device_command</code></td>
+<td>MCP over MQTT経由のエッジデバイス制御</td>
+<td>物理デバイス操作</td>
 </tr>
 <tr>
-<td>在室人数</td>
-<td>30秒</td>
-<td>リアルタイム性を最優先</td>
+<td><code>speak</code></td>
+<td>音声のみのアナウンス (70文字以内)</td>
+<td>発話のみ、ダッシュボードに記録なし</td>
+</tr>
+<tr>
+<td><code>get_zone_status</code></td>
+<td>ゾーンの詳細状態をJSON取得</td>
+<td>なし (読み取り専用)</td>
+</tr>
+<tr>
+<td><code>get_active_tasks</code></td>
+<td>既存タスク一覧取得</td>
+<td>なし (読み取り専用)</td>
 </tr>
 </tbody>
 </table>
-<p><strong>イベント検知</strong> — 状態変化を検出し、クールダウン付きで発火:</p>
+<p><strong>ツール選択の指針</strong> (システムプロンプトに定義):</p>
 <table>
 <thead>
 <tr>
-<th>イベント</th>
-<th>条件</th>
-<th>クールダウン</th>
+<th>状況</th>
+<th>選択するツール</th>
+<th>理由</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>CO2閾値超過</td>
-<td>&gt; 1000ppm</td>
-<td>10分</td>
+<td>CO2 1000ppm超 + 在室者あり</td>
+<td><code>create_task</code></td>
+<td>物理的な換気作業が必要</td>
 </tr>
 <tr>
-<td>温度急変</td>
-<td>3度以上/短時間</td>
-<td>—</td>
+<td>30分間同一姿勢</td>
+<td><code>speak</code> (caringトーン)</td>
+<td>助言であり作業依頼ではない</td>
 </tr>
 <tr>
-<td>長時間座位</td>
-<td>同姿勢30分以上</td>
-<td>1時間</td>
+<td>センサー値の急変</td>
+<td><code>speak</code> (humorousトーン)</td>
+<td>改竄の可能性を軽く指摘</td>
+</tr>
+<tr>
+<td>全指標正常</td>
+<td>何もしない</td>
+<td>speakも禁止。無意味な報告は行わない</td>
 </tr>
 </tbody>
 </table>
@@ -1611,50 +1680,44 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="18">
-<h1 id="perception-yolov11--4%E5%B1%A4%E6%B4%BB%E5%8B%95%E5%88%86%E6%9E%90">Perception: YOLOv11 + 4層活動分析</h1>
-<p><strong>Tier 1: 高速検出</strong> (5秒間隔, QVGA)<br />
-→ YOLO11s.pt で人物検出 (在室カウント)</p>
-<p><strong>Tier 2: 姿勢推定</strong> (人物検出時のみ)<br />
-→ YOLO11s-pose.pt でスケルトン抽出</p>
-<p><strong>4層時間バッファ</strong> (活動パターンの長期追跡):</p>
+;" data-marpit-pagination-total="31">
+<h1 id="%E3%82%BF%E3%82%B9%E3%82%AF%E3%82%B9%E3%82%B1%E3%82%B8%E3%83%A5%E3%83%BC%E3%83%AA%E3%83%B3%E3%82%B0-%E6%96%87%E8%84%88%E5%AF%BE%E5%BF%9C%E3%83%87%E3%82%A3%E3%82%B9%E3%83%91%E3%83%83%E3%83%81">タスクスケジューリング: 文脈対応ディスパッチ</h1>
+<p>タスクは作成と配信が分離されており、状況に応じて配信タイミングを制御する。</p>
 <table>
 <thead>
 <tr>
-<th>層</th>
-<th>時間解像度</th>
-<th>保持期間</th>
-<th>用途</th>
+<th>条件</th>
+<th>判定</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Tier 0</td>
-<td>30-50ms</td>
-<td>数秒</td>
-<td>瞬間姿勢</td>
+<td>緊急度4 (CRITICAL)</td>
+<td>即時配信</td>
 </tr>
 <tr>
-<td>Tier 1</td>
-<td>100-500ms</td>
-<td>数分</td>
-<td>動作パターン</td>
+<td>緊急度3 + ゾーンに在室者あり</td>
+<td>即時配信</td>
 </tr>
 <tr>
-<td>Tier 2</td>
-<td>1-4s</td>
-<td>数十分</td>
-<td>中期傾向</td>
+<td>ゾーンに在室者なし</td>
+<td>キュー待機 (在室者検知まで保留)</td>
 </tr>
 <tr>
-<td>Tier 3</td>
-<td>~1h</td>
-<td>4時間</td>
-<td>長時間追跡</td>
+<td>22時以降 + 低緊急度</td>
+<td>翌朝まで保留</td>
+</tr>
+<tr>
+<td>キュー滞留24時間超過</td>
+<td>強制配信</td>
 </tr>
 </tbody>
 </table>
-<p>カメラ自動検出: ネットワーク ping sweep + YOLO 検証 → プラグアンドプレイ</p>
+<p><strong>重複検知</strong> (2段階):</p>
+<ul>
+<li>Stage 1: title + location の完全一致</li>
+<li>Stage 2: zone + task_type の一致</li>
+</ul>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="11" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -1786,50 +1849,50 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="18">
-<h1 id="%E5%85%B1%E7%94%9F%E7%B5%8C%E6%B8%88-%E8%A4%87%E5%BC%8F%E7%B0%BF%E8%A8%98--%E3%83%87%E3%83%9E%E3%83%AC%E3%83%83%E3%82%B8">共生経済: 複式簿記 + デマレッジ</h1>
-<p><strong>物理タスクをAIが生成し、人間が遂行し、経済が回る。</strong></p>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>┌─────────────┐     タスク生成      ┌──────────────┐
-│  Brain LLM  │ ──────────────────→ │  Dashboard   │
-│  (判断)     │                     │  (キオスク)   │
-└─────────────┘                     └──────┬───────┘
-                                          │ 完了報告
-┌─────────────┐     クレジット付与   ┌─────┴────────┐
-│  System     │ ──────────────────→ │  User        │
-│  Wallet     │  複式簿記 (DEBIT/   │  Wallet      │
-│  (ID=0)     │   CREDIT)           │              │
-└─────────────┘                     └──────────────┘
+;" data-marpit-pagination-total="31">
+<h1 id="%E5%A4%9A%E5%B1%A4%E5%AE%89%E5%85%A8%E6%A9%9F%E6%A7%8B">多層安全機構</h1>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code>LLM出力 → [憲法的AI] → [Sanitizer] → [行動履歴] → 物理デバイス
 </code></pre>
+<p><strong>第1層: 憲法的AI</strong> (システムプロンプトの行動原則)<br />
+安全最優先 / 報酬は難易度比例 (500〜5000) / タスク作成前に既存確認必須 / 正常時は何もしない / 個人特定情報を扱わない</p>
+<p><strong>第2層: Sanitizer</strong> (ハードコードされた物理限界)</p>
 <table>
 <thead>
 <tr>
-<th>機能</th>
-<th>実装</th>
+<th>パラメータ</th>
+<th>許容範囲</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>台帳</td>
-<td>複式簿記 (PostgreSQL, トランザクションID付き冪等性保証)</td>
+<td>温度設定</td>
+<td>18〜28℃</td>
 </tr>
 <tr>
-<td>タスク報酬</td>
-<td>500〜5000ポイント (LLMが動的決定)</td>
+<td>ポンプ動作</td>
+<td>最大60秒</td>
 </tr>
 <tr>
-<td>デバイスXP</td>
-<td>運用貢献度 → 動的乗数 (1.0x〜3.0x)</td>
+<td>報酬上限</td>
+<td>5000</td>
 </tr>
 <tr>
-<td>デフレ機構</td>
-<td>手数料5%焼却 + デマレッジ2%/日</td>
+<td>緊急度</td>
+<td>0〜4</td>
 </tr>
 <tr>
-<td>ウォレットPWA</td>
-<td>残高確認 / QRスキャン / P2P送金 / 履歴</td>
+<td>タスク作成レート</td>
+<td>10件/時間</td>
 </tr>
 </tbody>
 </table>
+<p><strong>第3層: 行動履歴 + レート制限</strong></p>
+<ul>
+<li>重複ツール呼び出しフィルタ + speakレート制限 (1回/サイクル)</li>
+<li>サイクル間隔の強制 (最小25秒)</li>
+<li>30分間の行動履歴を保持し、同一アクションの反復を抑止</li>
+</ul>
+<p>LLMのハルシネーションは言語制約だけでは防げないため、物理的安全に関わるパラメータはコードで強制する。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="12" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -1961,20 +2024,47 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="18">
-<h1 id="%E3%82%B7%E3%83%8A%E3%83%AA%E3%82%AA-%E5%B5%90%E3%81%AE%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%AB">シナリオ: 嵐のプロトコル</h1>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>[T+0s]   気圧急低下 + 天気API「15分後に豪雨」
-[T+3s]   Brain: 被害リスクを判断 → 窓の状態を確認
-[T+4s]   窓3: スマートアクチュエータ → MCP経由で自動閉鎖
-         窓5: 手動式 → 緊急タスク生成 (報酬: 5000, 緊急度: 最高)
-[T+5s]   VOICEVOX音声通知 (alertトーン) + ダッシュボード表示
-[T+30s]  人間が受諾 → 窓を閉める → 完了報告 → クレジット付与
+;" data-marpit-pagination-total="31">
+<h1 id="mcp-over-mqtt-iot%E5%90%91%E3%81%91%E3%83%97%E3%83%AD%E3%83%88%E3%82%B3%E3%83%AB%E8%A8%AD%E8%A8%88">MCP over MQTT: IoT向けプロトコル設計</h1>
+<p>MCP (Model Context Protocol) は通常HTTP/stdio上で動作するが、IoT環境にはMQTTが適合する。</p>
+<table>
+<thead>
+<tr>
+<th>比較項目</th>
+<th>HTTP</th>
+<th>MQTT</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LLM推論(秒) vs デバイス応答(ms〜分)の時間差</td>
+<td>タイムアウトリスク</td>
+<td>ブローカーが吸収</td>
+</tr>
+<tr>
+<td>ESP32での実装負荷</td>
+<td>HTTPスタックが重い</td>
+<td>MQTTクライアントは軽量</td>
+</tr>
+<tr>
+<td>再送制御・デバイス生死監視</td>
+<td>自前実装が必要</td>
+<td>QoS + LWT が標準装備</td>
+</tr>
+</tbody>
+</table>
+<p><strong>トピック設計</strong>:</p>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code># テレメトリ (per-channel)
+office/{zone}/sensor/{device_id}/{channel} → {&quot;value&quot;: X}
+
+# MCP制御 (JSON-RPC 2.0)
+mcp/{device_id}/request/call_tool  → {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;method&quot;:&quot;call_tool&quot;,&quot;params&quot;:{...},&quot;id&quot;:&quot;uuid&quot;}
+mcp/{device_id}/response/{req_id}  → {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;result&quot;:{...},&quot;id&quot;:&quot;uuid&quot;}
+
+# ハートビート (60秒間隔)
+{topic_prefix}/heartbeat → {&quot;status&quot;:&quot;online&quot;,&quot;uptime&quot;:N}
 </code></pre>
-<ul>
-<li><strong>自動化と人間協働のハイブリッド</strong></li>
-<li>報酬は緊急度に応じてLLMが <strong>動的に決定</strong> (通常の5倍)</li>
-<li>2段階重複検知でタスクの二重発行を防止</li>
-</ul>
+<p>SensorSwarmのLeafはドット表記 (<code>swarm_hub_01.leaf_env_01</code>) でWorldModelへの統合にコード変更不要。Phase 3までプロトコル変更なし。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="13" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -2106,23 +2196,47 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="18">
-<h1 id="%E3%82%B7%E3%83%8A%E3%83%AA%E3%82%AA-%E9%83%BD%E5%B8%82%E3%81%AE%E5%91%BC%E5%90%B8%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3%E7%99%BA%E8%A6%8B">シナリオ: 都市の呼吸パターン発見</h1>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code>Phase 0 (単一オフィス):
-  CO2ピーク 9:00, 13:00 — 人数変動と相関
-
-Phase 2 (複数拠点):
-  Hub-A (オフィス街): CO2ピーク 9:00, 13:00
-  Hub-B (商業施設):   CO2ピーク 11:00, 15:00, 19:00
-  Hub-C (住宅街):     CO2ピーク 7:00, 20:00
-
-Phase 3 (都市規模):
-  → 人の流れが可視化される:
-    住宅街(朝) → オフィス街(日中) → 商業施設(夕方) → 住宅街(夜)
-  → 大気質の悪化パターンを検出
-  → 都市計画 (換気設備・緑地配置) への入力データに
+;" data-marpit-pagination-total="31">
+<h1 id="sensorswarm-hubleaf-2%E5%B1%A4%E3%82%A8%E3%83%83%E3%82%B8%E3%83%8D%E3%83%83%E3%83%88%E3%83%AF%E3%83%BC%E3%82%AF">SensorSwarm: Hub+Leaf 2層エッジネットワーク</h1>
+<p>WiFi接続のセンサーノードのみではAP帯域・チャネル干渉がボトルネックとなる。SensorSwarmはHub+Leafの2層構造により、WiFiスタックを持たないLeafノードでの低消費電力運用を実現する。</p>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code>[Brain] ←MQTT→ [SwarmHub (ESP32, WiFi+MQTT)]
+                    ├── ESP-NOW → [Leaf: 温湿度] 無線200m, バッテリー駆動
+                    ├── UART    → [Leaf: PIR+照度] 有線, Pi Pico
+                    ├── I2C     → [Leaf: ドアセンサー] 有線, ATtiny
+                    └── BLE     → [Leaf: 未実装, nRF54ターゲット]
 </code></pre>
-<p>各Hubの <strong>1時間平均CO2値のみ</strong> で都市知能が創発する。</p>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>Hub</th>
+<th>Leaf</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WiFi</td>
+<td>あり (MQTT接続)</td>
+<td>不要 (Hub経由)</td>
+</tr>
+<tr>
+<td>通信プロトコル</td>
+<td>MCP (JSON-RPC 2.0)</td>
+<td>バイナリ (5-245B, MAGIC <code>0x53</code>, XOR checksum)</td>
+</tr>
+<tr>
+<td>デバイスID</td>
+<td><code>swarm_hub_01</code></td>
+<td><code>swarm_hub_01.leaf_env_01</code> (ドット表記)</td>
+</tr>
+<tr>
+<td>トランスポート</td>
+<td>WiFi</td>
+<td>ESP-NOW / UART / I2C / BLE (4種)</td>
+</tr>
+</tbody>
+</table>
+<p>HubがLeafのバイナリメッセージをデコードし、per-channel MQTTとして再発行。Brain側からはLeafが独立したセンサーとして見える。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="14" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -2254,40 +2368,73 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="18">
-<h1 id="%E3%83%87%E3%83%BC%E3%82%BF%E4%B8%BB%E6%A8%A9-%E7%89%A9%E7%90%86%E7%9A%84%E4%BF%9D%E8%A8%BC">データ主権: 物理的保証</h1>
+;" data-marpit-pagination-total="31">
+<h1 id="%E3%82%A8%E3%83%83%E3%82%B8%E3%83%87%E3%83%90%E3%82%A4%E3%82%B9-%E3%83%95%E3%82%A1%E3%83%BC%E3%83%A0%E3%82%A6%E3%82%A7%E3%82%A2%E3%81%A8%E3%83%89%E3%83%A9%E3%82%A4%E3%83%90">エッジデバイス: ファームウェアとドライバ</h1>
+<p><strong>MicroPython ファームウェア (量産向け)</strong></p>
 <table>
 <thead>
 <tr>
-<th>層</th>
-<th>データ量 (1 Core Hub/日)</th>
-<th>外部送信</th>
+<th>種別</th>
+<th>特徴</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>生信号 (映像 + センサー)</td>
-<td>~50 GB</td>
-<td>不可</td>
+<td>unified-node</td>
+<td><code>config.json</code> でセンサーを宣言的に定義。SensorRegistryによる遅延初期化・アドレス自動検出・エラー分離</td>
 </tr>
 <tr>
-<td>構造化イベント</td>
-<td>~500 MB</td>
-<td>Hub内保存</td>
-</tr>
-<tr>
-<td>City Hub への送信</td>
-<td><strong>~1 MB</strong></td>
-<td>集約統計のみ</td>
+<td>sensor-02</td>
+<td>BME680 + MH-Z19C 専用 (レガシー)</td>
 </tr>
 </tbody>
 </table>
-<ul>
-<li>映像は RAM 上でのみ処理し、ディスクに保存しない</li>
-<li>Core Hub を物理的に撤去 → 全生データ消失 = <strong>物理的データ主権</strong></li>
-<li>GDPR / 個人情報保護法: データを送らないことが最強のコンプライアンス</li>
-<li>Hub間通信: mTLS (相互認証) + TLS 1.3</li>
-</ul>
+<p><strong>C++ / PlatformIO ファームウェア (カメラ向け)</strong><br />
+camera-node: ESP32 WROVER + OV2640</p>
+<p><strong>共通ライブラリ <code>soms_mcp.py</code></strong>: WiFi+MQTT接続管理 (自動再接続) / config.json読み込み / per-channelテレメトリ送信 / MCPツール登録 (<code>register_tool(name, callback)</code>) / ハートビート (60秒)</p>
+<p><strong>センサードライバ 6種</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>ドライバ</th>
+<th>バス</th>
+<th>計測チャネル</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BME680</td>
+<td>I2C</td>
+<td>temperature, humidity, pressure, gas_resistance</td>
+</tr>
+<tr>
+<td>MH-Z19C</td>
+<td>UART</td>
+<td>co2</td>
+</tr>
+<tr>
+<td>DHT22/DHT11</td>
+<td>GPIO</td>
+<td>temperature, humidity</td>
+</tr>
+<tr>
+<td>PIR</td>
+<td>GPIO</td>
+<td>motion</td>
+</tr>
+<tr>
+<td>BH1750</td>
+<td>I2C</td>
+<td>illuminance</td>
+</tr>
+<tr>
+<td>SHT3x</td>
+<td>I2C</td>
+<td>temperature, humidity (高精度)</td>
+</tr>
+</tbody>
+</table>
+<p>診断スクリプト17本 (<code>edge/tools/</code>): I2Cスキャン、UARTテスト、LED点滅、ハードウェア検証等。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="15" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -2419,43 +2566,45 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="18">
-<h1 id="%E9%83%BD%E5%B8%82%E5%B1%95%E9%96%8B%E3%83%AD%E3%83%BC%E3%83%89%E3%83%9E%E3%83%83%E3%83%97">都市展開ロードマップ</h1>
+;" data-marpit-pagination-total="31">
+<h1 id="perception-%E3%83%97%E3%83%A9%E3%82%AC%E3%83%96%E3%83%AB%E3%83%A2%E3%83%8B%E3%82%BF%E3%83%BC">Perception: プラガブルモニター</h1>
+<p>モニターはYAML設定 (<code>config/monitors.yaml</code>) で宣言的に定義。</p>
 <table>
 <thead>
 <tr>
-<th>Phase</th>
-<th>内容</th>
-<th>規模</th>
+<th>モニター</th>
+<th>頻度</th>
+<th>解像度</th>
+<th>処理内容</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>0</strong> (現在)</td>
-<td>単一オフィスで E2E フロー実証</td>
-<td>1 Hub</td>
+<td>OccupancyMonitor</td>
+<td>5秒</td>
+<td>QVGA</td>
+<td>yolo11s.pt による人物検出。在室カウント</td>
 </tr>
 <tr>
-<td><strong>1</strong></td>
-<td>多ゾーン化、Data Lake + Data Mart 実装</td>
-<td>1 Hub, 10+ ノード</td>
+<td>ActivityMonitor</td>
+<td>3秒</td>
+<td>VGA</td>
+<td>2段階推論: 人物検出 → 人がいれば姿勢推定 (yolo11s-pose.pt)</td>
 </tr>
 <tr>
-<td><strong>2</strong></td>
-<td>複数拠点 Core Hub + City Data Hub</td>
-<td>2-3 Hub</td>
-</tr>
-<tr>
-<td><strong>3</strong></td>
-<td>都市内展開、ゼロタッチ配備</td>
-<td>10+ Hub</td>
+<td>WhiteboardMonitor</td>
+<td>60秒</td>
+<td>VGA</td>
+<td>Cannyエッジ検出によるホワイトボード汚れ度合い判定</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Phase 0 達成済み</strong> (変更不要な設計):<br />
-MCP over MQTT / ReAct ループ + 3層安全機構 / WorldModel + センサーフュージョン /<br />
-SensorSwarm (Hub-Leaf) / 憲法的AI / Per-channel テレメトリ / タスク経済 + 複式簿記</p>
-<p><strong>Phase 1 で追加</strong>: Event Store (TimescaleDB) / Data Mart 集約パイプライン / OTA更新</p>
+<p><strong>カメラ自動検出</strong> (3段階パイプライン):</p>
+<ol>
+<li>ネットワーク上のカメラポート (80, 81, 554, 8554) を非同期TCP接続でスキャン</li>
+<li>候補URLパターンでOpenCV接続テスト</li>
+<li>YOLOで「映像が実際に映っている」ことを確認</li>
+</ol>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="16" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -2587,44 +2736,47 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="18">
-<h1 id="%E3%83%91%E3%83%95%E3%82%A9%E3%83%BC%E3%83%9E%E3%83%B3%E3%82%B9%E5%AE%9F%E6%B8%AC%E5%80%A4">パフォーマンス実測値</h1>
-<p>AMD RX 9700 (RDNA4) + Qwen2.5 14B — GPU サーバー1台で完結。</p>
+;" data-marpit-pagination-total="31">
+<h1 id="%E6%B4%BB%E5%8B%95%E5%88%86%E6%9E%90-4%E5%B1%A4%E6%99%82%E9%96%93%E3%83%90%E3%83%83%E3%83%95%E3%82%A1">活動分析: 4層時間バッファ</h1>
+<p>生フレームから長時間の姿勢傾向まで、段階的に時間解像度を落としながら保持する。</p>
 <table>
 <thead>
 <tr>
-<th>指標</th>
-<th>値</th>
+<th>層</th>
+<th>時間解像度</th>
+<th>保持期間</th>
+<th>検出内容</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>LLM推論速度</td>
-<td>~51 tok/s (安定)</td>
+<td>Tier 0 (raw)</td>
+<td>毎フレーム</td>
+<td>60秒</td>
+<td>瞬間姿勢</td>
 </tr>
 <tr>
-<td>正常データ応答</td>
-<td>3.3秒</td>
+<td>Tier 1</td>
+<td>10秒ごと</td>
+<td>10分</td>
+<td>短期の動作パターン (歩行/着座/起立)</td>
 </tr>
 <tr>
-<td>ツール呼び出し応答</td>
-<td>6.6秒</td>
+<td>Tier 2</td>
+<td>1分ごと</td>
+<td>1時間</td>
+<td>中期傾向 (持続的な着座など)</td>
 </tr>
 <tr>
-<td>エラー率</td>
-<td>0% (12リクエスト)</td>
-</tr>
-<tr>
-<td>Dockerサービス数</td>
-<td>11</td>
-</tr>
-<tr>
-<td>月額クラウド費用</td>
-<td>$0</td>
+<td>Tier 3</td>
+<td>5分ごと</td>
+<td>4時間</td>
+<td>長時間姿勢追跡</td>
 </tr>
 </tbody>
 </table>
-<p>30秒の認知サイクルに対して3-7秒で応答 → 十分に実用的。</p>
+<p><strong>姿勢正規化</strong>: 位置・スケール不変の骨格特徴量で比較。アンカー: 腰中点、スケール: 肩幅。カメラからの距離や映り方に依存しない。</p>
+<p>Tier 2 で30分以上 <code>mostly_static</code> が継続 → 座位イベント発火。Brain は <code>speak</code> ツール (caringトーン) で通知。クールダウン1時間。</p>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="17" data-paginate="true" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -2756,65 +2908,2333 @@ section::after {
   color: #94a3b8;
   font-size: 0.65em;
 }
-;" data-marpit-pagination-total="18">
+;" data-marpit-pagination-total="31">
+<h1 id="dashboard-%E3%82%B2%E3%83%BC%E3%83%9F%E3%83%95%E3%82%A3%E3%82%B1%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3ui%E3%81%A8%E3%82%BF%E3%82%B9%E3%82%AF%E3%83%A9%E3%82%A4%E3%83%95%E3%82%B5%E3%82%A4%E3%82%AF%E3%83%AB">Dashboard: ゲーミフィケーションUIとタスクライフサイクル</h1>
+<p>React 19 + TypeScript + Vite 7 + Tailwind CSS 4 + Framer Motion。認証不要のキオスクモード。</p>
+<p><strong>タスクカード構成</strong>: タイトル / 場所バッジ / 報酬バッジ (金色、「最適化承認スコア」表記) / 緊急度インジケータ (色分け) / 受諾・完了・無視ボタン</p>
+<p><strong>ポーリング</strong>: タスク一覧 5秒 / 音声イベント 3秒 / 完了タスク 5分後フェードアウト / 表示上限 10件</p>
+<p><strong>タスクライフサイクル</strong>:</p>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code>Brain: create_task → Backend: POST /tasks/ (2段階重複検知) → タスク作成 + 音声合成
+→ [Pending] 告知音声自動再生
+→ [Accepted] PUT /tasks/{id}/accept → 受諾音声再生
+→ [Completed] PUT /tasks/{id}/complete → 完了音声 + Wallet報酬支払い
+</code></pre>
+<p>Backend: FastAPI + SQLAlchemy async。PostgreSQL 16 (asyncpg) / SQLite (aiosqlite) フォールバック。タスクモデル19カラム (bounty, urgency, voice関連, assignment, completion)。</p>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="18" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="18" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="31">
+<h1 id="voice-%E3%82%B5%E3%83%BC%E3%83%93%E3%82%B9-voicevox%E9%80%A3%E6%90%BA%E3%81%A8%E6%8B%92%E5%90%A6%E3%82%B9%E3%83%88%E3%83%83%E3%82%AF">Voice サービス: VOICEVOX連携と拒否ストック</h1>
+<p><strong>音声生成フロー</strong>: テキスト → VOICEVOX <code>/audio_query</code> (韻律) → <code>/synthesis</code> (WAV 24kHz) → pydub (MP3 64kbps) → <code>/audio/{filename}</code> 配信。Speaker ID 47: ナースロボ_タイプT。</p>
+<table>
+<thead>
+<tr>
+<th>場面</th>
+<th>処理方式</th>
+<th>レイテンシ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>タスク告知</td>
+<td><code>announce_with_completion</code>: LLMテキスト生成 + VOICEVOX。告知と完了の2音声を同時生成</td>
+<td>4-6秒</td>
+</tr>
+<tr>
+<td>タスク受諾</td>
+<td><code>synthesize</code>: 定型フレーズの即時合成</td>
+<td>1-2秒</td>
+</tr>
+<tr>
+<td>タスク完了</td>
+<td>告知時に同時生成済みの completion 音声を再生</td>
+<td>即時</td>
+</tr>
+<tr>
+<td>タスク無視</td>
+<td>rejectionストックから取得</td>
+<td>&lt;100ms</td>
+</tr>
+<tr>
+<td>健康助言・警告</td>
+<td>Brain <code>speak</code> → <code>synthesize</code></td>
+<td>1-2秒</td>
+</tr>
+</tbody>
+</table>
+<p><strong>拒否ストック</strong>: アイドル時にバックグラウンドでLLMテキスト生成 + VOICEVOX合成。最大100件のMP3を備蓄、残80件以下で補充開始。6バリエーション (傷ついた / 皮肉な等)。50文字以内。</p>
+<p><strong>トーン</strong>: caring (健康助言) / alert (環境警告) / humorous (軽い指摘) / neutral (一般)。speak 70文字制限。</p>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="19" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="19" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="31">
+<h1 id="wallet-%E8%A4%87%E5%BC%8F%E7%B0%BF%E8%A8%98%E3%83%99%E3%83%BC%E3%82%B9%E3%81%AE%E4%BF%A1%E7%94%A8%E5%8F%B0%E5%B8%B3">Wallet: 複式簿記ベースの信用台帳</h1>
+<p>PostgreSQL上の複式簿記。1取引 = DEBIT + CREDIT の2行、トランザクションIDによる冪等性保証。</p>
+<table>
+<thead>
+<tr>
+<th>モデル</th>
+<th>役割</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Wallet</td>
+<td>ユーザー残高。user_id=0 はシステムウォレット (通貨発行元、負残高許容)</td>
+</tr>
+<tr>
+<td>LedgerEntry</td>
+<td>複式仕訳。種別: INFRASTRUCTURE_REWARD / TASK_REWARD / P2P_TRANSFER</td>
+</tr>
+<tr>
+<td>Device</td>
+<td>デバイスXPトラッキング。topic_prefixによるゾーンマッチ</td>
+</tr>
+<tr>
+<td>RewardRate</td>
+<td>デバイス種別ごとの報酬レート (llm_node: 5000/h, sensor_node: 500/h, hub: 1000/h)</td>
+</tr>
+<tr>
+<td>SupplyStats</td>
+<td>通貨発行総量・焼却量・流通量</td>
+</tr>
+</tbody>
+</table>
+<p><strong>報酬フロー</strong>: タスク完了 → POST /transactions/task-reward → System Wallet → User Wallet 振替 → SupplyStats更新</p>
+<p><strong>XP乗数</strong>: <code>multiplier = 1.0 + (device_xp / 1000) × 0.5</code>　上限3.0x</p>
+<p><strong>デフレ機構</strong>: 手数料5%焼却 + デマレッジ2%/日。実用通貨ではなくコミュニティ内ゲーム用ポイントとして設計。</p>
+<p><strong>ウォレットPWA</strong>: 残高表示 / QRスキャン報酬受取 / P2P送金 / 取引履歴 (React Router v6)</p>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="20" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="20" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="31">
+<h1 id="e2e%E3%83%87%E3%83%BC%E3%82%BF%E3%83%95%E3%83%AD%E3%83%BC-co2%E6%A4%9C%E7%9F%A5%E3%81%8B%E3%82%89%E3%82%BF%E3%82%B9%E3%82%AF%E5%AE%8C%E4%BA%86%E3%81%BE%E3%81%A7">E2Eデータフロー: CO2検知からタスク完了まで</h1>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code>[T+0s]   ESP32 sensor-02: CO2 = 1050ppm
+         → MQTT: office/kitchen/sensor/co2_01/co2 → {&quot;value&quot;: 1050}
+
+[T+0s]   WorldModel: CO2値更新、co2_threshold_exceeded イベント発火
+
+[T+3s]   ReActサイクル開始 (イベントバッチ遅延完了)
+         → LLMに送信: &quot;kitchen: CO2 1050ppm, 3人在室, activity: moderate&quot;
+
+[T+4s]   LLM Think: &quot;CO2が高い。在室者がいるので換気が必要&quot;
+         LLM Act: get_active_tasks() → 既存の換気タスクなし
+                  create_task(title=&quot;キッチンの換気&quot;, bounty=1500, urgency=3)
+
+[T+5s]   Sanitizer: bounty ≤ 5000 ✓, urgency ∈ [0,4] ✓
+         → POST /tasks/ (2段階重複検知通過) → タスク作成
+         → VoiceService: LLMテキスト生成 → VOICEVOX → MP3
+
+[T+10s]  Frontend: ポーリングで検出 → カード表示 + 音声自動再生
+
+[T+??]   完了報告 → completion音声 → Wallet: 1500ポイント振替
+</code></pre>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="21" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="21" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="31">
+<h1 id="%E3%83%87%E3%83%BC%E3%82%BF%E4%B8%BB%E6%A8%A9%E3%81%AE%E6%8A%80%E8%A1%93%E7%9A%84%E4%BF%9D%E8%A8%BC">データ主権の技術的保証</h1>
+<table>
+<thead>
+<tr>
+<th>データ分類</th>
+<th>例</th>
+<th>処理場所</th>
+<th>保存</th>
+<th>外部送信</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>映像</td>
+<td>カメラRGBフレーム</td>
+<td>Core Hub RAM</td>
+<td>なし</td>
+<td>不可</td>
+</tr>
+<tr>
+<td>音声</td>
+<td>マイク波形</td>
+<td>Core Hub RAM</td>
+<td>なし</td>
+<td>不可</td>
+</tr>
+<tr>
+<td>生テレメトリ</td>
+<td>温度 23.5℃</td>
+<td>Core Hub</td>
+<td>Event Store (90日)</td>
+<td>不可</td>
+</tr>
+<tr>
+<td>LLM判断ログ</td>
+<td>「CO2高→タスク作成」</td>
+<td>Core Hub</td>
+<td>Event Store (90日)</td>
+<td>不可</td>
+</tr>
+<tr>
+<td>集約統計</td>
+<td>1時間平均気温</td>
+<td>Core Hub</td>
+<td>Data Mart</td>
+<td>City Hub送信</td>
+</tr>
+<tr>
+<td>タスク記録</td>
+<td>完了タスク一覧</td>
+<td>Core Hub</td>
+<td>Data Store</td>
+<td>匿名化送信可</td>
+</tr>
+</tbody>
+</table>
+<p>暗号化: Sensor→Hub: WPA3 + MQTT over TLS / Hub内部: Docker network isolation / Hub→City: TLS 1.3 + mTLS</p>
+<p>ネットワーク障害時はローカルキューに蓄積し、復旧後に一括送信。自律動作は通信状態に依存しない。</p>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="22" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="22" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="31">
+<h1 id="city-data-hub-%E9%83%BD%E5%B8%82%E8%A6%8F%E6%A8%A1%E3%81%AE%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3%E6%8A%BD%E5%87%BA">City Data Hub: 都市規模のパターン抽出</h1>
+<p>City Data Hub は生データを処理しない。各Core Hubの Data Mart (集約済み) のみを受信する。</p>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-json"><span class="hljs-comment">// Data Mart送信例 (1時間ごと)</span>
+<span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;hub_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;hub_office_01&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;period&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;2026-02-13T14:00:00/PT1H&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;zones&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;kitchen&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;avg_temperature&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">24.3</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;max_co2&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1050</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;avg_occupancy&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">2.8</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;comfort_index&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">0.72</span> <span class="hljs-punctuation">}</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;tasks_created&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;tasks_completed&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;llm_cycles&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">120</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;device_health&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;online&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">5</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;offline&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">0</span> <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p><strong>City Data Hub が抽出するパターンの例</strong>:</p>
+<ul>
+<li>複数地区のCO2同時上昇 → 広域大気汚染の検知</li>
+<li>月曜午前の全オフィス在室率急上昇 → 通勤パターンの変化</li>
+<li>Hub単体のセンサー精度劣化 → メンテナンス必要性の検知</li>
+<li>季節・地区ごとのエネルギー消費パターン → 資源配分の最適化</li>
+</ul>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="23" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="23" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="31">
+<h1 id="%E9%83%BD%E5%B8%82%E3%81%AE%E5%91%BC%E5%90%B8%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3">都市の呼吸パターン</h1>
+<p>各Hubが1時間平均のCO2値を送信するだけで、都市規模の人流パターンが可視化される。</p>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code>Hub-A (オフィス街):  CO2ピーク 9:00, 13:00
+Hub-B (商業施設):    CO2ピーク 11:00, 15:00, 19:00
+Hub-C (住宅街):      CO2ピーク 7:00, 20:00
+</code></pre>
+<p>時空間分析により推定される人流:<br />
+住宅街 (朝7時) → オフィス街 (9時) → 商業施設 (昼・夕方) → 住宅街 (夜20時)</p>
+<p>特定の風向き条件下で特定地区のCO2が異常上昇するパターンを検出できれば、換気設備の配置計画や緑地計画への入力データとなる。送信データ量は数バイト/Hub/時間。</p>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="24" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="24" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="31">
+<h1 id="%E9%A0%98%E5%9F%9F%E7%89%B9%E5%8C%96hub-%E5%90%8C%E4%B8%80%E3%82%A2%E3%83%BC%E3%82%AD%E3%83%86%E3%82%AF%E3%83%81%E3%83%A3%E3%81%AE%E5%B1%95%E9%96%8B%E5%85%88">領域特化Hub: 同一アーキテクチャの展開先</h1>
+<table>
+<thead>
+<tr>
+<th>Hub種別</th>
+<th>センサー構成</th>
+<th>LLMの行動原則</th>
+<th>タスク例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>オフィス (SOMS)</td>
+<td>温湿度, CO2, カメラ</td>
+<td>快適性・健康・生産性の最適化</td>
+<td>換気, 清掃, 備品補充</td>
+</tr>
+<tr>
+<td>農業</td>
+<td>pH, EC, 水温, 照度</td>
+<td>水耕栽培の生育環境維持</td>
+<td>養液調整, 収穫判断</td>
+</tr>
+<tr>
+<td>水槽</td>
+<td>水温, pH, TDS</td>
+<td>水生生物の環境管理</td>
+<td>給餌, 水換え</td>
+</tr>
+<tr>
+<td>店舗</td>
+<td>人流カメラ, 温湿度</td>
+<td>顧客体験と在庫の最適化</td>
+<td>品出し, 陳列変更</td>
+</tr>
+<tr>
+<td>公共施設</td>
+<td>騒音, 振動, 気象</td>
+<td>安全管理と設備保全</td>
+<td>点検, 修繕</td>
+</tr>
+<tr>
+<td>屋外環境</td>
+<td>気象, 大気質, UV</td>
+<td>環境監視と市民への情報提供</td>
+<td>警報発令, データ記録</td>
+</tr>
+</tbody>
+</table>
+<p>全Hubが共通のMCP over MQTTとData Martスキーマを使用。City Data Hub は異種Hubのデータを統一的に集約・分析可能。</p>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="25" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="25" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="31">
+<h1 id="soms-%E2%86%92-core-hub-%E9%80%B2%E5%8C%96%E3%83%91%E3%82%B9">SOMS → Core Hub: 進化パス</h1>
+<p><strong>Phase 0 の設計で変更不要な部分</strong>:<br />
+MCP over MQTT / ReActループ / WorldModel + センサーフュージョン / 憲法的AI / per-channel テレメトリ / config.json + 共通ライブラリ / タスク経済</p>
+<p><strong>追加が必要なコンポーネント</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>コンポーネント</th>
+<th>Phase 1</th>
+<th>Phase 2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Event Store</td>
+<td>TimescaleDB 導入</td>
+<td>レプリケーション追加</td>
+</tr>
+<tr>
+<td>Data Lake</td>
+<td>Event Store = Data Lake</td>
+<td>保持期間ポリシー追加</td>
+</tr>
+<tr>
+<td>Data Mart</td>
+<td>1時間集約バッチジョブ</td>
+<td>標準スキーマ + Hub間共有</td>
+</tr>
+<tr>
+<td>Hub間通信</td>
+<td>N/A</td>
+<td>MQTT Bridge or HTTPS (mTLS)</td>
+</tr>
+<tr>
+<td>Hub管理</td>
+<td>N/A</td>
+<td>登録・認証・ヘルスチェック</td>
+</tr>
+<tr>
+<td>OTA更新</td>
+<td>ESP32 OTA基盤</td>
+<td>全ノード一括更新</td>
+</tr>
+<tr>
+<td>LoRa対応</td>
+<td>実験的導入</td>
+<td>屋外ノード標準</td>
+</tr>
+</tbody>
+</table>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="26" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="26" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="31">
+<h1 id="%E3%83%AD%E3%83%BC%E3%83%89%E3%83%9E%E3%83%83%E3%83%97%E3%81%A8%E6%88%90%E5%8A%9F%E6%8C%87%E6%A8%99">ロードマップと成功指標</h1>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>内容</th>
+<th>規模</th>
+<th>成功基準</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0 (現在)</td>
+<td>単一オフィスでE2Eフロー実証</td>
+<td>1 Hub</td>
+<td>24時間連続稼働 / E2Eレイテンシ &lt;10秒 / 適切判断率 &gt;80%</td>
+</tr>
+<tr>
+<td>1</td>
+<td>多ゾーン化 + Data Lake</td>
+<td>1 Hub, 10+ノード</td>
+<td>同時接続10+ / Data Lake 30日蓄積 / 月5件以上の洞察</td>
+</tr>
+<tr>
+<td>2</td>
+<td>複数Core Hub + City Data Hub</td>
+<td>2-3 Hub</td>
+<td>Hub間通信 99.9% / 孤立72時間 / クロスHub相関 3件以上</td>
+</tr>
+<tr>
+<td>3</td>
+<td>都市展開 + ゼロタッチ配備</td>
+<td>10+ Hub</td>
+<td>外部クラウド送信 0 bytes / 都市計画への入力 1件以上</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Core Hub ハードウェア要件</strong> (Phase 2以降):</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>最小構成</th>
+<th>推奨構成</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPU</td>
+<td>16GB VRAM (量子化LLM)</td>
+<td>32GB VRAM (フル推論+Vision)</td>
+</tr>
+<tr>
+<td>CPU / RAM</td>
+<td>8コア / 32GB</td>
+<td>16コア / 64GB</td>
+</tr>
+<tr>
+<td>Storage</td>
+<td>500GB SSD</td>
+<td>2TB NVMe</td>
+</tr>
+<tr>
+<td>消費電力</td>
+<td>150W (アイドル)</td>
+<td>350W (推論時)</td>
+</tr>
+<tr>
+<td>設置面積</td>
+<td>A4用紙程度 (ミニPC構成)</td>
+<td>ラックマウント 1U</td>
+</tr>
+</tbody>
+</table>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="27" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="27" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="31">
+<h1 id="phase-0-%E9%81%94%E6%88%90%E7%8A%B6%E6%B3%81">Phase 0 達成状況</h1>
+<table>
+<thead>
+<tr>
+<th>コンポーネント</th>
+<th>状態</th>
+<th>詳細</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ReAct認知ループ</td>
+<td>稼働</td>
+<td>5ツール, 最大5反復, 3層安全機構</td>
+</tr>
+<tr>
+<td>WorldModel</td>
+<td>稼働</td>
+<td>指数減衰加重平均, 4種イベント検知</td>
+</tr>
+<tr>
+<td>MCP over MQTT</td>
+<td>稼働</td>
+<td>JSON-RPC 2.0, ESP32実機通信済み</td>
+</tr>
+<tr>
+<td>Perception</td>
+<td>稼働</td>
+<td>YOLOv11 検出+姿勢, 4層活動分析, カメラ自動検出</td>
+</tr>
+<tr>
+<td>SensorSwarm</td>
+<td>稼働</td>
+<td>Hub+Leaf, ESP-NOW/UART/I2C, バイナリプロトコル</td>
+</tr>
+<tr>
+<td>Dashboard</td>
+<td>稼働</td>
+<td>React 19 キオスク, 音声統合, 2段階重複検知</td>
+</tr>
+<tr>
+<td>Voice</td>
+<td>稼働</td>
+<td>VOICEVOX, 拒否ストック (最大100)</td>
+</tr>
+<tr>
+<td>Wallet</td>
+<td>稼働</td>
+<td>複式簿記, デマレッジ, 5%焼却, デバイスXP</td>
+</tr>
+<tr>
+<td>Wallet PWA</td>
+<td>稼働</td>
+<td>残高/QR/送金/履歴</td>
+</tr>
+<tr>
+<td>仮想テスト環境</td>
+<td>稼働</td>
+<td>Mock LLM + Virtual Edge + Virtual Camera</td>
+</tr>
+<tr>
+<td>E2E統合テスト</td>
+<td>稼働</td>
+<td>7シナリオ</td>
+</tr>
+<tr>
+<td>Data Lake / Data Mart</td>
+<td>未実装</td>
+<td>Phase 1 で対応</td>
+</tr>
+</tbody>
+</table>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="28" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="28" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="31">
+<h1 id="%E3%83%91%E3%83%95%E3%82%A9%E3%83%BC%E3%83%9E%E3%83%B3%E3%82%B9%E5%AE%9F%E6%B8%AC%E5%80%A4">パフォーマンス実測値</h1>
+<p>AMD RX 9700 (RDNA4) + Qwen2.5 14B (Q4_K_M) — GPU サーバー1台構成</p>
+<table>
+<thead>
+<tr>
+<th>指標</th>
+<th>値</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LLM推論速度</td>
+<td>~51 tok/s</td>
+</tr>
+<tr>
+<td>正常時応答</td>
+<td>3.3秒</td>
+</tr>
+<tr>
+<td>ツール呼び出し応答</td>
+<td>6.6秒</td>
+</tr>
+<tr>
+<td>エラー率</td>
+<td>0% (12リクエスト)</td>
+</tr>
+<tr>
+<td>Dockerサービス数</td>
+<td>11</td>
+</tr>
+<tr>
+<td>月額クラウド費用</td>
+<td>$0</td>
+</tr>
+</tbody>
+</table>
+<p>30秒の認知サイクルに対して3〜7秒で応答完了。処理能力に十分な余裕がある。</p>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="29" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="29" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="31">
 <h1 id="%E6%8A%80%E8%A1%93%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF">技術スタック</h1>
 <table>
 <thead>
 <tr>
 <th>層</th>
 <th>技術</th>
+<th>補足</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>LLM</td>
-<td>Qwen2.5 14B (Ollama, AMD ROCm)</td>
+<td>Qwen2.5 14B (Q4_K_M), Ollama (ROCm)</td>
+<td>Mock LLM: キーワードマッチでtool call生成</td>
 </tr>
 <tr>
 <td>Vision</td>
-<td>YOLOv11 (物体検出 + 姿勢推定, 4層バッファ)</td>
+<td>YOLOv11 (yolo11s.pt + yolo11s-pose.pt)</td>
+<td>物体検出 + 骨格推定 (17キーポイント)</td>
 </tr>
 <tr>
 <td>Backend</td>
 <td>Python 3.11, FastAPI, SQLAlchemy async</td>
+<td>Pydantic 2.x, loguru, aiohttp</td>
 </tr>
 <tr>
 <td>Frontend</td>
 <td>React 19, TypeScript, Vite 7, Tailwind CSS 4</td>
-</tr>
-<tr>
-<td>Messaging</td>
-<td>MQTT (Mosquitto), MCP (JSON-RPC 2.0)</td>
-</tr>
-<tr>
-<td>Edge</td>
-<td>SensorSwarm (ESP32 Hub + Leaf, 4種トランスポート)</td>
-</tr>
-<tr>
-<td>Economy</td>
-<td>複式簿記 (PostgreSQL), デマレッジ, PWAウォレット</td>
-</tr>
-<tr>
-<td>Database</td>
-<td>PostgreSQL 16 (asyncpg) / SQLite fallback</td>
+<td>Framer Motion, Lucide icons</td>
 </tr>
 <tr>
 <td>Voice</td>
-<td>VOICEVOX (日本語TTS, 拒否ストック事前生成)</td>
+<td>VOICEVOX (Speaker 47), pydub</td>
+<td>LLMテキスト生成 + 拒否ストック</td>
+</tr>
+<tr>
+<td>Messaging</td>
+<td>MQTT (Mosquitto), paho-mqtt 2.x</td>
+<td>MCP (JSON-RPC 2.0) over MQTT</td>
+</tr>
+<tr>
+<td>Edge (Python)</td>
+<td>MicroPython, ESP32-C6/S3</td>
+<td>unified-node + SensorSwarm (Hub+Leaf)</td>
+</tr>
+<tr>
+<td>Edge (C++)</td>
+<td>Arduino, ESP32 WROVER</td>
+<td>OV2640カメラノード</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>PostgreSQL 16 (asyncpg)</td>
+<td>SQLite (aiosqlite) フォールバック</td>
 </tr>
 <tr>
 <td>Container</td>
 <td>Docker Compose (11 services)</td>
+<td>ROCm対応</td>
 </tr>
 <tr>
 <td>GPU</td>
 <td>AMD RX 9700 (RDNA4)</td>
+<td>HSA_OVERRIDE_GFX_VERSION=12.0.1</td>
 </tr>
 </tbody>
 </table>
-<p>ミドルウェア不使用。Python + MQTT の純粋なイベント駆動設計。</p>
 </section>
-</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="18" data-theme="default" data-style="section {
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="30" data-paginate="true" data-theme="default" data-style="section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+" lang="en-US" data-marpit-pagination="30" style="--paginate:true;--theme:default;--style:section {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 22px;
+  padding: 40px 60px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+h1 {
+  color: #0f172a;
+  font-size: 1.6em;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+h2 {
+  color: #334155;
+  font-size: 1.2em;
+}
+strong {
+  color: #0f172a;
+}
+em {
+  color: #64748b;
+  font-style: normal;
+}
+code {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8em;
+}
+table {
+  font-size: 0.78em;
+  width: 100%;
+}
+th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+td {
+  border-color: #e2e8f0;
+}
+blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.95em;
+}
+ul, ol {
+  font-size: 0.95em;
+}
+a {
+  color: #2563eb;
+}
+section::after {
+  color: #94a3b8;
+  font-size: 0.65em;
+}
+;" data-marpit-pagination-total="31">
+<h1 id="%E3%83%87%E3%83%97%E3%83%AD%E3%82%A4%E3%83%A1%E3%83%B3%E3%83%88-2%E3%81%A4%E3%81%AE%E3%83%A2%E3%83%BC%E3%83%89">デプロイメント: 2つのモード</h1>
+<p><strong>シミュレーション</strong> (GPU・ハードウェア不要)</p>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-bash">./infra/scripts/start_virtual_edge.sh
+</code></pre>
+<p>Mock LLM + Virtual Edge (ランダムウォークセンサー) + Virtual Camera (RTSPテストパターン)</p>
+<p><strong>プロダクション</strong> (AMD ROCm GPU + 実ハードウェア)</p>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-bash">docker compose -f infra/docker-compose.yml up -d --build
+</code></pre>
+<p>Ollama + Qwen2.5:14b + YOLOv11 + 実ESP32</p>
+<table>
+<thead>
+<tr>
+<th>サービス</th>
+<th>ポート</th>
+<th>コンテナ名</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Frontend (nginx)</td>
+<td>80</td>
+<td>soms-frontend</td>
+</tr>
+<tr>
+<td>Backend API</td>
+<td>8000</td>
+<td>soms-backend</td>
+</tr>
+<tr>
+<td>Mock LLM</td>
+<td>8001</td>
+<td>soms-mock-llm</td>
+</tr>
+<tr>
+<td>Voice</td>
+<td>8002</td>
+<td>soms-voice</td>
+</tr>
+<tr>
+<td>Wallet</td>
+<td>8003</td>
+<td>soms-wallet</td>
+</tr>
+<tr>
+<td>PostgreSQL</td>
+<td>5432</td>
+<td>soms-postgres</td>
+</tr>
+<tr>
+<td>VOICEVOX</td>
+<td>50021</td>
+<td>soms-voicevox</td>
+</tr>
+<tr>
+<td>Ollama</td>
+<td>11434</td>
+<td>soms-ollama</td>
+</tr>
+<tr>
+<td>MQTT</td>
+<td>1883</td>
+<td>soms-mqtt</td>
+</tr>
+</tbody>
+</table>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="31" data-theme="default" data-style="section {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
   font-size: 22px;
   padding: 40px 60px;
@@ -2946,21 +5366,11 @@ section::after {
 }
 ;">
 <h1 id="%E3%81%BE%E3%81%A8%E3%82%81">まとめ</h1>
-<p><strong>SOMS</strong> は、分散型ローカルLLMで物理空間をAI化する<br />
-Core Hub アーキテクチャの Phase 0 実証プラットフォーム。</p>
-<ul>
-<li><strong>都市の情報化</strong> — データが生まれた場所で処理する、本当のスマートシティ</li>
-<li><strong>自律的AI</strong> — IF-THENを超えた ReAct 認知ループ + 多層安全機構</li>
-<li><strong>物理タスクの解決</strong> — 人間との経済的協働 (共生) + 複式簿記経済</li>
-<li><strong>データ主権</strong> — 50,000:1 圧縮、クラウド送信ゼロ、物理的保証</li>
-<li><strong>スケーラブルエッジ</strong> — SensorSwarm で安価に高密度カバー</li>
-<li><strong>都市への拡張</strong> — Core Hub が都市の知能インフラになる</li>
-</ul>
-<blockquote>
-<p>クラウドにデータを送ることは、都市の情報化ではない。<br />
-都市が自ら考えることが、本当の情報化だ。</p>
-</blockquote>
-<p><strong>GitHub</strong>: <code>Office_as_AI_ToyBox</code></p>
+<p>SOMS は、ローカルLLM + IoT + 人間経済で建物を自律管理する Core Hub アーキテクチャの Phase 0 実装。</p>
+<p>GPU1台のサーバーに11のDockerサービスを載せ、センサーデータの収集からLLM推論、タスク生成、音声通知、報酬支払いまでの全フローがローカルで完結する。外部へのデータ送信はゼロ。</p>
+<p>同一アーキテクチャを接続センサーとシステムプロンプトの差し替えだけで多領域に展開し、City Data Hub による集約統計の分析で、単一拠点では見えない都市規模のパターンを抽出する。</p>
+<p>Phase 0 で設計の妥当性を確認した要素 — MCP over MQTT, ReActループ, WorldModel, 憲法的AI, per-channelテレメトリ, タスク経済 — はPhase 3の都市展開まで変更不要。</p>
+<p>GitHub: <code>Office_as_AI_ToyBox</code></p>
 </section>
 <script>!function(){"use strict";const t={h1:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"1"},style:"display: block; font-size: 2em; margin-block-start: 0.67em; margin-block-end: 0.67em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h2:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"2"},style:"display: block; font-size: 1.5em; margin-block-start: 0.83em; margin-block-end: 0.83em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h3:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"3"},style:"display: block; font-size: 1.17em; margin-block-start: 1em; margin-block-end: 1em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h4:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"4"},style:"display: block; margin-block-start: 1.33em; margin-block-end: 1.33em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h5:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"5"},style:"display: block; font-size: 0.83em; margin-block-start: 1.67em; margin-block-end: 1.67em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h6:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"6"},style:"display: block; font-size: 0.67em; margin-block-start: 2.33em; margin-block-end: 2.33em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},span:{proto:()=>HTMLSpanElement},pre:{proto:()=>HTMLElement,style:"display: block; font-family: monospace; white-space: pre; margin: 1em 0; --marp-auto-scaling-white-space: pre;"}},e="data-marp-auto-scaling-wrapper",i="data-marp-auto-scaling-svg",n="data-marp-auto-scaling-container";class s extends HTMLElement{container;containerSize;containerObserver;svg;svgComputedStyle;svgPreserveAspectRatio="xMinYMid meet";wrapper;wrapperSize;wrapperObserver;constructor(){super();const t=t=>([e])=>{const{width:i,height:n}=e.contentRect;this[t]={width:i,height:n},this.updateSVGRect()};this.attachShadow({mode:"open"}),this.containerObserver=new ResizeObserver(t("containerSize")),this.wrapperObserver=new ResizeObserver((...e)=>{t("wrapperSize")(...e),this.flushSvgDisplay()})}static get observedAttributes(){return["data-downscale-only"]}connectedCallback(){this.shadowRoot.innerHTML=`\n<style>\n  svg[${i}] { display: block; width: 100%; height: auto; vertical-align: top; }\n  span[${n}] { display: table; white-space: var(--marp-auto-scaling-white-space, nowrap); width: max-content; }\n</style>\n<div ${e}>\n  <svg part="svg" ${i}>\n    <foreignObject><span ${n}><slot></slot></span></foreignObject>\n  </svg>\n</div>\n    `.split(/\n\s*/).join(""),this.wrapper=this.shadowRoot.querySelector(`div[${e}]`)??void 0;const t=this.svg;this.svg=this.wrapper?.querySelector(`svg[${i}]`)??void 0,this.svg!==t&&(this.svgComputedStyle=this.svg?window.getComputedStyle(this.svg):void 0),this.container=this.svg?.querySelector(`span[${n}]`)??void 0,this.observe()}disconnectedCallback(){this.svg=void 0,this.svgComputedStyle=void 0,this.wrapper=void 0,this.container=void 0,this.observe()}attributeChangedCallback(){this.observe()}flushSvgDisplay(){const{svg:t}=this;t&&(t.style.display="inline",requestAnimationFrame(()=>{t.style.display=""}))}observe(){this.containerObserver.disconnect(),this.wrapperObserver.disconnect(),this.wrapper&&this.wrapperObserver.observe(this.wrapper),this.container&&this.containerObserver.observe(this.container),this.svgComputedStyle&&this.observeSVGStyle(this.svgComputedStyle)}observeSVGStyle(t){const e=()=>{const i=(()=>{const e=t.getPropertyValue("--preserve-aspect-ratio");if(e)return e.trim();return`x${(({textAlign:t,direction:e})=>{if(t.endsWith("left"))return"Min";if(t.endsWith("right"))return"Max";if("start"===t||"end"===t){let i="rtl"===e;return"end"===t&&(i=!i),i?"Max":"Min"}return"Mid"})(t)}YMid meet`})();i!==this.svgPreserveAspectRatio&&(this.svgPreserveAspectRatio=i,this.updateSVGRect()),t===this.svgComputedStyle&&requestAnimationFrame(e)};e()}updateSVGRect(){let t=Math.ceil(this.containerSize?.width??0);const e=Math.ceil(this.containerSize?.height??0);void 0!==this.dataset.downscaleOnly&&(t=Math.max(t,this.wrapperSize?.width??0));const i=this.svg?.querySelector(":scope > foreignObject");if(i?.setAttribute("width",`${t}`),i?.setAttribute("height",`${e}`),this.svg&&(this.svg.setAttribute("viewBox",`0 0 ${t} ${e}`),this.svg.setAttribute("preserveAspectRatio",this.svgPreserveAspectRatio),this.svg.style.height=t<=0||e<=0?"0":""),this.container){const t=this.svgPreserveAspectRatio.toLowerCase();this.container.style.marginLeft=t.startsWith("xmid")||t.startsWith("xmax")?"auto":"0",this.container.style.marginRight=t.startsWith("xmi")?"auto":"0"}}}const r=(t,{attrs:e={},style:i})=>class extends t{constructor(...t){super(...t);for(const[t,i]of Object.entries(e))this.hasAttribute(t)||this.setAttribute(t,i);this._shadow()}static get observedAttributes(){return["data-auto-scaling"]}connectedCallback(){this._update()}attributeChangedCallback(){this._update()}_shadow(){if(!this.shadowRoot)try{this.attachShadow({mode:"open"})}catch(t){if(!(t instanceof Error&&"NotSupportedError"===t.name))throw t}return this.shadowRoot}_update(){const t=this._shadow();if(t){const e=i?`<style>:host { ${i} }</style>`:"";let n="<slot></slot>";const{autoScaling:s}=this.dataset;if(void 0!==s){n=`<marp-auto-scaling exportparts="svg:auto-scaling" ${"downscale-only"===s?"data-downscale-only":""}>${n}</marp-auto-scaling>`}t.innerHTML=e+n}}};let o;const a=Symbol(),l=()=>o??(o=!!document.createElement("div",{is:"marp-auto-scaling"}).outerHTML.startsWith("<div is"),o);let c;const d="marpitSVGPolyfill:setZoomFactor,",h=Symbol(),g=Symbol();const p=()=>{const t="Apple Computer, Inc."===navigator.vendor,e=t?[v]:[],i={then:e=>(t?(async()=>{if(void 0===c){const t=document.createElement("canvas");t.width=10,t.height=10;const e=t.getContext("2d"),i=new Image(10,10),n=new Promise(t=>{i.addEventListener("load",()=>t())});i.crossOrigin="anonymous",i.src="data:image/svg+xml;charset=utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2210%22%20height%3D%2210%22%20viewBox%3D%220%200%201%201%22%3E%3CforeignObject%20width%3D%221%22%20height%3D%221%22%20requiredExtensions%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxhtml%22%3E%3Cdiv%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxhtml%22%20style%3D%22width%3A%201px%3B%20height%3A%201px%3B%20background%3A%20red%3B%20position%3A%20relative%22%3E%3C%2Fdiv%3E%3C%2FforeignObject%3E%3C%2Fsvg%3E",await n,e.drawImage(i,0,0),c=e.getImageData(5,5,1,1).data[3]<128}return c})().then(t=>{null==e||e(t?[v]:[])}):null==e||e([]),i)};return Object.assign(e,i)};let m,u;function v(t){const e="object"==typeof t&&t.target||document,i="object"==typeof t?t.zoom:t;window[g]||(Object.defineProperty(window,g,{configurable:!0,value:!0}),document.body.style.zoom=1.0001,document.body.offsetHeight,document.body.style.zoom=1,window.addEventListener("message",({data:t,origin:e})=>{if(e===window.origin)try{if(t&&"string"==typeof t&&t.startsWith(d)){const[,e]=t.split(","),i=Number.parseFloat(e);Number.isNaN(i)||(u=i)}}catch(t){console.error(t)}}));let n=!1;Array.from(e.querySelectorAll("svg[data-marpit-svg]"),t=>{var e,s,r,o;t.style.transform||(t.style.transform="translateZ(0)");const a=i||u||t.currentScale||1;m!==a&&(m=a,n=a);const l=t.getBoundingClientRect(),{length:c}=t.children;for(let i=0;i<c;i+=1){const n=t.children[i];if(n.getScreenCTM){const t=n.getScreenCTM();if(t){const i=null!==(s=null===(e=n.x)||void 0===e?void 0:e.baseVal.value)&&void 0!==s?s:0,c=null!==(o=null===(r=n.y)||void 0===r?void 0:r.baseVal.value)&&void 0!==o?o:0,d=n.children.length;for(let e=0;e<d;e+=1){const s=n.children[e];if("SECTION"===s.tagName){const{style:e}=s;e.transformOrigin||(e.transformOrigin=`${-i}px ${-c}px`),e.transform=`scale(${a}) matrix(${t.a}, ${t.b}, ${t.c}, ${t.d}, ${t.e-l.left}, ${t.f-l.top}) translateZ(0.0001px)`;break}}}}}}),!1!==n&&Array.from(e.querySelectorAll("iframe"),({contentWindow:t})=>{null==t||t.postMessage(`${d}${n}`,"null"===window.origin?"*":window.origin)})}function w({once:t=!1,target:e=document}={}){const i=function(t=document){if(t[h])return t[h];let e=!0;const i=()=>{e=!1,delete t[h]};Object.defineProperty(t,h,{configurable:!0,value:i});let n=[],s=!1;(async()=>{try{n=await p()}finally{s=!0}})();const r=()=>{for(const e of n)e({target:t});s&&0===n.length||e&&window.requestAnimationFrame(r)};return r(),i}(e);return t?(i(),()=>{}):i}m=1,u=void 0;const b=Symbol(),y=(e=document)=>{if("undefined"==typeof window)throw new Error("Marp Core's browser script is valid only in browser context.");if(((e=document)=>{const i=window[a];i||customElements.define("marp-auto-scaling",s);for(const n of Object.keys(t)){const s=`marp-${n}`,o=t[n].proto();l()&&o!==HTMLElement?i||customElements.define(s,r(o,{style:t[n].style}),{extends:n}):(i||customElements.define(s,r(HTMLElement,t[n])),e.querySelectorAll(`${n}[is="${s}"]`).forEach(t=>{t.outerHTML=t.outerHTML.replace(new RegExp(`^<${n}`,"i"),`<${s}`).replace(new RegExp(`</${n}>$`,"i"),`</${s}>`)}))}window[a]=!0})(e),e[b])return e[b];const i=w({target:e}),n=()=>{i(),delete e[b]},o=Object.assign(n,{cleanup:n,update:()=>y(e)});return Object.defineProperty(e,b,{configurable:!0,value:o}),o},f=document.currentScript;y(f?f.getRootNode():document)}();
 </script></foreignObject></svg></div><script>/*!! License: https://unpkg.com/@marp-team/marp-cli@4.2.3/lib/bespoke.js.LICENSE.txt */
