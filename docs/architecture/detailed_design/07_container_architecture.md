@@ -1,62 +1,177 @@
 # 07. Containerization & Orchestration
 
-## 1. Portable Infrastructure Strategy
-To ensure the system is hardware-agnostic and easy to deploy/migrate, we adopt a **Container-Native** architecture using Docker and Docker Compose. This encapsulates dependencies (CUDA/ROCm drivers, Python libraries, System tools) into reproducible images.
+## 1. Strategy
+The system uses **Docker Compose** for container orchestration. All dependencies (ROCm drivers, Python libraries, system tools) are encapsulated into reproducible images. Source code is bind-mounted for development (changes take effect on container restart without rebuild).
 
 ## 2. Container Service Architecture
-The system is composed of the following microservices defined in a single `docker-compose.yml`.
 
-| Service Name | Base Image | Role | Resources |
-| :--- | :--- | :--- | :--- |
-| `mosquitto` | `eclipse-mosquitto:latest` | MQTT Broker (Central Nervous System) | Low |
-| `llm-engine` | `rocm/vllm:latest` (Custom Build) | LLM Inference API | **GPU (32GB VRAM)** |
-| `perception` | `pytorch/pytorch:rocm` | YOLOv11 Vision Analysis | Shared GPU / CPU |
-| `brain-bridge` | `python:3.11-slim` | Main Event Loop & MCP Logic | CPU |
-| `backend` | `python:3.11-slim` | FastAPI Dashboard API | CPU |
-| `frontend` | `nginx:alpine` | React SPA static host | Low |
+### 2.1 Main Compose (`infra/docker-compose.yml`)
 
-## 3. GPU Passthrough (AMD Radeon)
-For the `llm-engine` to access the AMD Radeon GPU, we must map the devices into the container.
+| Service | Base Image | Container | Port | Role | Resources |
+|---------|-----------|-----------|------|------|-----------|
+| `mosquitto` | `eclipse-mosquitto:latest` | soms-mqtt | 1883, 9001 | MQTT Broker | Low |
+| `brain` | Custom (Python 3.11) | soms-brain | — | LLM Cognitive Loop | CPU |
+| `postgres` | `postgres:16-alpine` | soms-postgres | 5432 | Shared Database | Low |
+| `backend` | Custom (Python 3.11) | soms-backend | 8000 | Dashboard API | CPU |
+| `frontend` | Custom (nginx + Vite build) | soms-frontend | 80 | React SPA + Reverse Proxy | Low |
+| `voicevox` | Custom (VOICEVOX CPU) | soms-voicevox | 50021 | Japanese TTS Engine | CPU |
+| `voice-service` | Custom (Python 3.11) | soms-voice | 8002 | Voice API + LLM Text Gen | CPU |
+| `wallet` | Custom (Python 3.11) | soms-wallet | 8003 | Credit Ledger | CPU |
+| `ollama` | `ollama/ollama:rocm` | soms-ollama | 11434 | LLM Inference | **GPU** |
+| `mock-llm` | Custom (Python 3.11) | soms-mock-llm | 8001 | Test LLM Simulator | CPU |
+| `perception` | Custom (PyTorch ROCm) | soms-perception | host | YOLOv11 Vision | **GPU** |
 
-### `docker-compose.yml` Fragment
-```yaml
-services:
-  llm-engine:
-    image: soms/vllm-rocm:latest
-    devices:
-      - /dev/kfd  # AMD Kernel Fusion Driver
-      - /dev/dri  # Direct Rendering Infrastructure
-    group_add:
-      - video
-    security_opt:
-      - seccomp:unconfined
-    volumes:
-      - ./models:/root/.cache/huggingface
-    environment:
-      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
+### 2.2 Edge Mock Compose (`infra/docker-compose.edge-mock.yml`)
+
+| Service | Role |
+|---------|------|
+| `virtual-edge` | SwarmHub + 3 Leaf emulator |
+| `mock-llm` | Keyword-based LLM simulator |
+| `virtual-camera` | mediamtx + ffmpeg RTSP server |
+
+## 3. Service Dependencies
+
+```
+mosquitto ─────────────────────────────────────────────────────────
+    ↑                    ↑           ↑              ↑
+    │                    │           │              │
+  brain ──→ backend ──→ postgres ←── wallet     perception
+    │          ↑                                (host network)
+    │          │
+    ├──→ voice-service ──→ voicevox
+    │
+    └──→ ollama (or mock-llm)
+
+  frontend (nginx) ──→ backend, voice-service, wallet
 ```
 
-## 4. Volume Strategy (Persistence)
-To ensure portability, all state must be stored in named volumes or bind mounts, never inside the container layer.
--   **`soms_db_data`**: Mapped to `backend` for SQLite file storage (`/data/soms.db`).
--   **`soms_models`**: Mapped to `llm-engine` and `perception` to avoid re-downloading large weights (`/models`).
--   **`soms_logs`**: Shared volume for centralized logging.
+### Startup Order (`depends_on`)
+1. `mosquitto` (no deps)
+2. `postgres` (no deps)
+3. `backend` (mosquitto, postgres)
+4. `wallet` (postgres, mosquitto)
+5. `voicevox` (no deps)
+6. `voice-service` (voicevox)
+7. `brain` (mosquitto)
+8. `frontend` (backend)
+9. `ollama`, `mock-llm`, `perception` (independent)
 
-## 5. Network Topology (Distributed Ready)
--   **Internal Network (`soms-net`)**: Backend, Brain, LLM, and Perception communicate here.
--   **Host Exposure**:
-    -   `mosquitto`: Port 1883 (Binding to `0.0.0.0` allows external nodes to connect).
-    -   `frontend`: Port 80 (Dashboard access).
-    -   `backend`: Port 8000 (API Access for remote scripts).
-    -   `perception`: Port 8554 (RTSP Stream for remote viewing).
+## 4. GPU Passthrough (AMD ROCm)
 
-## 6. Build & Deployment Workflow
-1.  **Development**: Developers work with `dev.Dockerfile` which mounts the `/src` directory for live-reloading.
-2.  **Production**: `prod.Dockerfile` copies source code and pre-compiles assets.
-3.  **Migration**: To move to a new machine:
-    1.  Copy `docker-compose.yml` and `.env` (Secrets).
-    2.  Rsync the `./volumes/` folder (Database, Models).
-    3.  Run `docker compose up -d`.
+### Device Mapping
+```yaml
+ollama:
+  devices:
+    - /dev/kfd:/dev/kfd                     # AMD Kernel Fusion Driver
+    - /dev/dri/card1:/dev/dri/card1         # dGPU render node
+    - /dev/dri/renderD128:/dev/dri/renderD128
+  environment:
+    - HSA_OVERRIDE_GFX_VERSION=12.0.1       # RDNA4 compatibility
+```
 
-## 7. Extensions for Edge
-Specific Docker profiles (e.g., `docker-compose.edge.yaml`) can be created for Raspberry Pi nodes, excluding the heavy `llm-engine` but keeping `perception` (Nano model) and `mosquitto` (Bridge mode).
+**Critical**: Do NOT pass `/dev/dri` (entire directory). This maps both dGPU and iGPU, causing the iGPU to reset and crashing the GNOME desktop. Always map specific device nodes.
+
+### GPU Assignment
+| Device | Path | Purpose |
+|--------|------|---------|
+| dGPU (RX 9700) | card1, renderD128 | ROCm compute (Ollama, Perception) |
+| iGPU (Raphael) | card2, renderD129 | Display only — never pass to Docker |
+
+### Perception Special Case
+```yaml
+perception:
+  network_mode: host          # Direct camera RTSP access
+  devices:
+    - /dev/kfd:/dev/kfd
+    - /dev/dri/card1:/dev/dri/card1
+    - /dev/dri/renderD128:/dev/dri/renderD128
+  group_add:
+    - video
+  security_opt:
+    - seccomp:unconfined
+```
+
+`network_mode: host` is used for direct RTSP camera access. This means Perception cannot use the `soms-net` Docker network — it connects to MQTT via `localhost:1883`.
+
+## 5. Volume Strategy
+
+| Volume | Mounted By | Purpose |
+|--------|-----------|---------|
+| `soms_mqtt_data` | mosquitto | MQTT persistence |
+| `soms_mqtt_log` | mosquitto | MQTT logs |
+| `soms_pg_data` | postgres | PostgreSQL data |
+| `soms_audio_data` | voice-service | Generated audio files |
+| `ollama_models` | ollama | Model weights |
+| `soms_db_data` | (legacy) | SQLite — no longer used, should be removed |
+
+### Source Code Bind Mounts
+All Python services bind-mount their source for development:
+```yaml
+volumes:
+  - ../services/brain/src:/app
+  - ../services/dashboard/backend:/app
+  - ../services/voice/src:/app
+  - ../services/wallet/src:/app
+```
+
+Changes take effect on container restart without rebuild.
+
+## 6. Network Topology
+
+### Internal Network (`soms-net`)
+All services except Perception communicate on the `soms-net` bridge network.
+
+### Host-Exposed Ports
+
+| Service | Port | Binding | Purpose |
+|---------|------|---------|---------|
+| mosquitto | 1883 | `${MQTT_BIND_ADDR:-0.0.0.0}:1883` | Edge device MQTT access |
+| mosquitto | 9001 | `${MQTT_BIND_ADDR:-0.0.0.0}:9001` | WebSocket |
+| frontend | 80 | `0.0.0.0:80` | Dashboard + reverse proxy |
+| backend | 8000 | `0.0.0.0:8000` | API direct access |
+| mock-llm | 8001 | `0.0.0.0:8001` | Mock LLM direct access |
+| voice-service | 8002 | `0.0.0.0:8002` | Voice API direct access |
+| wallet | 8003 | `0.0.0.0:8003` | Wallet API direct access |
+| postgres | 5432 | `0.0.0.0:5432` | DB direct access |
+| voicevox | 50021 | `0.0.0.0:50021` | VOICEVOX direct access |
+| ollama | 11434 | `0.0.0.0:11434` | LLM API direct access |
+
+**Security note** (M-1): PostgreSQL and Wallet ports should be restricted to `127.0.0.1` in production.
+
+### Host Docker Bridge
+Brain and Voice Service use `extra_hosts: host.docker.internal:host-gateway` to reach host-running Ollama when `LLM_API_URL=http://host.docker.internal:11434/v1`.
+
+## 7. Build & Deployment
+
+### Development
+```bash
+# Full simulation
+./infra/scripts/start_virtual_edge.sh
+
+# Production
+docker compose -f infra/docker-compose.yml up -d --build
+
+# Rebuild single service
+docker compose -f infra/docker-compose.yml up -d --build brain
+```
+
+### Migration
+1. Copy `docker-compose.yml`, `.env`, and source directories.
+2. Copy named volumes (PostgreSQL data, Ollama models, audio).
+3. Run `docker compose up -d`.
+
+## 8. Known Issues
+
+| ID | Issue | Impact |
+|----|-------|--------|
+| M-1 | PostgreSQL port on all interfaces | Security risk |
+| M-5 | Perception `network_mode: host` conflicts with custom network | Service discovery issue |
+| M-8 | Unused `soms_db_data` volume (SQLite legacy) | Confusion |
+| M-9 | Wallet port unnecessarily exposed | Security risk |
+| M-10 | Frontend missing `.dockerignore` | Image bloat |
+| M-11 | Edge mock compose missing network definition | Implicit default network |
+| L-1 | Perception uses floating `rocm/pytorch:latest` tag | Build reproducibility |
+| L-2 | Unnecessary `build-essential` in Python service Dockerfiles | +90MB image size |
+| L-7 | No Docker healthchecks defined | Failure detection difficulty |
+
+See `ISSUES.md` for complete issue tracking.

@@ -69,15 +69,27 @@ LLM が状況を判断し、必要なタスクを生成し、報酬（最適化�
 
 ルールベースの自動化ではなく、LLM の推論による **自律的判断** を重視する。「環境の快適性とエネルギー効率の最大化」という **目的関数** に向けて、状況に応じてツールを選択し行動する。
 
-#### 原則2: 憲法的AI (Constitutional AI)
+#### 原則2: 憲法的AI + 安全ガードレール (Constitutional AI + Safety Guard Rails)
 
-LLM の行動を **コードのハードコードではなく、言語による行動原則（憲法）** で制約する。システムプロンプトに組み込まれた原則:
+LLM の行動を **言語による行動原則（憲法）** で制約し、さらに **ハードコードされた安全弁 (Sanitizer)** で物理的限界を保証する二重構造。
+
+**言語ベースの原則** (システムプロンプト):
 
 - **安全最優先**: 健康・安全に関わる問題は最高優先度
 - **コスト意識**: 報酬は難易度に比例 (500〜5000)、むやみに人間に依頼しない
 - **重複回避**: タスク作成前に既存タスクを必ず確認
-- **正常時は何もしない**: 全指標が正常なら介入しない
+- **正常時は何もしない**: 全指標が正常なら介入しない (speak も禁止)
 - **プライバシー**: 個人を特定する情報は扱わない
+
+**ハードコードされた安全弁** (Sanitizer):
+
+- 温度設定範囲: 18〜28℃
+- ポンプ動作: 最大60秒
+- 報酬上限: 5000
+- 緊急度範囲: 0〜4
+- タスク作成レート: 10件/時間
+
+言語ベースの原則だけでは LLM のハルシネーションにより突破される可能性があるため、物理的安全に関わるパラメータはコードで強制する。これは Constitutional AI の否定ではなく、**工学的に必要な安全装置** である。
 
 #### 原則3: イベント駆動 (Event-Driven Architecture)
 
@@ -266,12 +278,47 @@ YOLOv11 ベースのコンピュータビジョンシステム。「ピクセル
 
 ### 6.1 デバイス種類
 
+#### スタンドアロンノード
+
 | デバイス | ハードウェア | ファームウェア | センサー |
 |---------|------------|--------------|---------|
-| sensor-02 | Seeed XIAO ESP32-C6 | MicroPython | BME680 (温湿度/気圧/ガス) + MH-Z19C (CO2) |
-| sensor-node | ESP32 | MicroPython | DHT22 (温湿度) |
-| sensor-node (C++) | ESP32 | PlatformIO C++ | BME680 |
-| camera-node | Freenove ESP32 WROVER | PlatformIO C++ | OV2640 カメラ |
+| unified-node | ESP32-C6 / ESP32-S3 | MicroPython | config.json で任意の組み合わせ |
+| sensor-02 | Seeed XIAO ESP32-C6 | MicroPython | BME680 + MH-Z19C (CO2) |
+| camera-node | Freenove ESP32 WROVER | Arduino C++ | OV2640 カメラ |
+
+**unified-node** は設定ファイル (`config.json`) で接続センサーを宣言的に定義する量産向けファームウェア。`SensorRegistry` がセンサーの遅延初期化・自動アドレス検出・エラー分離を行う。
+
+**対応センサードライバ** (6種):
+
+| ドライバ | センサー | バス | 計測チャネル |
+|---------|---------|------|------------|
+| BME680 | 温湿度/気圧/ガス | I2C | temperature, humidity, pressure, gas_resistance |
+| MH-Z19C | CO2 | UART | co2 |
+| DHT22/DHT11 | 温湿度 | GPIO | temperature, humidity |
+| PIR | 人感 | GPIO | motion |
+| BH1750 | 照度 | I2C | illuminance |
+| SHT3x | 温湿度 (高精度) | I2C | temperature, humidity |
+
+#### SensorSwarm (Hub + Leaf 2階層ネットワーク)
+
+WiFi を持たないバッテリー駆動の小型デバイス (Leaf) を、WiFi+MQTT 対応の中継器 (Hub) が集約するアーキテクチャ。
+
+```
+[Brain] ←MQTT→ [SwarmHub (ESP32, WiFi)]
+                    ├── ESP-NOW → [Leaf: 温湿度]
+                    ├── UART    → [Leaf: PIR+照度]
+                    └── I2C     → [Leaf: ドアセンサー]
+```
+
+| 要素 | 役割 | 通信 |
+|------|------|------|
+| SwarmHub | Leaf データを MQTT に中継、MCP ツール (`leaf_command`, `get_swarm_status`) を提供 | WiFi + MQTT |
+| Leaf (ESP-NOW) | 無線、200m 到達、バッテリー駆動 | ESP-NOW → Hub |
+| Leaf (UART) | 有線、Pi Pico 等 | UART → Hub |
+| Leaf (I2C) | 有線、ATtiny 等の超低消費電力 | I2C → Hub |
+| Leaf (BLE) | 未実装 (スタブのみ)、nRF54 ターゲット | — |
+
+**バイナリプロトコル**: 5〜245バイト、MAGIC `0x53`、XOR チェックサム。Hub が Leaf のバイナリメッセージをデコードし、per-channel MQTT (`office/{zone}/sensor/{hub_id}.{leaf_id}/{channel}`) として再発行。ドット区切りの device_id により **WorldModel のコード変更なしに** Swarm デバイスを統合。
 
 ### 6.2 共通ライブラリ: `edge/lib/soms_mcp.py`
 
@@ -314,46 +361,119 @@ YOLOv11 ベースのコンピュータビジョンシステム。「ピクセル
 ### 7.2 Dashboard Backend
 
 **場所**: `services/dashboard/backend/`
-**技術**: FastAPI + SQLAlchemy (async) + SQLite
+**技術**: FastAPI + SQLAlchemy (async) + SQLite (aiosqlite) / PostgreSQL (asyncpg)
 
 **データモデル**:
 
 | モデル | 主要フィールド | 用途 |
 |-------|--------------|------|
-| Task | title, description, bounty_gold, urgency(0-4), zone, announcement_audio_url, completion_audio_url | タスク管理 |
-| VoiceEvent | message, audio_url, tone, zone | 音声イベント記録 |
-| User | username, credits | ユーザー (スタブ) |
+| Task | title, description, bounty_gold, urgency(0-4), zone, assigned_to, accepted_at, announcement/completion_audio_url/text | タスク管理 |
+| VoiceEvent | message, audio_url, tone, zone | 音声イベント記録 (speak ツール用) |
+| User | username, display_name, is_active | ユーザー |
+| SystemStats | total_xp, tasks_completed, tasks_created | シングルトン統計 |
+
+**タスクライフサイクル**:
+```
+[Brain: create_task] → POST /tasks/ (重複検知: Stage1=title+location, Stage2=zone+task_type)
+    ↓
+[Pending] → Frontend に表示、announcement 音声自動再生
+    ↓ PUT /tasks/{id}/accept (assigned_to, accepted_at 記録)
+[Accepted] → 「対応中」表示、受諾音声再生
+    ↓ PUT /tasks/{id}/complete
+[Completed] → completion 音声再生、Wallet へ報酬支払い (fire-and-forget)
+```
 
 **主要 API**:
-- `GET /tasks/` — アクティブタスク一覧
-- `POST /tasks/` — タスク作成 (重複検知付き)
-- `PUT /tasks/{id}/complete` — タスク完了
+- `GET /tasks/` — アクティブタスク一覧 (期限切れ自動フィルタ)
+- `POST /tasks/` — タスク作成 (2段階重複検知)
+- `PUT /tasks/{id}/accept` — タスク受諾 (ユーザー割り当て)
+- `PUT /tasks/{id}/complete` — タスク完了 + Wallet 報酬支払い
 - `GET /voice-events/recent` — 直近60秒の音声イベント
 - `GET /tasks/stats` — キュー/アクティブ/完了統計
 
 ### 7.3 Voice サービス
 
 **場所**: `services/voice/src/`
-**技術**: FastAPI + VOICEVOX (Speaker ID 47: ナースロボ_タイプT)
+**技術**: FastAPI + VOICEVOX (Speaker ID 47: ナースロボ_タイプT) + LLM テキスト生成
 
 **音声生成フロー**:
 ```
 テキスト → VOICEVOX /audio_query (韻律生成)
         → VOICEVOX /synthesis (波形生成, WAV 24kHz)
-        → pydub (WAV → MP3 変換)
+        → pydub (WAV → MP3 64kbps 変換)
         → /audio/{filename} で配信
 ```
 
-**音声の使い分け**:
+**API エンドポイント**:
+
+| エンドポイント | 用途 | レイテンシ |
+|---|---|---|
+| `POST /api/voice/synthesize` | テキスト→音声 (speak ツール / 受諾) | 1-2秒 |
+| `POST /api/voice/announce_with_completion` | タスク用二重音声 (告知 + 完了) | 4-6秒 |
+| `GET /api/voice/rejection/random` | 事前生成ストックから即座に取得 | <100ms |
+| `GET /api/voice/rejection/status` | ストック残数確認 | <10ms |
+| `GET /audio/{filename}` | MP3 ファイル配信 | — |
+
+**場面別の音声フロー**:
+
+| 場面 | 音声ソース | タイミング |
+|------|----------|----------|
+| タスク告知 | `announce_with_completion` で LLM がテキスト生成 → VOICEVOX 合成 | タスク作成時に事前生成 |
+| タスク完了 | 上記で同時生成された completion 音声 | 完了ボタン押下時 |
+| タスク受諾 | `synthesize` で定型フレーズ合成 | 受諾ボタン押下時 (1-2秒待ち) |
+| タスク無視 | rejection ストックから取得 | 無視ボタン押下時 (即座) |
+| 健康助言・警告 | Brain の `speak` ツール → `synthesize` | ReAct サイクル中 |
+
+**Rejection ストック**: アイドル時に LLM でテキスト生成 + VOICEVOX で合成し、最大100個の MP3 を事前ストック。ストック80個以下でバックグラウンド補充開始。AI がタスクを無視された際の「傷ついた」「皮肉な」リアクション (6バリエーション) を即座に返す。
+
+**音声の使い分け** (speak ツール):
 
 | 場面 | トーン | 例 |
 |------|-------|-----|
 | 健康助言 | caring | 「少し体を動かしてみませんか？」 |
 | 環境警告 | alert | 「CO2濃度が上がっています」 |
 | 軽い指摘 | humorous | 「おやおや、センサーに何か起きたかな？」 |
-| 一般報告 | neutral | 「環境は快適です」 |
+| 一般 | neutral | 「いらっしゃいませ」 |
 
-**70文字制限**: `speak` ツールのメッセージは70文字以内。自然な発話ペースを保つための制約。
+**制約**: `speak` ツール70文字、タスク告知70文字、rejection 50文字。自然な発話ペースを保つための制約。
+**正常時は speak 禁止**: 「環境は快適です」のような状況報告は行わない (システムプロンプトで制御)。
+
+### 7.4 Wallet サービス (経済システム)
+
+**場所**: `services/wallet/src/`
+**技術**: FastAPI + SQLAlchemy (async) + PostgreSQL (asyncpg)
+
+SOMS の経済を支える **複式簿記ベースの信用台帳**。タスク報酬の発行・移転を追跡する。
+
+**コアモデル**:
+
+| モデル | 役割 |
+|-------|------|
+| Wallet | ユーザー残高。user_id=0 はシステムウォレット (通貨発行元、負残高許容) |
+| LedgerEntry | 複式簿記エントリ。1取引 = DEBIT + CREDIT の2行。参照IDで冪等性保証 |
+| Device | デバイスXPトラッキング。topic_prefix でゾーンマッチング |
+| RewardRate | デバイス種別ごとの報酬レート (llm_node: 5000/h, sensor_node: 500/h) |
+| SupplyStats | 通貨発行総量・流通量の追跡 |
+
+**報酬フロー**:
+```
+タスク完了 → Dashboard Backend → POST /transactions/task-reward
+         → System Wallet (user_id=0) から User Wallet へ振替
+         → SupplyStats.total_issued 更新
+```
+
+**XP → 報酬乗数** (計算ロジック実装済み、未適用):
+```
+multiplier = 1.0 + (device_xp / 1000) × 0.5  (上限 3.0×)
+例: 0 XP → 1.0×, 1000 XP → 1.5×, 4000+ XP → 3.0×
+```
+
+**現在の実装状況**:
+- タスク完了 → バウンティ支払い: **動作する**
+- Frontend での残高表示・履歴閲覧: **動作する**
+- デバイスXP付与 (タスク作成/完了時): **未接続** (xp_scorer ロジックは存在)
+- インフラ稼働報酬 (rate_per_hour): **テーブルのみ、スケジューラ未実装**
+- 通貨バーン: **未実装** (total_burned は常に 0)
 
 ---
 
@@ -489,17 +609,17 @@ LLM の出力
 
 | 層 | 技術 | 用途 |
 |----|------|------|
-| **LLM** | Qwen2.5 (Ollama, ROCm) / Mock LLM | 推論エンジン |
+| **LLM** | Qwen2.5:14b (Q4_K_M), Ollama (ROCm) / Mock LLM | 推論エンジン |
 | **Vision** | YOLOv11 (yolo11s.pt, yolo11s-pose.pt) | 物体検出/姿勢推定 |
 | **Backend** | Python 3.11, FastAPI, SQLAlchemy async | API/DB |
-| **Frontend** | React 19, TypeScript, Vite 7, Tailwind CSS 4 | UI |
-| **Voice** | VOICEVOX, pydub | 日本語音声合成 |
+| **Frontend** | React 19, TypeScript, Vite 7, Tailwind CSS 4, Framer Motion | UI |
+| **Voice** | VOICEVOX, pydub, LLM テキスト生成 | 日本語音声合成 |
 | **Messaging** | MQTT (Mosquitto), paho-mqtt 2.x | イベント通信 |
-| **Edge (Python)** | MicroPython, ESP32 | IoT ファームウェア |
-| **Edge (C++)** | PlatformIO, ArduinoJson | IoT ファームウェア |
-| **Database** | SQLite (aiosqlite) | タスク/イベント永続化 |
-| **Container** | Docker Compose v3.8 | デプロイメント |
-| **GPU** | AMD ROCm (RDNA 2/3) | LLM/Vision 推論 |
+| **Edge (Python)** | MicroPython, ESP32 (unified-node + SensorSwarm) | IoT ファームウェア |
+| **Edge (C++)** | Arduino, ESP32 WROVER | カメラノード |
+| **Database** | PostgreSQL 16 (asyncpg) + SQLite (aiosqlite fallback) | 永続化 |
+| **Container** | Docker Compose | デプロイメント |
+| **GPU** | AMD RX 9700 (RDNA4), ROCm, `HSA_OVERRIDE_GFX_VERSION=12.0.1` | LLM/Vision 推論 |
 
 ---
 
