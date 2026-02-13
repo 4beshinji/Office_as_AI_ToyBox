@@ -121,6 +121,10 @@ class Event(BaseModel):
             channel = self.data.get('channel', '?')
             change = self.data.get('change', 0)
             return f"センサー異常: {channel}が急変({change:.1f}変化)"
+        elif self.event_type == "door_opened":
+            return f"ドアが開きました ({self.data.get('device_id', '')})"
+        elif self.event_type == "door_closed":
+            return f"ドアが閉まりました ({self.data.get('device_id', '')})"
         return f"イベント: {self.event_type}"
 
 
@@ -142,6 +146,7 @@ class ZoneState(BaseModel):
     _prev_occupancy: int = 0
     _prev_temperature: Optional[float] = None
     _prev_humidity: Optional[float] = None
+    _prev_door_state: Optional[bool] = None
     _prev_env_timestamps: Dict[str, float] = {}
     
     class Config:

@@ -132,7 +132,25 @@ class WorldModel:
             zone.environment.co2 = int(fused_value)
         elif channel == "illuminance":
             zone.environment.illuminance = fused_value
-        
+        elif channel == "motion":
+            zone.occupancy.pir_detected = bool(fused_value)
+            zone.occupancy.person_count = self.sensor_fusion.integrate_occupancy(
+                vision_count=zone.occupancy.vision_count,
+                pir_active=zone.occupancy.pir_detected
+            )
+        elif channel == "door":
+            prev_door = getattr(zone, '_prev_door_state', None)
+            door_open = bool(fused_value)
+            if prev_door is not None and door_open != prev_door:
+                event = Event(
+                    timestamp=current_time,
+                    event_type="door_opened" if door_open else "door_closed",
+                    severity="info",
+                    data={"device_id": device_id, "state": "open" if door_open else "closed"}
+                )
+                zone.events.append(event)
+            zone._prev_door_state = door_open
+
         # Update timestamp
         zone.environment.timestamps[channel] = current_time
     
