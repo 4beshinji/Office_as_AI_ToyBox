@@ -221,6 +221,13 @@ Routers: `routers/wallets.py` (balance/create), `routers/transactions.py` (histo
 - Perception monitors are YAML-configured (`services/perception/config/monitors.yaml`), not hardcoded
 - Logging uses `loguru` (brain, voice, perception) and standard `logging` (world_model)
 
+## Parallel Development
+
+When working as one of multiple concurrent Claude Code workers, read these documents BEFORE starting:
+
+- `docs/parallel-dev/WORKER_GUIDE.md` — Lane definitions, file ownership, git workflow
+- `docs/parallel-dev/API_CONTRACTS.md` — Inter-service API contracts and mocking guidance
+
 ## Environment Configuration
 
 Key variables in `.env` (see `env.example`):
