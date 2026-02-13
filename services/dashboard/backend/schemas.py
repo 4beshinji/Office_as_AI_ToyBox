@@ -67,7 +67,7 @@ class TaskComplete(BaseModel):
     completion_note: Optional[str] = None  # Free-text (max 500 chars)
 
 class TaskAccept(BaseModel):
-    user_id: int
+    user_id: Optional[int] = None
 
 # SystemStats Schemas
 class SystemStatsResponse(BaseModel):
@@ -99,6 +99,10 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     pass
+
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    display_name: Optional[str] = None
 
 class User(UserBase):
     id: int

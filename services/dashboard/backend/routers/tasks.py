@@ -237,10 +237,10 @@ async def accept_task(task_id: int, body: schemas.TaskAccept, db: AsyncSession =
         raise HTTPException(status_code=404, detail="Task not found")
     if task.is_completed:
         raise HTTPException(status_code=400, detail="Task already completed")
-    if task.assigned_to is not None:
-        raise HTTPException(status_code=400, detail="Task already assigned")
+    if task.accepted_at is not None:
+        raise HTTPException(status_code=400, detail="Task already accepted")
 
-    task.assigned_to = body.user_id
+    task.assigned_to = body.user_id  # None for anonymous kiosk accept
     task.accepted_at = func.now()
     await db.commit()
     await db.refresh(task)

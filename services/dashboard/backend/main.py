@@ -3,8 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect, text
-from sqlalchemy.future import select
-from database import engine, AsyncSessionLocal, Base
+from database import engine, Base
 from routers import tasks, users, voice_events
 import models # Make sure models are registered
 
@@ -59,12 +58,6 @@ async def startup():
         # Add columns that create_all cannot add to existing tables
         await conn.run_sync(_migrate_add_columns)
 
-    # Seed default user if none exist
-    async with AsyncSessionLocal() as session:
-        result = await session.execute(select(models.User))
-        if not result.scalars().first():
-            session.add(models.User(username="guest", display_name="ゲスト"))
-            await session.commit()
 
 # Include Routers
 app.include_router(tasks.router)
