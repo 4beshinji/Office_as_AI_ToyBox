@@ -2,9 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import TaskCard, { Task } from './components/TaskCard';
 import { useAudioQueue, AudioPriority } from './audio';
-import UserSelector, { UserInfo } from './components/UserSelector';
-import WalletBadge from './components/WalletBadge';
-import WalletPanel from './components/WalletPanel';
 
 const ACCEPT_PHRASES = [
   "承知しました。よろしくお願いします。",
@@ -25,6 +22,12 @@ interface SystemStats {
   tasks_completed_last_hour: number;
 }
 
+interface SupplyStats {
+  total_issued: number;
+  total_burned: number;
+  circulating: number;
+}
+
 function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,8 +38,7 @@ function App() {
   const [ignoredTaskIds, setIgnoredTaskIds] = useState<Set<number>>(new Set());
   const initialLoadDone = useRef(false);
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
-  const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
-  const [walletOpen, setWalletOpen] = useState(false);
+  const [supply, setSupply] = useState<SupplyStats | null>(null);
 
   // Configuration
   const MAX_DISPLAY_TASKS = 10;
@@ -72,16 +74,20 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Poll system stats
+  // Poll system stats + supply
   useEffect(() => {
     const fetchStats = () => {
       fetch('/api/tasks/stats')
         .then(res => res.json())
         .then(data => setSystemStats(data))
         .catch(err => console.error("Failed to fetch stats:", err));
+      fetch('/api/wallet/supply')
+        .then(res => res.json())
+        .then(data => setSupply(data))
+        .catch(() => setSupply(null));
     };
     fetchStats();
-    const interval = setInterval(fetchStats, 5000);
+    const interval = setInterval(fetchStats, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -167,14 +173,12 @@ function App() {
   const handleAccept = (taskId: number) => {
     setAcceptedTaskIds(prev => new Set(prev).add(taskId));
 
-    // Notify backend of assignment
-    if (currentUser) {
-      fetch(`/api/tasks/${taskId}/accept`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: currentUser.id }),
-      }).catch(err => console.error('Failed to accept task:', err));
-    }
+    // Notify backend (anonymous accept — no user_id)
+    fetch(`/api/tasks/${taskId}/accept`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    }).catch(err => console.error('Failed to accept task:', err));
 
     enqueueFromApi(async () => {
       const text = pickRandom(ACCEPT_PHRASES);
@@ -238,14 +242,14 @@ function App() {
           >
             <div>
               <h1 className="text-4xl font-bold text-[var(--primary-500)]">
-                SOMS ダッシュボード
+                SOMS
               </h1>
               <p className="text-[var(--gray-600)] mt-1">
                 共生型オフィス管理システム
               </p>
             </div>
 
-            {/* System Stats + User & Wallet */}
+            {/* System Stats + Supply */}
             <div className="flex items-center gap-4">
               {systemStats && (
                 <div className="flex items-center gap-2">
@@ -257,11 +261,13 @@ function App() {
                   </div>
                 </div>
               )}
-              <UserSelector currentUser={currentUser} onSelect={setCurrentUser} />
-              <WalletBadge
-                userId={currentUser?.id ?? null}
-                onClick={() => setWalletOpen(true)}
-              />
+              {supply && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-yellow-100 to-amber-100 border border-[var(--gold)]">
+                  <span className="text-sm font-medium text-[var(--gold-dark)]">
+                    {supply.circulating} 流通
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Audio Toggle */}
@@ -290,7 +296,7 @@ function App() {
             お願い事一覧
           </h2>
           <p className="text-[var(--gray-600)]">
-            タスクを完了して SOMS コインを獲得しましょう。インフラの維持にも報酬が支払われます。
+            タスクを完了して報酬を受け取りましょう。スマホのウォレットアプリで QR コードを読み取ってください。
           </p>
         </div>
 
@@ -332,15 +338,6 @@ function App() {
           </motion.div>
         )}
       </main>
-
-      {/* Wallet Side Panel */}
-      {currentUser && (
-        <WalletPanel
-          userId={currentUser.id}
-          isOpen={walletOpen}
-          onClose={() => setWalletOpen(false)}
-        />
-      )}
     </div>
   );
 }
