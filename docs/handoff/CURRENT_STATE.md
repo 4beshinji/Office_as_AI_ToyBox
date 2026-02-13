@@ -1,9 +1,22 @@
 # SOMS 作業状態ドキュメント — マルチワーカー引き継ぎ用
 
-**更新日時**: 2026-02-13
+**更新日時**: 2026-02-13 (Session H 更新)
 **ブランチ**: main
-**HEAD**: `0821921` (fix: dashboard migrate function sync and App.tsx useRef for initialLoadDone)
-**未コミット**: `docs/architecture/kick-off.md` のみ (590行追加の大幅改訂)
+**HEAD**: `b1be95b` (refactor: consolidate all handoff docs into docs/handoff/)
+**未コミット**: wallet デフレ機構 + App.tsx 簡素化 + 設計ドキュメント (詳細は Session H ハンドオフ参照)
+
+---
+
+## 0. 最新セッション (Session H) — ウォレット分離設計
+
+**方針転換**: ダッシュボードとウォレットアプリを完全分離。
+- ダッシュボード = アカウント不要のキオスク (タスク表示 + 供給量 + QR)
+- ウォレット = スマホアプリ (残高・送金・決闘・QRスキャン報酬受取)
+- 決闘バックエンドは設計確定前のため revert 済み
+
+**変更**: App.tsx から UserSelector/WalletBadge/WalletPanel 除去、供給量バッジ追加
+**成果物**: `docs/architecture/wallet-separation.md` (設計ドキュメント)
+**詳細**: `docs/handoff/2026-02-13_session-h-wallet-separation.md`
 
 ---
 
