@@ -1,3 +1,4 @@
+import contextlib
 import aiohttp
 import os
 import json
@@ -10,6 +11,15 @@ class DashboardClient:
         self.voice_url = voice_url or os.getenv("VOICE_SERVICE_URL", "http://voice-service:8000")
         self.enable_voice = enable_voice
         self._session = session
+
+    @contextlib.asynccontextmanager
+    async def _get_session(self):
+        """Yield the shared session, or create an ephemeral one for standalone usage."""
+        if self._session:
+            yield self._session
+        else:
+            async with aiohttp.ClientSession() as session:
+                yield session
 
     async def create_task(
         self,
@@ -92,20 +102,20 @@ class DashboardClient:
                 logger.warning(f"Failed to generate dual voice: {e}")
 
         try:
-            async with self._session.post(url, json=payload) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    logger.info(f"Task created successfully: {data}")
+            async with self._get_session() as session:
+                async with session.post(url, json=payload) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        logger.info(f"Task created successfully: {data}")
 
-                    # Note: Voice was already generated and stored in task
-                    if voice_data:
-                        logger.info(f"Announcement: {voice_data.get('announcement_text')}")
-                        logger.info(f"Completion: {voice_data.get('completion_text')}")
+                        if voice_data:
+                            logger.info(f"Announcement: {voice_data.get('announcement_text')}")
+                            logger.info(f"Completion: {voice_data.get('completion_text')}")
 
-                    return data
-                else:
-                    logger.error(f"Failed to create task: {response.status} {await response.text()}")
-                    return None
+                        return data
+                    else:
+                        logger.error(f"Failed to create task: {response.status} {await response.text()}")
+                        return None
         except Exception as e:
             logger.error(f"Error communicating with Dashboard API: {e}")
             return None
@@ -114,18 +124,18 @@ class DashboardClient:
         """Fetch active (non-completed) tasks from dashboard."""
         url = f"{self.api_url}/tasks/"
         try:
-            async with self._session.get(url) as response:
-                if response.status == 200:
-                    tasks = await response.json()
-                    # Filter to non-completed tasks
-                    active = [
-                        t for t in tasks
-                        if not t.get("is_completed", False)
-                    ]
-                    return active
-                else:
-                    logger.error(f"Failed to fetch tasks: {response.status}")
-                    return []
+            async with self._get_session() as session:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        tasks = await response.json()
+                        active = [
+                            t for t in tasks
+                            if not t.get("is_completed", False)
+                        ]
+                        return active
+                    else:
+                        logger.error(f"Failed to fetch tasks: {response.status}")
+                        return []
         except Exception as e:
             logger.error(f"Error fetching active tasks: {e}")
             return []
@@ -134,12 +144,13 @@ class DashboardClient:
         """Fetch task statistics from dashboard."""
         url = f"{self.api_url}/tasks/stats"
         try:
-            async with self._session.get(url) as response:
-                if response.status == 200:
-                    return await response.json()
-                else:
-                    logger.warning(f"Failed to fetch task stats: {response.status}")
-                    return {}
+            async with self._get_session() as session:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        return await response.json()
+                    else:
+                        logger.warning(f"Failed to fetch task stats: {response.status}")
+                        return {}
         except Exception as e:
             logger.error(f"Error fetching task stats: {e}")
             return {}
@@ -160,14 +171,15 @@ class DashboardClient:
                 "task": task_data
             }
 
-            async with self._session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=180)) as resp:
-                if resp.status == 200:
-                    result = await resp.json()
-                    logger.info(f"Dual voice generated successfully")
-                    return result
-                else:
-                    logger.warning(f"Dual voice generation failed: {resp.status}")
-                    return None
+            async with self._get_session() as session:
+                async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=180)) as resp:
+                    if resp.status == 200:
+                        result = await resp.json()
+                        logger.info(f"Dual voice generated successfully")
+                        return result
+                    else:
+                        logger.warning(f"Dual voice generation failed: {resp.status}")
+                        return None
 
         except Exception as e:
             logger.warning(f"Failed to generate dual voice: {e}")

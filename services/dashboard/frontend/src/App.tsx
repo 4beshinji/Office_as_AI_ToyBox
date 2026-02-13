@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import TaskCard, { Task } from './components/TaskCard';
 import { useAudioQueue, AudioPriority } from './audio';
@@ -33,7 +33,7 @@ function App() {
   const [playedVoiceEventIds, setPlayedVoiceEventIds] = useState<Set<number>>(new Set());
   const [acceptedTaskIds, setAcceptedTaskIds] = useState<Set<number>>(new Set());
   const [ignoredTaskIds, setIgnoredTaskIds] = useState<Set<number>>(new Set());
-  const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const initialLoadDone = useRef(false);
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
   const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
   const [walletOpen, setWalletOpen] = useState(false);

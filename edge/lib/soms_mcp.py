@@ -34,6 +34,7 @@ class MCPDevice:
         """
         cfg = self._load_config(config_path)
         cfg.update(overrides)
+        self.config = cfg
 
         self.device_id = cfg["device_id"]
         self.zone = cfg.get("zone", "default")
