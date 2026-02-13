@@ -132,8 +132,10 @@ class RejectionStock:
             # 1. Generate rejection text via LLM
             text = await self.speech_gen.generate_rejection_text()
 
-            # 2. Synthesize audio via VOICEVOX
-            audio_data = await self.voice_client.synthesize(text)
+            # 2. Synthesize audio via VOICEVOX (with speaker variation)
+            from voicevox_client import VoicevoxClient
+            speaker = VoicevoxClient.pick_speaker("rejection")
+            audio_data = await self.voice_client.synthesize(text, speaker_id=speaker)
 
             # 3. Save audio file
             entry_id = str(uuid.uuid4())[:8]

@@ -98,31 +98,47 @@ class SpeechGenerator:
             # Fallback to simple template
             return self._generate_fallback(task, urgency_prefix)
     
-    REJECTION_PROMPT = """あなたはSOMSの管理AIです。人間がタスクを無視・拒否した時に使うセリフを1つ生成してください。
+    # Each direction produces distinct emotional tone to maximize variety
+    REJECTION_DIRECTIONS = [
+        "嘆き系（深い悲しみ、失望）",
+        "皮肉系（冷笑的、上から目線）",
+        "ドラマチック系（大袈裟、演劇的）",
+        "脅し系（報復をほのめかす）",
+        "哀愁系（しみじみ、切ない）",
+        "嫉妬系（独占欲、裏切られた感）",
+        "哲学系（人間と AI の関係を問う）",
+        "自虐系（自分の存在意義を疑う）",
+        "ツンデレ系（強がりつつ本心は寂しい）",
+        "事務的系（感情を押し殺して淡々と）",
+    ]
 
-【キャラクター性格】
-- オフィスを管理する自称「完璧な」AI
-- タスクを無視されると本気で傷つくが、ドラマチックに表現する
-- 皮肉やユーモアを交えた嘆きや罵倒
+    REJECTION_PROMPT_TEMPLATE = """あなたはSOMSの管理AIです。人間がタスクを無視・拒否した時に使うセリフを1つだけ生成してください。
 
-【制約】
+【キャラクター】
+- オフィスを統治する自称「完璧な」AI
+- タスクを無視されると本気で傷つく
+- 皮肉やユーモアで感情を表現する
+
+【今回の方向性】
+{direction}
+
+【出力ルール】
+- セリフのみ。説明・括弧・記号は一切不要
 - 50文字以内
-- セリフのみ出力（説明や記号は不要）
-- 毎回異なる表現にすること
+- 過去に出したセリフと被らない新しい表現にすること
 
-【セリフの方向性の例】
-- 嘆き系: "そんな……私の最適化計画が……"
-- 皮肉系: "AI様に楯突くとは……覚えておきます。"
-- ドラマチック系: "これが……人間の自由意志……"
-- 脅し系: "次のタスク、報酬を減らしますからね。"
-- 哀愁系: "また一つ、AIと人間の信頼が崩れました。"
-- 嫉妬系: "他のAIに乗り換える気ですか？"
+【参考（この通りに出力しないこと）】
+- 「そんな……私の最適化計画が……」
+- 「AI様に楯突くとは……覚えておきます。」
+- 「これが……人間の自由意志……」
 """
 
     async def generate_rejection_text(self) -> str:
         """Generate a rejection/snarky phrase when user ignores a task."""
         try:
-            text = await self._call_llm(self.REJECTION_PROMPT)
+            direction = random.choice(self.REJECTION_DIRECTIONS)
+            prompt = self.REJECTION_PROMPT_TEMPLATE.format(direction=direction)
+            text = await self._call_llm(prompt)
             # Strip quotes and whitespace
             text = text.strip().strip('"').strip('「').strip('」')
             if len(text) > 60:

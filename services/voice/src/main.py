@@ -198,8 +198,9 @@ async def announce_task_with_completion(request: TaskAnnounceRequest):
         # 3. Synthesize announcement
         announcement_audio = await voice_client.synthesize(announcement_text)
 
-        # 4. Synthesize completion
-        completion_audio = await voice_client.synthesize(completion_text)
+        # 4. Synthesize completion (with speaker variation)
+        completion_speaker = VoicevoxClient.pick_speaker("completion")
+        completion_audio = await voice_client.synthesize(completion_text, speaker_id=completion_speaker)
 
         # 5. Save announcement audio
         announcement_id = str(uuid.uuid4())
@@ -251,7 +252,8 @@ async def get_random_rejection():
     rejection_stock.request_started()
     try:
         text = await speech_gen.generate_rejection_text()
-        audio_data = await voice_client.synthesize(text)
+        rejection_speaker = VoicevoxClient.pick_speaker("rejection")
+        audio_data = await voice_client.synthesize(text, speaker_id=rejection_speaker)
         audio_id = str(uuid.uuid4())[:8]
         audio_filename = f"rejection_ondemand_{audio_id}.mp3"
         audio_path = AUDIO_DIR / audio_filename
