@@ -92,8 +92,8 @@ function App() {
     const currentIds = new Set(tasks.map(t => t.id));
 
     // On first load, just record existing IDs without playing
-    if (!initialLoadDone) {
-      setInitialLoadDone(true);
+    if (!initialLoadDone.current) {
+      initialLoadDone.current = true;
       setPrevTaskIds(currentIds);
       return;
     }
@@ -109,7 +109,8 @@ function App() {
     }
 
     setPrevTaskIds(currentIds);
-  }, [tasks, isAudioEnabled, loading, initialLoadDone, enqueue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- prevTaskIds intentionally captures previous render's value
+  }, [tasks, isAudioEnabled, loading, enqueue]);
 
   // Voice event polling (ephemeral speak messages from Brain)
   useEffect(() => {

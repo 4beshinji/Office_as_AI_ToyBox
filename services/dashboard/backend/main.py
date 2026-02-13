@@ -22,7 +22,7 @@ app.add_middleware(
 )
 
 
-async def _migrate_add_columns(conn):
+def _migrate_add_columns(conn):
     """Add missing columns to existing tables (stopgap until Alembic)."""
     insp = inspect(conn)
 
