@@ -81,7 +81,7 @@ async def transfer(
         if existing.scalars().first():
             raise ValueError(f"Duplicate reference_id: {reference_id}")
 
-    # Lock wallets in id order to prevent deadlocks
+    # Lock wallets in id order to prevent deadlocks; auto-create if missing
     user_ids = sorted([from_user_id, to_user_id])
     wallets = {}
     for uid in user_ids:
@@ -90,7 +90,9 @@ async def transfer(
         )
         w = result.scalars().first()
         if not w:
-            raise ValueError(f"Wallet for user_id={uid} not found")
+            w = Wallet(user_id=uid, balance=0)
+            db.add(w)
+            await db.flush()
         wallets[uid] = w
 
     from_wallet = wallets[from_user_id]

@@ -17,6 +17,36 @@ logger = logging.getLogger(__name__)
 
 WALLET_SERVICE_URL = os.getenv("WALLET_SERVICE_URL", "http://wallet:8000")
 
+
+async def _grant_device_xp(zone: str, task_id: int, xp_amount: int, event_type: str):
+    """Fire-and-forget XP grant to zone devices via wallet service."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            await client.post(
+                f"{WALLET_SERVICE_URL}/devices/xp-grant",
+                json={
+                    "zone": zone,
+                    "task_id": task_id,
+                    "xp_amount": xp_amount,
+                    "event_type": event_type,
+                },
+            )
+    except Exception as e:
+        logger.warning("XP grant failed for zone=%s task=%d: %s", zone, task_id, e)
+
+
+async def _get_zone_multiplier(zone: str) -> float:
+    """Fetch reward multiplier for a zone from wallet service. Returns 1.0 on failure."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{WALLET_SERVICE_URL}/devices/zone-multiplier/{zone}")
+            if resp.status_code == 200:
+                return resp.json().get("multiplier", 1.0)
+    except Exception as e:
+        logger.warning("Zone multiplier fetch failed for zone=%s: %s", zone, e)
+    return 1.0
+
+
 router = APIRouter(
     prefix="/tasks",
     tags=["tasks"]
@@ -169,6 +199,11 @@ async def create_task(task: schemas.TaskCreate, db: AsyncSession = Depends(get_d
 
     await db.commit()
     await db.refresh(new_task)
+
+    # Grant device XP for task creation (fire-and-forget)
+    if new_task.zone:
+        await _grant_device_xp(new_task.zone, new_task.id, 10, "task_created")
+
     return _task_to_response(new_task)
 
 @router.put("/{task_id}/accept", response_model=schemas.Task)
@@ -208,17 +243,27 @@ async def complete_task(task_id: int, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(task)
 
+    # Grant device XP for task completion (fire-and-forget)
+    if task.zone:
+        await _grant_device_xp(task.zone, task.id, 20, "task_completed")
+
     # Pay bounty via wallet service (fire-and-forget)
     if task.assigned_to and task.bounty_gold:
+        # Apply zone device XP multiplier (1.0x-3.0x)
+        multiplier = 1.0
+        if task.zone:
+            multiplier = await _get_zone_multiplier(task.zone)
+        adjusted_bounty = int(task.bounty_gold * multiplier)
+
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
                 await client.post(
                     f"{WALLET_SERVICE_URL}/transactions/task-reward",
                     json={
                         "user_id": task.assigned_to,
-                        "amount": task.bounty_gold,
+                        "amount": adjusted_bounty,
                         "task_id": task.id,
-                        "description": f"Task: {task.title}",
+                        "description": f"Task: {task.title} ({multiplier:.1f}x)",
                     },
                 )
         except Exception as e:

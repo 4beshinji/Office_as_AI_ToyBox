@@ -10,7 +10,7 @@ from schemas import (
     DeviceCreate, DeviceUpdate, DeviceResponse,
     DeviceXpGrantRequest, DeviceXpResponse, DeviceXpStatsResponse,
 )
-from services.xp_scorer import grant_xp_to_zone
+from services.xp_scorer import grant_xp_to_zone, compute_reward_multiplier, find_zone_devices
 
 router = APIRouter(prefix="/devices", tags=["devices"])
 
@@ -65,3 +65,38 @@ async def update_device(
     await db.commit()
     await db.refresh(device)
     return device
+
+
+@router.post("/xp-grant", response_model=DeviceXpResponse)
+async def xp_grant(body: DeviceXpGrantRequest, db: AsyncSession = Depends(get_db)):
+    """Grant XP to all active devices in a zone."""
+    devices_awarded, total_xp, device_ids = await grant_xp_to_zone(
+        db,
+        zone=body.zone,
+        task_id=body.task_id,
+        xp_amount=body.xp_amount,
+        event_type=body.event_type,
+    )
+    await db.commit()
+    return DeviceXpResponse(
+        devices_awarded=devices_awarded,
+        total_xp_granted=total_xp,
+        device_ids=device_ids,
+    )
+
+
+@router.get("/zone-multiplier/{zone}")
+async def get_zone_multiplier(zone: str, db: AsyncSession = Depends(get_db)):
+    """Get the average reward multiplier for devices in a zone."""
+    devices = await find_zone_devices(db, zone)
+    if not devices:
+        return {"zone": zone, "multiplier": 1.0, "device_count": 0, "avg_xp": 0}
+
+    avg_xp = sum(d.xp for d in devices) / len(devices)
+    multiplier = compute_reward_multiplier(int(avg_xp))
+    return {
+        "zone": zone,
+        "multiplier": multiplier,
+        "device_count": len(devices),
+        "avg_xp": int(avg_xp),
+    }

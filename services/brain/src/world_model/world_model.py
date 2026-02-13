@@ -132,6 +132,10 @@ class WorldModel:
             zone.environment.co2 = int(fused_value)
         elif channel == "illuminance":
             zone.environment.illuminance = fused_value
+        elif channel == "pressure":
+            zone.environment.pressure = fused_value
+        elif channel == "gas_resistance":
+            zone.environment.gas_resistance = int(fused_value)
         elif channel == "motion":
             zone.occupancy.pir_detected = bool(fused_value)
             zone.occupancy.person_count = self.sensor_fusion.integrate_occupancy(
@@ -412,6 +416,9 @@ class WorldModel:
                 else:
                     summary += "\n"
             
+            if zone.environment.pressure is not None:
+                summary += f"- 気圧: {zone.environment.pressure:.1f}hPa\n"
+
             if zone.environment.illuminance is not None:
                 summary += f"- 照度: {zone.environment.illuminance:.0f}lux\n"
             

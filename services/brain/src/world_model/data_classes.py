@@ -13,6 +13,8 @@ class EnvironmentData(BaseModel):
     humidity: Optional[float] = None  # Percentage
     co2: Optional[int] = None  # ppm
     illuminance: Optional[float] = None  # lux
+    pressure: Optional[float] = None  # hPa
+    gas_resistance: Optional[int] = None  # Ohms (BME680 VOC indicator)
     
     # Timestamps for each measurement
     timestamps: Dict[str, float] = Field(default_factory=dict)
