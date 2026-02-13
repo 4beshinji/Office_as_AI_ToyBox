@@ -63,3 +63,11 @@ class VirtualDevice:
     
     def publish_telemetry(self, subtopic: str, data: dict):
         self.client.publish(f"{self.topic_prefix}/{subtopic}", json.dumps(data))
+
+    def publish_sensor_data(self, data: dict):
+        """Publish per-channel telemetry with {"value": X} for WorldModel."""
+        for channel, value in data.items():
+            self.client.publish(
+                f"{self.topic_prefix}/{channel}",
+                json.dumps({"value": value}),
+            )

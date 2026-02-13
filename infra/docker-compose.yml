@@ -83,7 +83,7 @@ services:
       - voicevox
     environment:
       - VOICEVOX_URL=http://voicevox:50021
-      - LLM_API_URL=http://ollama:11434/v1
+      - LLM_API_URL=${LLM_API_URL:-http://mock-llm:8000/v1}
       - LLM_MODEL=${LLM_MODEL}
     volumes:
       - ../services/voice/src:/app
@@ -97,7 +97,8 @@ services:
     restart: always
     devices:
       - /dev/kfd:/dev/kfd
-      - /dev/dri:/dev/dri
+      - /dev/dri/card1:/dev/dri/card1
+      - /dev/dri/renderD128:/dev/dri/renderD128
     ports:
       - "11434:11434"
     volumes:
@@ -125,7 +126,8 @@ services:
     network_mode: host
     devices:
       - /dev/kfd:/dev/kfd
-      - /dev/dri:/dev/dri
+      - /dev/dri/card1:/dev/dri/card1
+      - /dev/dri/renderD128:/dev/dri/renderD128
     group_add:
       - video
     security_opt:

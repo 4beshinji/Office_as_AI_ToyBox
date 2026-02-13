@@ -9,7 +9,8 @@ services:
     restart: unless-stopped
     devices:
       - /dev/kfd:/dev/kfd
-      - /dev/dri:/dev/dri
+      - /dev/dri/card1:/dev/dri/card1
+      - /dev/dri/renderD128:/dev/dri/renderD128
     ports:
       - "8000:8000"
     volumes:

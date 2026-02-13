@@ -21,14 +21,18 @@ devices = []
 
 class SensorNode(VirtualDevice):
     def __init__(self, client):
-        super().__init__("sensor_01", "office/env/sensor_01", client)
+        super().__init__("sensor_01", "office/main/sensor/sensor_01", client)
         self.state = {"temperature": 22.0, "humidity": 50.0}
+        self.register_tool("get_status", self.get_status)
+
+    def get_status(self):
+        return dict(self.state)
 
     def update(self):
         # Random Walk
         self.state["temperature"] += random.uniform(-0.1, 0.1)
         self.state["humidity"] += random.uniform(-0.5, 0.5)
-        self.publish_telemetry("status", self.state)
+        self.publish_sensor_data(self.state)
 
 class HydroNode(VirtualDevice):
     def __init__(self, client):
