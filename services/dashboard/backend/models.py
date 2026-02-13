@@ -61,5 +61,4 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     display_name = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
-    credits = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

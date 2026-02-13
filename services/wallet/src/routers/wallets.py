@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from database import get_db
-from models import Wallet, LedgerEntry
+from models import LedgerEntry
 from schemas import WalletCreate, WalletResponse, LedgerEntryResponse
 from services.ledger import get_or_create_wallet
 
@@ -20,12 +20,8 @@ async def create_wallet(body: WalletCreate, db: AsyncSession = Depends(get_db)):
 
 @router.get("/{user_id}", response_model=WalletResponse)
 async def get_wallet(user_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(Wallet).filter(Wallet.user_id == user_id)
-    )
-    wallet = result.scalars().first()
-    if not wallet:
-        raise HTTPException(status_code=404, detail="Wallet not found")
+    wallet = await get_or_create_wallet(db, user_id)
+    await db.commit()
     return wallet
 
 
@@ -36,13 +32,8 @@ async def get_history(
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
 ):
-    # Find wallet
-    result = await db.execute(
-        select(Wallet).filter(Wallet.user_id == user_id)
-    )
-    wallet = result.scalars().first()
-    if not wallet:
-        raise HTTPException(status_code=404, detail="Wallet not found")
+    wallet = await get_or_create_wallet(db, user_id)
+    await db.commit()
 
     entries = await db.execute(
         select(LedgerEntry)

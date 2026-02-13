@@ -37,7 +37,6 @@ async def _migrate_add_columns(conn):
         ("tasks", "accepted_at", "TIMESTAMP WITH TIME ZONE", None),
         ("users", "display_name", "VARCHAR", None),
         ("users", "is_active", "BOOLEAN", "TRUE"),
-        ("users", "credits", "INTEGER", "0"),
         ("users", "created_at", "TIMESTAMP WITH TIME ZONE", "NOW()"),
     ]
     for table, col_name, col_type, default in migrations:
