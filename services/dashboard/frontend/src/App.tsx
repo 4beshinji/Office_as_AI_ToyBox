@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import TaskCard, { Task } from './components/TaskCard';
+import { useAudioQueue, AudioPriority } from './audio';
 
 const ACCEPT_PHRASES = [
   "承知しました。よろしくお願いします。",
@@ -26,41 +27,7 @@ function App() {
   const MAX_DISPLAY_TASKS = 10;
   const COMPLETED_Display_SECONDS = 300; // 5 minutes
 
-  // Voice synthesis helper (for accept phrases)
-  const synthesizeAndPlay = useCallback(async (text: string) => {
-    try {
-      const res = await fetch('/api/voice/synthesize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.audio_url) {
-          const audio = new Audio(data.audio_url);
-          audio.play().catch(e => console.warn('Audio playback failed:', e));
-        }
-      }
-    } catch (e) {
-      console.warn('Voice synthesis failed:', e);
-    }
-  }, []);
-
-  // Play pre-generated rejection audio from stock
-  const playRejectionAudio = useCallback(async () => {
-    try {
-      const res = await fetch('/api/voice/rejection/random');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.audio_url) {
-          const audio = new Audio(data.audio_url);
-          audio.play().catch(e => console.warn('Rejection audio playback failed:', e));
-        }
-      }
-    } catch (e) {
-      console.warn('Rejection audio fetch failed:', e);
-    }
-  }, []);
+  const { enqueue, enqueueFromApi } = useAudioQueue(isAudioEnabled);
 
   useEffect(() => {
     const fetchTasks = () => {
@@ -98,14 +65,10 @@ function App() {
     // Find genuinely new, uncompleted tasks
     const newTasks = tasks.filter(t => !prevTaskIds.has(t.id) && !t.is_completed);
 
-    if (newTasks.length > 0) {
-      const latestTask = newTasks[0];
-      if (latestTask.announcement_audio_url) {
-        console.log("Announcement sound trigger:", latestTask.title, latestTask.announcement_audio_url);
-        const audio = new Audio(latestTask.announcement_audio_url);
-        audio.play().catch(e => {
-          console.warn("Audio playback failed (check auto-play policy):", e);
-        });
+    for (const task of newTasks) {
+      if (task.announcement_audio_url) {
+        console.log("Announcement sound trigger:", task.title, task.announcement_audio_url);
+        enqueue(task.announcement_audio_url, AudioPriority.ANNOUNCEMENT);
       }
     }
 
@@ -122,10 +85,7 @@ function App() {
         .then((events: { id: number; audio_url: string }[]) => {
           for (const event of events) {
             if (!playedVoiceEventIds.has(event.id) && event.audio_url) {
-              const audio = new Audio(event.audio_url);
-              audio.play().catch(e => {
-                console.warn("Voice event playback failed:", e);
-              });
+              enqueue(event.audio_url, AudioPriority.VOICE_EVENT);
               setPlayedVoiceEventIds(prev => new Set(prev).add(event.id));
             }
           }
@@ -170,18 +130,24 @@ function App() {
   const handleAccept = (taskId: number) => {
     setAcceptedTaskIds(prev => new Set(prev).add(taskId));
 
-    if (isAudioEnabled) {
-      synthesizeAndPlay(pickRandom(ACCEPT_PHRASES));
-    }
+    enqueueFromApi(async () => {
+      const text = pickRandom(ACCEPT_PHRASES);
+      const res = await fetch('/api/voice/synthesize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.audio_url ?? null;
+    }, AudioPriority.USER_ACTION);
   };
 
   const handleComplete = (taskId: number) => {
     const task = tasks.find(t => t.id === taskId);
 
-    // Play completion audio if enabled and available
-    if (isAudioEnabled && task?.completion_audio_url) {
-      const audio = new Audio(task.completion_audio_url);
-      audio.play().catch(e => console.warn("Completion audio failed:", e));
+    if (task?.completion_audio_url) {
+      enqueue(task.completion_audio_url, AudioPriority.USER_ACTION);
     }
 
     fetch(`/api/tasks/${taskId}/complete`, {
@@ -205,9 +171,12 @@ function App() {
   const handleIgnore = (taskId: number) => {
     setIgnoredTaskIds(prev => new Set(prev).add(taskId));
 
-    if (isAudioEnabled) {
-      playRejectionAudio();
-    }
+    enqueueFromApi(async () => {
+      const res = await fetch('/api/voice/rejection/random');
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.audio_url ?? null;
+    }, AudioPriority.USER_ACTION);
   };
 
   return (
