@@ -68,7 +68,7 @@ def _task_to_response(task_model: models.Task) -> schemas.Task:
 
 @router.post("/", response_model=schemas.Task)
 async def create_task(task: schemas.TaskCreate, db: AsyncSession = Depends(get_db)):
-    # Duplicate Check: Check for active tasks with same title and location
+    # Duplicate Check Stage 1: exact title + location match
     query = select(models.Task).filter(
         models.Task.title == task.title,
         models.Task.location == task.location,
@@ -76,6 +76,26 @@ async def create_task(task: schemas.TaskCreate, db: AsyncSession = Depends(get_d
     )
     result = await db.execute(query)
     existing_task = result.scalars().first()
+
+    # Duplicate Check Stage 2: same zone + overlapping task_type
+    # (LLM often generates slightly different titles for the same issue)
+    if not existing_task and task.zone and task.task_type:
+        query2 = select(models.Task).filter(
+            models.Task.zone == task.zone,
+            models.Task.is_completed == False
+        )
+        result2 = await db.execute(query2)
+        candidates = result2.scalars().all()
+        new_types = set(task.task_type)
+        for candidate in candidates:
+            if candidate.task_type:
+                try:
+                    existing_types = set(json.loads(candidate.task_type))
+                except (json.JSONDecodeError, TypeError):
+                    existing_types = set()
+                if new_types & existing_types:  # Any overlap
+                    existing_task = candidate
+                    break
 
     if existing_task:
         # Update existing task in place (preserve ID to prevent repeated audio)
@@ -134,7 +154,7 @@ async def complete_task(task_id: int, db: AsyncSession = Depends(get_db)):
     task.completed_at = func.now()
     await db.commit()
     await db.refresh(task)
-    return task
+    return _task_to_response(task)
 
 @router.put("/{task_id}/reminded", response_model=schemas.Task)
 async def mark_task_reminded(task_id: int, db: AsyncSession = Depends(get_db)):
@@ -147,7 +167,7 @@ async def mark_task_reminded(task_id: int, db: AsyncSession = Depends(get_db)):
     task.last_reminded_at = func.now()
     await db.commit()
     await db.refresh(task)
-    return task
+    return _task_to_response(task)
 # Queue Management Endpoints
 
 @router.get("/queue", response_model=List[schemas.Task])

@@ -192,8 +192,13 @@ class ToolExecutor:
         summaries = []
         for t in tasks[:10]:  # Limit to 10
             title = t.get("title", "")
-            status = t.get("status", "")
-            summaries.append(f"- {title} (status: {status})")
+            completed = t.get("is_completed", False)
+            zone = t.get("zone", "")
+            task_type = t.get("task_type", [])
+            status_str = "完了" if completed else "対応中"
+            zone_str = f", zone: {zone}" if zone else ""
+            type_str = f", type: {','.join(task_type)}" if task_type else ""
+            summaries.append(f"- {title} ({status_str}{zone_str}{type_str})")
 
         return {
             "success": True,

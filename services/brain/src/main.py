@@ -92,11 +92,29 @@ class Brain:
                 if now - event.timestamp < 300:
                     recent_events.append(f"[{zone_id}] {event.description}")
 
+        # Fetch active tasks to prevent duplicates
+        active_tasks = await self.dashboard.get_active_tasks()
+
         # Build messages
         system_msg = build_system_message()
         user_content = f"## 現在のオフィス状態\n{llm_context}"
         if recent_events:
             user_content += f"\n\n## 直近のイベント\n" + "\n".join(recent_events)
+
+        # Inject active tasks so LLM knows what already exists
+        if active_tasks:
+            user_content += "\n\n## 現在のアクティブタスク（重複作成禁止）\n"
+            for t in active_tasks[:10]:
+                title = t.get("title", "")
+                zone = t.get("zone", "")
+                task_type = t.get("task_type", [])
+                zone_str = f" [{zone}]" if zone else ""
+                type_str = f" ({','.join(task_type)})" if task_type else ""
+                user_content += f"- {title}{zone_str}{type_str}\n"
+            user_content += "上記タスクと同じ目的のタスクを新規作成しないでください。"
+        else:
+            user_content += "\n\n## 現在のアクティブタスク\nなし"
+
         user_msg = {"role": "user", "content": user_content}
 
         messages = [system_msg, user_msg]

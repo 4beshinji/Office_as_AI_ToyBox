@@ -64,11 +64,11 @@ class DashboardClient:
             "bounty_gold": bounty,
             "task_type": task_types,
             "expires_at": expires_at,
-            "location": "Office",
+            "location": zone or "Office",
             "urgency": urgency,
             "zone": zone
         }
-        
+
         # Generate dual voice if enabled (before task creation)
         voice_data = None
         if announce:
@@ -76,7 +76,7 @@ class DashboardClient:
                 voice_data = await self._generate_dual_voice({
                     "title": title,
                     "description": description,
-                    "location": "Office",
+                    "location": zone or "Office",
                     "bounty_gold": bounty,
                     "urgency": urgency,
                     "zone": zone
@@ -121,7 +121,7 @@ class DashboardClient:
                         # Filter to non-completed tasks
                         active = [
                             t for t in tasks
-                            if t.get("status") != "completed"
+                            if not t.get("is_completed", False)
                         ]
                         return active
                     else:

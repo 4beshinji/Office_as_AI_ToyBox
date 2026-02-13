@@ -343,7 +343,27 @@ class WorldModel:
             return self._llm_context_cache
         
         context_parts = []
-        
+
+        # Collect alerts for abnormal values across all zones
+        alerts = []
+        for zone_id, zone in sorted(self.zones.items()):
+            env = zone.environment
+            if env.temperature is not None:
+                if env.temperature > 26:
+                    alerts.append(f"⚠️ [{zone_id}] 高温: {env.temperature:.1f}℃（基準: 18-26℃）")
+                elif env.temperature < 18:
+                    alerts.append(f"⚠️ [{zone_id}] 低温: {env.temperature:.1f}℃（基準: 18-26℃）")
+            if env.co2 is not None and env.co2 > 1000:
+                alerts.append(f"⚠️ [{zone_id}] CO2高濃度: {env.co2}ppm（基準: 1000ppm以下）")
+            if env.humidity is not None:
+                if env.humidity > 70:
+                    alerts.append(f"⚠️ [{zone_id}] 高湿度: {env.humidity:.0f}%（基準: 30-70%）")
+                elif env.humidity < 30:
+                    alerts.append(f"⚠️ [{zone_id}] 低湿度: {env.humidity:.0f}%（基準: 30-70%）")
+
+        if alerts:
+            context_parts.append("### アラート（要対応）\n" + "\n".join(alerts))
+
         for zone_id, zone in sorted(self.zones.items()):
             summary = f"### {zone_id}\n"
             
