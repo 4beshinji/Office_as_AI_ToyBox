@@ -149,6 +149,60 @@ async def transfer(
     return txn_id
 
 
+async def burn(
+    db: AsyncSession,
+    user_id: int,
+    amount: int,
+    transaction_type: str,
+    description: Optional[str] = None,
+    reference_id: Optional[str] = None,
+) -> uuid.UUID:
+    """Burn (destroy) currency from a user wallet.
+
+    Creates a single DEBIT entry with no counterparty and increments
+    SupplyStats.total_burned so that circulating supply shrinks.
+
+    Raises:
+        ValueError: insufficient funds or invalid amount
+    """
+    if amount <= 0:
+        raise ValueError("Burn amount must be positive")
+
+    result = await db.execute(
+        select(Wallet).filter(Wallet.user_id == user_id).with_for_update()
+    )
+    wallet = result.scalars().first()
+    if not wallet:
+        raise ValueError(f"Wallet not found for user {user_id}")
+    if wallet.balance < amount:
+        raise ValueError("Insufficient funds for burn")
+
+    wallet.balance -= amount
+
+    txn_id = uuid.uuid4()
+
+    entry = LedgerEntry(
+        transaction_id=txn_id,
+        wallet_id=wallet.id,
+        amount=-amount,
+        balance_after=wallet.balance,
+        entry_type="DEBIT",
+        transaction_type=transaction_type,
+        description=description,
+        reference_id=reference_id,
+        counterparty_wallet_id=None,
+    )
+    db.add(entry)
+
+    await _update_supply(db, burned=amount)
+    await db.flush()
+    logger.info(
+        "Burn %s: user=%d, amount=%d, type=%s",
+        txn_id, user_id, amount, transaction_type,
+    )
+    return txn_id
+
+
 async def _update_supply(db: AsyncSession, issued: int = 0, burned: int = 0):
     """Update the single-row supply_stats tracker."""
     result = await db.execute(

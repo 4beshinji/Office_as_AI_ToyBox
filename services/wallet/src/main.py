@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy import text
@@ -7,6 +9,10 @@ from database import engine, Base, AsyncSessionLocal
 from models import Wallet, RewardRate, SupplyStats
 from routers import wallets, transactions, devices, admin
 from services.ledger import SYSTEM_USER_ID
+from services.demurrage import apply_demurrage
+from services.monetary_policy import DEMURRAGE_INTERVAL
+
+logger = logging.getLogger(__name__)
 
 SEED_REWARD_RATES = [
     {"device_type": "llm_node", "rate_per_hour": 5000, "min_uptime_for_reward": 300},
@@ -48,7 +54,24 @@ async def lifespan(app: FastAPI):
 
         await db.commit()
 
+    # Background demurrage loop
+    demurrage_task = asyncio.create_task(_demurrage_loop())
     yield
+    demurrage_task.cancel()
+    try:
+        await demurrage_task
+    except asyncio.CancelledError:
+        pass
+
+
+async def _demurrage_loop() -> None:
+    """Periodically apply demurrage to all eligible wallets."""
+    while True:
+        await asyncio.sleep(DEMURRAGE_INTERVAL)
+        try:
+            await apply_demurrage()
+        except Exception:
+            logger.exception("Demurrage cycle failed")
 
 
 app = FastAPI(title="SOMS Wallet Service", lifespan=lifespan)

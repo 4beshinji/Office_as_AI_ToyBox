@@ -42,6 +42,20 @@ class TransactionResponse(BaseModel):
     entries: List[LedgerEntryResponse]
 
 
+# Transfer fee info
+class TransferFeeInfo(BaseModel):
+    fee_rate: float
+    fee_amount: int
+    net_amount: int      # amount actually received by recipient
+    min_transfer: int
+    below_minimum: bool  # True when amount < min_transfer
+
+class P2PTransferResponse(BaseModel):
+    transaction_id: UUID
+    entries: List[LedgerEntryResponse]
+    fee: TransferFeeInfo
+
+
 # Task Reward
 class TaskRewardRequest(BaseModel):
     user_id: int
