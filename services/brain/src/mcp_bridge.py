@@ -9,11 +9,12 @@ class MCPBridge:
         self.mqtt_client = mqtt_client
         self.pending_requests: Dict[str, asyncio.Future] = {}
         self.tools: Dict[str, Dict[str, Any]] = {}
+        self._loop: asyncio.AbstractEventLoop | None = None
 
     async def call_tool(self, agent_id: str, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         request_id = str(uuid.uuid4())
         topic = f"mcp/{agent_id}/request/call_tool"
-        
+
         payload = {
             "jsonrpc": "2.0",
             "method": "call_tool",
@@ -23,10 +24,10 @@ class MCPBridge:
             },
             "id": request_id
         }
-        
+
         # Create a Future to await response
-        loop = asyncio.get_running_loop()
-        future = loop.create_future()
+        self._loop = asyncio.get_running_loop()
+        future = self._loop.create_future()
         self.pending_requests[request_id] = future
         
         # Publish request
@@ -52,10 +53,13 @@ class MCPBridge:
             request_id = payload["id"]
             
         if request_id in self.pending_requests:
-            future = self.pending_requests[request_id]
-            if not future.done():
+            future = self.pending_requests.pop(request_id)
+            if not future.done() and self._loop:
                 if "error" in payload:
-                     future.set_exception(Exception(payload["error"]))
+                    self._loop.call_soon_threadsafe(
+                        future.set_exception, Exception(payload["error"])
+                    )
                 else:
-                     future.set_result(payload.get("result"))
-            del self.pending_requests[request_id]
+                    self._loop.call_soon_threadsafe(
+                        future.set_result, payload.get("result")
+                    )

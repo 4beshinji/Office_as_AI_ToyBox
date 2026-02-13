@@ -27,6 +27,7 @@ class ImageRequester:
         self.port = port
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         self.pending_requests: Dict[str, asyncio.Future] = {}
+        self._loop: asyncio.AbstractEventLoop | None = None
         self.client.on_message = self._on_message
         self.client.connect(broker, port)
         self.client.subscribe("mcp/+/response/#")
@@ -34,38 +35,42 @@ class ImageRequester:
         logger.info(f"ImageRequester connected to {broker}:{port}")
         
     def _on_message(self, client, userdata, msg):
-        """レスポンス受信時のコールバック"""
+        """レスポンス受信時のコールバック (MQTT thread)"""
         try:
             # トピックからrequest_idを抽出
             # mcp/camera_node_01/response/req-abc123
             parts = msg.topic.split('/')
             request_id = parts[-1]
-            
-            if request_id not in self.pending_requests:
+
+            future = self.pending_requests.pop(request_id, None)
+            if future is None:
                 logger.warning(f"Unknown request_id: {request_id}")
                 return
-            
+
+            if not self._loop or future.done():
+                return
+
             payload = json.loads(msg.payload)
-            
+
             # Base64デコード
             image_b64 = payload["image"]
             image_bytes = base64.b64decode(image_b64)
-            
+
             # OpenCV形式に変換
             nparr = np.frombuffer(image_bytes, np.uint8)
             image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            
+
             if image is None:
                 logger.error(f"Failed to decode image for {request_id}")
-                future = self.pending_requests.pop(request_id)
-                future.set_exception(ValueError("Image decode failed"))
+                self._loop.call_soon_threadsafe(
+                    future.set_exception, ValueError("Image decode failed")
+                )
                 return
-            
+
             # Futureを完了
-            future = self.pending_requests.pop(request_id)
-            future.set_result(image)
+            self._loop.call_soon_threadsafe(future.set_result, image)
             logger.debug(f"Image received: {request_id}, shape={image.shape}")
-                
+
         except Exception as e:
             logger.error(f"Error processing response: {e}", exc_info=True)
     
@@ -89,10 +94,10 @@ class ImageRequester:
             np.ndarray: OpenCV画像 (BGR), タイムアウト時はNone
         """
         request_id = f"req-{uuid.uuid4().hex[:8]}"
-        
+
         # Futureを作成
-        loop = asyncio.get_event_loop()
-        future = loop.create_future()
+        self._loop = asyncio.get_running_loop()
+        future = self._loop.create_future()
         self.pending_requests[request_id] = future
         
         # リクエスト送信

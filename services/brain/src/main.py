@@ -43,6 +43,7 @@ class Brain:
         # Event-driven trigger
         self._cycle_triggered = asyncio.Event()
         self._last_event_count: dict[str, int] = {}
+        self._loop: asyncio.AbstractEventLoop | None = None
 
     def on_connect(self, client, userdata, flags, rc, properties=None):
         logger.info(f"Connected to MQTT Broker with result code {rc}")
@@ -67,7 +68,8 @@ class Brain:
                 }
                 if current_event_counts != self._last_event_count:
                     self._last_event_count = current_event_counts
-                    self._cycle_triggered.set()
+                    if self._loop:
+                        self._loop.call_soon_threadsafe(self._cycle_triggered.set)
 
         except Exception as e:
             logger.error(f"Error processing message: {e}")
@@ -180,6 +182,7 @@ class Brain:
         logger.info("Cycle complete.")
 
     async def run(self):
+        self._loop = asyncio.get_running_loop()
         logger.info(f"Connecting to {MQTT_BROKER}:{MQTT_PORT}...")
         try:
             self.client.connect(MQTT_BROKER, MQTT_PORT, 60)
