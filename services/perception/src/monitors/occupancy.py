@@ -39,7 +39,7 @@ class OccupancyMonitor(MonitorBase):
         payload = {
             "zone": self.zone_name,
             "occupied": occupied,
-            "count": count,
+            "person_count": count,
             "timestamp": time.time()
         }
         

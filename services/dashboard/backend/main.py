@@ -24,19 +24,29 @@ app.add_middleware(
 
 async def _migrate_add_columns(conn):
     """Add missing columns to existing tables (stopgap until Alembic)."""
-    inspector = inspect(conn)
-    existing = {col["name"] for col in inspector.get_columns("tasks")}
+    insp = inspect(conn)
 
+    # Collect existing columns per table
+    table_columns = {}
+    for table_name in insp.get_table_names():
+        table_columns[table_name] = {c["name"] for c in insp.get_columns(table_name)}
+
+    # (table, column, SQL type, default_expr_or_None)
     migrations = [
-        ("assigned_to", "INTEGER"),
-        ("accepted_at", "TIMESTAMP WITH TIME ZONE"),
+        ("tasks", "assigned_to", "INTEGER", None),
+        ("tasks", "accepted_at", "TIMESTAMP WITH TIME ZONE", None),
+        ("users", "display_name", "VARCHAR", None),
+        ("users", "is_active", "BOOLEAN", "TRUE"),
+        ("users", "credits", "INTEGER", "0"),
+        ("users", "created_at", "TIMESTAMP WITH TIME ZONE", "NOW()"),
     ]
-    for col_name, col_type in migrations:
-        if col_name not in existing:
+    for table, col_name, col_type, default in migrations:
+        if table in table_columns and col_name not in table_columns[table]:
+            default_clause = f" DEFAULT {default}" if default else ""
             conn.execute(text(
-                f"ALTER TABLE tasks ADD COLUMN {col_name} {col_type}"
+                f"ALTER TABLE {table} ADD COLUMN {col_name} {col_type}{default_clause}"
             ))
-            logger.info("Migrated: added column tasks.%s", col_name)
+            logger.info("Migrated: added column %s.%s", table, col_name)
 
 
 # Startup Event
