@@ -17,10 +17,40 @@
 **ルール**: メインディレクトリで `git checkout` 禁止。各自の worktree パスで作業すること。
 新ブランチ作成時は worktree 内で `git checkout -b lane/L{N}-new-description` を実行。
 
-## main HEAD: `f861b7d`
+## main HEAD: `fde0055`
 
 Session I の全レーンがマージ済み。全サービス healthy 稼働確認済み。
 受け入れ基準テスト全 PASS (Docker build, frontend build, API 動作, Brain ReAct loop)。
+
+## 監視 #5 — Session J タスク進捗
+
+| レーン | HEAD | 新コミット | Session J 進捗 | Worktree |
+|-------|------|-----------|---------------|----------|
+| L3 | `70c4e7b` | 0 | ❌ 未着手 | ✅ 正常 |
+| L4 | `d4822cd` | +1 (interval fix) | ⚠ 独自バグ修正のみ、H-7 未着手 | ✅ 正常 |
+| L5 | `0692efe` | +2 (テスト拡充) | ⚠ テスト基盤構築中、**CRITICAL H-8 未着手** | ✅ 正常 |
+| L6 | `46d5922` | 0 | ❌ 未着手、**CRITICAL H-9 未着手** | ✅ 正常 |
+| L7 | `f861b7d` | 0 (rebase済) | ❌ 未着手 | ✅ 正常 |
+| L9 | `16138d5` | +4 (PWA+Send改善) | ✅ タスク#4,#5 完了 | ✅ 正常 |
+
+### Worktree 遵守: 全レーン正常 ✅ (main にブランチ切替なし)
+
+### L9 の進捗詳細 (最も活発)
+- `178cf32` feat: PWA service worker → Session J #5 (PWA merge prep) ✅
+- `006fd80` feat: vite-plugin-pwa + Workbox → Session J #5 ✅
+- `acea9b1` fix: SW autoUpdate → Session J #5 ✅
+- `16138d5` fix: Send confirmation + ESLint → Session J #4 (Send UX) ✅
+- ビルド確認: **PASS** (246KB + sw.js + manifest.webmanifest)
+- 残: #1 QR fallback, #2 型安全, #3 env API URL
+
+### L5 の進捗詳細
+- `d530624` feat: integration test + SQLite fallback
+- `0692efe` test: heartbeat reward tests, 17 sections (47 assertions)
+- テスト基盤は整備されたが **H-8 (multiplier 適用)** の実装修正は未着手
+
+### L4 の進捗詳細
+- `d4822cd` fix: PostgreSQL interval → portable datetime (SQLite 互換修正)
+- Session J の **H-7 (bounty validation)** は未着手
 
 ---
 
