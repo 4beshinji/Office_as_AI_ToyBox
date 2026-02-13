@@ -1,14 +1,20 @@
 from pydantic import BaseModel
 from typing import Optional, List
+from datetime import datetime
 
 class Task(BaseModel):
-    """Task model for voice announcement."""
+    """Task model for voice announcement, aligned with Dashboard TaskBase schema."""
     title: str
     description: Optional[str] = None
     location: Optional[str] = None
     bounty_gold: int = 10
+    bounty_xp: int = 50
     urgency: int = 2  # 0-4
     zone: Optional[str] = None
+    task_type: Optional[List[str]] = None
+    expires_at: Optional[datetime] = None
+    min_people_required: int = 1
+    estimated_duration: int = 10  # minutes
 
 class SynthesizeRequest(BaseModel):
     """Request model for direct text-to-speech synthesis."""

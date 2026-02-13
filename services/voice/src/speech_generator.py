@@ -18,6 +18,8 @@ class SpeechGenerator:
 - 報酬: {bounty_gold}最適化承認スコア
 - 緊急度: {urgency}/4
 - エリア: {zone}
+- 種別: {task_type}
+- 所要時間: {estimated_duration}
 
 【制約】
 - 70文字以内
@@ -65,6 +67,10 @@ class SpeechGenerator:
         elif task.urgency >= 3:
             urgency_prefix = "至急、"
         
+        # Format new fields for prompt
+        task_type_str = "、".join(task.task_type) if task.task_type else "一般"
+        duration_str = f"約{task.estimated_duration}分" if task.estimated_duration else "不明"
+        
         # Format prompt with task data
         prompt = self.TASK_ANNOUNCEMENT_PROMPT.format(
             title=task.title,
@@ -72,7 +78,9 @@ class SpeechGenerator:
             location=task.location or "場所不明",
             bounty_gold=task.bounty_gold,
             urgency=task.urgency,
-            zone=task.zone or "不明"
+            zone=task.zone or "不明",
+            task_type=task_type_str,
+            estimated_duration=duration_str,
         )
         
         try:

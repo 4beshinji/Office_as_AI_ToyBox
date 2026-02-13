@@ -94,7 +94,12 @@ class RejectionStock:
             import random
             idx = random.randrange(len(self._entries))
             entry = self._entries.pop(idx)
-            self._save_manifest()
+            try:
+                self._save_manifest()
+            except Exception as e:
+                self._entries.insert(idx, entry)
+                logger.error(f"Failed to save manifest after pop, entry restored: {e}")
+                return None
         logger.info(
             f"Served rejection audio: {entry['text']} "
             f"(stock remaining: {self.count})"
@@ -151,7 +156,14 @@ class RejectionStock:
                     if old_path.exists():
                         old_path.unlink()
                 self._entries.append(entry)
-                self._save_manifest()
+                try:
+                    self._save_manifest()
+                except Exception as e:
+                    self._entries.pop()
+                    if audio_path.exists():
+                        audio_path.unlink()
+                    logger.error(f"Manifest save failed, rolled back entry: {e}")
+                    return False
 
             logger.info(
                 f"Generated rejection entry: '{text}' (stock: {self.count})"
