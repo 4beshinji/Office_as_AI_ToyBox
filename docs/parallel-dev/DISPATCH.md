@@ -7,27 +7,57 @@
 ## 現在の main HEAD
 
 ```
+c8cb90b feat(L9): scaffold mobile wallet PWA app with API client
+478ae97 docs: add worker dispatch instructions and update current state
 c0467ac docs: add parallel development worker guide and API contracts
 e07602e feat: add task completion report with status and MQTT broadcast
-98c322f docs: add wallet separation design and session H handoff
 ```
 
-## ブランチ状態サマリー
+## ⚠ 重大問題: 共有ワーキングツリーの競合
 
-| ブランチ | main +N | 状態 | 備考 |
-|---------|---------|------|------|
-| `lane/L4-error-boundary-and-users` | +1 | **作業中** | ErrorBoundary 完了 + Users CRUD / kiosk accept が stash 中 |
-| `lane/L3-voice-model-and-fixes` | +1 | **要リセット** | L4 コミット混入。main から再作成すべき |
-| `lane/L4-dashboard-improvements` | +0 | **廃止** | 空。`L4-error-boundary-and-users` に統合済み |
-| `lane/L7-infra-cleanup` | +0 | **未着手** | main と同一 |
+**複数のワーカーが同じ `.git` ディレクトリで同時に `git checkout` を実行しており、以下の問題が発生中**:
+
+1. **ブランチ間作業混入**: L3/L9 の変更が L7 ブランチにコミットされている
+2. **stash 消失**: L4 用に保存した stash が空になった
+3. **未コミット変更の流出**: あるワーカーの変更が別ブランチにステージされる
+4. **ファイルリバート**: ドキュメント更新が別ワーカーのチェックアウトで上書きされる
+
+**全ワーカー必須対策**:
+- コミット前に `git branch --show-current` でブランチ確認
+- `git diff --cached --stat` でステージ内容が自レーンのファイルのみか確認
+- 可能であれば `git worktree add` で独立ワーキングツリーを使用
+
+## ブランチ状態サマリー (監視 #2)
+
+| ブランチ | main +N/-N | 状態 | 備考 |
+|---------|-----------|------|------|
+| `lane/L3-voice-model-and-fixes` | +0/-0 | **リセット済** | main と同一。Voice 作業は L7 ブランチに混入 (後述) |
+| `lane/L4-error-boundary-and-users` | +1/-2 | **中断** | ErrorBoundary 完了。stash 消失、Users CRUD 再実装が必要 |
+| `lane/L6-brain-fixes` | +0/-0 | **作業開始** | sanitizer.py の H-5 修正が未コミット。ワーキングツリー競合で消失リスクあり |
+| `lane/L7-infra-cleanup` | +3/-0 | **⚠ 要クリーンアップ** | 3コミット中2件は他レーン混入 (下記参照) |
+| `lane/L9-wallet-app` | +0/-0 | **作業中** | ページ実装が L7 ブランチに混入。本ブランチにコミットなし |
+
+### L7 ブランチ汚染の詳細
+
+```
+lane/L7-infra-cleanup (main +3):
+  54391c1 feat(L3): expand Voice Task model + L9 wallet app ページ (15 files, +786/-32)  ← L3+L9 混入
+  52cd986 feat(L9): implement wallet app pages — package-lock.json only (+3906)            ← L9 混入
+  4af92c3 feat(L7): add healthchecks to all 11 Docker services (+70/-1)                    ← L7 本来の作業
+```
+
+**復旧方針**:
+- L7: `4af92c3` のみ有効。新ブランチ作成して cherry-pick するか rebase -i で整理
+- L3: `54391c1` から `services/voice/` ファイルのみ cherry-pick して L3 ブランチに移動
+- L9: `54391c1` から `services/wallet-app/` ファイルのみ + `52cd986` を L9 ブランチに移動
 
 ## stash 情報
 
 ```
-stash@{0}: On lane/L4-error-boundary-and-users: L4-worker-in-progress: users CRUD, kiosk accept, component cleanup
+(空)
 ```
 
-L4 ワーカーの作業途中。`git stash pop` で復元可能。
+stash は消失済み。L4 ワーカーは Users CRUD を再実装する必要あり。
 
 ---
 
@@ -63,19 +93,27 @@ L4 ワーカーの作業途中。`git stash pop` で復元可能。
 
 ---
 
-### L3 — Voice Service (要ブランチ再作成)
+### L3 — Voice Service (L7 ブランチから作業を回収)
 
 **優先度**: 高 (M-7 対応)
-**ブランチ修正手順**:
+**状態**: L3 の作業が `lane/L7-infra-cleanup` の `54391c1` に混入済み
+
+**復帰手順**:
 ```bash
-git branch -D lane/L3-voice-model-and-fixes   # 汚染ブランチ削除
-git checkout -b lane/L3-voice-model-and-fixes main
+git checkout lane/L3-voice-model-and-fixes
+# L7 ブランチの混入コミットから voice ファイルのみ取り出す
+git checkout 54391c1 -- services/voice/
+git commit -m "feat(L3): expand Voice Task model, fix rejection stock race condition"
 ```
 
-**タスク**:
-1. **M-7 対応**: Voice Service の Task モデル拡張 (`services/voice/src/models.py`)
-   - Dashboard の TaskCreate スキーマと整合させる (urgency, zone, bounty_gold 等)
-   - `speech_generator.py` が拡張フィールドを活用するよう更新
+**完了済み** (L7 ブランチ `54391c1` にて):
+- [x] Voice Task モデル拡張 (`models.py`)
+- [x] Rejection stock レースコンディション修正 (`rejection_stock.py`)
+- [x] Audio 定数抽出 (`speech_generator.py`)
+- [x] main.py 更新
+
+**残タスク**:
+1. L3 ブランチに正しくコミットを移動 (上記手順)
 2. Rejection stock の品質向上 (LLM プロンプト調整)
 3. VOICEVOX speaker バリエーション検討
 
@@ -83,31 +121,33 @@ git checkout -b lane/L3-voice-model-and-fixes main
 
 ---
 
-### L4 — Dashboard (作業中 → 継続)
+### L4 — Dashboard (中断 → 再実装が必要)
 
 **優先度**: 高
-**ブランチ**: `lane/L4-error-boundary-and-users` (既存)
+**ブランチ**: `lane/L4-error-boundary-and-users` (既存、main に 2 コミット遅れ)
 
 **復帰手順**:
 ```bash
 git checkout lane/L4-error-boundary-and-users
-git stash pop
+git rebase main    # dispatch docs + L9 scaffold を取り込む
 ```
 
 **完了済み**:
 - [x] React Error Boundary (`acfd450`)
-- [x] (stash) Users CRUD 完成 (GET/{id}, PUT/{id}, ページネーション, IntegrityError 処理)
-- [x] (stash) TaskAccept の user_id を Optional 化 (anonymous kiosk 対応)
-- [x] (stash) 不要コンポーネント削除 (UserSelector, WalletBadge, WalletPanel)
+
+**⚠ stash 消失 — 以下は再実装が必要**:
+- [ ] Users CRUD (GET/{id}, PUT/{id}, ページネーション, IntegrityError 処理)
+- [ ] TaskAccept の user_id を Optional 化 (anonymous kiosk 対応)
+- [ ] 不要コンポーネント削除 (UserSelector, WalletBadge, WalletPanel)
 
 **残タスク**:
-1. stash を pop してコミット
-2. **レーン違反修正**: `queue_manager.py` の変更は L6 に委譲するか revert する
-   - 該当: `dashboard._get_session()` への変更 → L6 が `services/brain/` で対応すべき
-3. App.tsx の統合確認 (削除コンポーネントの参照が残っていないか)
-4. Frontend ビルド確認: `npm run build`
+1. `git rebase main` で最新化
+2. Users CRUD 再実装
+3. TaskAccept anonymous kiosk 対応
+4. **レーン違反禁止**: `queue_manager.py` (brain) には触れない。L6 に委譲
+5. Frontend ビルド確認: `npm run build`
 
-**注意**: `services/wallet/`, `services/brain/` には触れない。`queue_manager.py` の変更は L6 向けに別途 PR/パッチ化すること。
+**注意**: `services/wallet/`, `services/brain/` には触れない。
 
 ---
 
@@ -126,40 +166,58 @@ git stash pop
 
 ---
 
-### L6 — Brain (未着手)
+### L6 — Brain (作業開始 → 未コミット変更あり)
 
 **優先度**: 高 (H-5 対応)
-**ブランチ**: `git checkout -b lane/L6-brain-fixes main`
+**ブランチ**: `lane/L6-brain-fixes` (既存、main と同一)
+
+**作業中の変更** (未コミット、ワーキングツリー競合で消失リスクあり):
+- `sanitizer.py`: `validate_action()` の speak cooldown 記録を `record_speak()` メソッドに分離
+  - これは H-5 修正の一部 (バリデーション成功後にのみ記録する)
 
 **タスク**:
-1. **H-5 対応**: `sanitizer.py:56-65` のレート制限タイミング修正
-   - `record_task_created()` をバリデーション成功後に移動
-2. `queue_manager.py` の ephemeral session 修正 (L4 が発見した問題)
+1. **H-5 対応**: `sanitizer.py` のレート制限タイミング修正 ← 着手済み
+   - `record_speak()` を `validate_action()` から分離 ← 完了 (要コミット)
+   - `record_task_created()` も同様に分離する
+   - `tool_executor.py` から成功時のみ `record_*()` を呼ぶ
+2. `queue_manager.py` の ephemeral session 修正
    - `aiohttp.ClientSession()` → `self.dashboard._get_session()` に変更
 3. task_report イベント受信後の Brain 反応ロジック検討
-   - WorldModel にイベントは入る (`data_classes.py`) が LLM への反映はまだ
 4. アクション履歴の LLM コンテキスト注入量チューニング
 
-**注意**: 他の `services/` には触れない。MQTT 購読パターンの変更は WORKER_GUIDE の MQTT 表を更新すること。
+**⚠ 注意**: 未コミット変更は他ワーカーのブランチ切替で消失する可能性がある。こまめにコミットすること。他の `services/` には触れない。
 
 ---
 
-### L7 — Infra / Docker (未着手 → 既存ブランチあり)
+### L7 — Infra / Docker (コミット済み → 要クリーンアップ)
 
 **優先度**: 中 (M-5 対応)
-**ブランチ**: `lane/L7-infra-cleanup` (既存、main と同一)
+**ブランチ**: `lane/L7-infra-cleanup` (main +3、うち2件は混入)
 
-**タスク**:
-1. **M-5 対応**: Perception の `network_mode: host` と `networks:` の競合修正
-   - `infra/docker-compose.yml:168` から perception の `networks:` を削除
-2. **L-1〜L-8** 低優先度対応:
-   - Dockerfile ベースイメージのタグ固定
-   - 全サービスにヘルスチェック追加
-   - 不要パッケージの整理
-3. `docker-compose.yml` の検証: `docker compose config`
-4. `.env.example` の更新 (新しい環境変数があれば追加)
+**完了済み**:
+- [x] 全11サービスにヘルスチェック追加 (`4af92c3`)
+- [x] mosquitto タグ固定 (`latest` → `2`)
 
-**注意**: サービスのソースコードには触れない。他レーンから `docker-compose.yml` 変更依頼が来たら統合する。
+**⚠ 要クリーンアップ**: ブランチに L3/L9 のコミットが混入。マージ前に整理が必要:
+```bash
+# 方法1: 新ブランチで L7 コミットのみ cherry-pick
+git checkout -b lane/L7-infra-cleanup-clean main
+git cherry-pick 4af92c3
+git branch -m lane/L7-infra-cleanup-clean lane/L7-infra-cleanup
+
+# 方法2: interactive rebase で不要コミットを除去
+git checkout lane/L7-infra-cleanup
+git rebase -i main  # 54391c1 と 52cd986 を drop
+```
+
+**残タスク**:
+1. ブランチクリーンアップ (上記)
+2. **M-5 対応**: Perception の `network_mode: host` と `networks:` の競合修正
+3. Dockerfile ベースイメージのタグ固定
+4. `docker-compose.yml` の検証: `docker compose config`
+5. `.env.example` の更新
+
+**注意**: サービスのソースコードには触れない。
 
 ---
 
@@ -178,73 +236,56 @@ git stash pop
 
 ---
 
-### L9 — Mobile Wallet App / PWA (新規)
+### L9 — Mobile Wallet App / PWA (作業中 → L7 ブランチから回収)
 
 **優先度**: 高
-**ブランチ**: `git checkout -b lane/L9-wallet-app main`
+**ブランチ**: `lane/L9-wallet-app` (既存、main と同一)
+**状態**: ページ実装が `lane/L7-infra-cleanup` の `54391c1` + `52cd986` に混入
 
-**技術スタック**: React 19 + TypeScript + Vite 6 + Tailwind CSS 4 + React Router 7 (PWA)
-**ディレクトリ**: `services/wallet-app/` (スキャフォールド作成済み)
+**回収手順**:
+```bash
+git checkout lane/L9-wallet-app
+# L7 ブランチから wallet-app ファイルを取り出す
+git checkout 54391c1 -- services/wallet-app/
+git checkout 52cd986 -- services/wallet-app/package-lock.json
+git commit -m "feat(L9): implement wallet app pages — Home, Send, History, QR Scan"
+```
 
-**スキャフォールド済み**:
-- [x] `package.json`, `vite.config.ts`, `tsconfig.json`
-- [x] `src/api/wallet.ts` — Wallet API クライアント (全エンドポイント型定義済み)
-- [x] `public/manifest.json` — PWA マニフェスト
-- [x] `src/App.tsx` — ルーター骨格 (placeholder)
+**完了済み** (L7 ブランチに混入):
+- [x] Home ページ (`Home.tsx`)
+- [x] 送金ページ (`Send.tsx`)
+- [x] 履歴ページ (`History.tsx`)
+- [x] QR スキャンページ (`Scan.tsx`)
+- [x] 共通コンポーネント (BalanceCard, BottomNav, TransactionItem)
+- [x] useUserId フック
+- [x] App.tsx ルーティング更新
+- [x] package-lock.json (npm install 済み)
 
-**タスク**:
-1. `npm install` で依存インストール
-2. **Home ページ** (`src/pages/Home.tsx`)
-   - 残高表示 (大きなフォント、SOMS 単位変換: balance / 1000)
-   - 直近の取引 3 件
-   - 供給量サマリー
-3. **QR スキャンページ** (`src/pages/Scan.tsx`)
-   - カメラアクセスで QR コード読み取り
-   - QR ペイロード形式: `soms://reward?task_id={id}&amount={amount}`
-   - `claimTaskReward()` API 呼出
-4. **送金ページ** (`src/pages/Send.tsx`)
-   - 宛先ユーザー ID 入力
-   - 金額入力 + リアルタイム手数料プレビュー (`previewFee()`)
-   - 確認 → `sendTransfer()` 実行
-5. **履歴ページ** (`src/pages/History.tsx`)
-   - 無限スクロール (offset ページネーション)
-   - 取引タイプ別フィルタ
-   - デビット/クレジット色分け
-6. **共通コンポーネント**
-   - `BottomNav.tsx` — タブナビゲーション (Home / Scan / Send / History)
-   - `BalanceCard.tsx` — 残高表示カード
-   - `TransactionItem.tsx` — 取引行コンポーネント
-7. **ユーザー識別** — localStorage に user_id を保存 (初回起動時に入力 or QR から取得)
-
-**API 依存** (全て `services/wallet-app/src/api/wallet.ts` に実装済み):
-- `GET /api/wallet/wallets/{user_id}` — 残高
-- `GET /api/wallet/wallets/{user_id}/history` — 履歴
-- `GET /api/wallet/supply` — 供給量
-- `GET /api/wallet/transactions/transfer-fee?amount=X` — 手数料プレビュー
-- `POST /api/wallet/transactions/p2p-transfer` — P2P 送金
-- `POST /api/wallet/transactions/task-reward` — QR 報酬受取
-
-**モック方法**: Wallet Service が停止中でも `vite.config.ts` のプロキシ先を変更して MSW 等でスタブ可能。
+**残タスク**:
+1. L9 ブランチに正しくコミットを移動 (上記手順)
+2. TypeScript ビルド確認: `npm run build`
+3. 実機テスト (Wallet Service 起動状態で)
+4. PWA オフライン対応 (Service Worker)
 
 **注意**:
 - `services/wallet/` (バックエンド) には触れない。API 契約は `API_CONTRACTS.md` §2 準拠。
 - `services/dashboard/` には触れない。コード共有なし。
-- 決闘 (NFC/BLE) は MVP スコープ外。設計確定後に Capacitor 化を検討。
+- 決闘 (NFC/BLE) は MVP スコープ外。
 
 ---
 
 ## レーン間の依存関係
 
 ```
-L4 (stash pop + commit) ──→ L6 (queue_manager.py 修正を引き取る)
-L3 (Voice model 拡張)   ──→ L6 (Brain が新フィールドを活用するなら)
-L7 (docker-compose 修正) ──→ L2 (Perception の network_mode 修正後にテスト)
-L9 (Wallet App)          ──→ L5 (Wallet API が安定していれば独立開発可能)
+L4 (rebase + 再実装) ──→ L6 (queue_manager.py 修正を引き取る)
+L3 (回収 + 継続)      ──→ L6 (Brain が新フィールドを活用するなら)
+L7 (クリーンアップ)   ──→ L2 (Perception の network_mode 修正後にテスト)
+L9 (回収 + 継続)      ──→ L5 (Wallet API が安定していれば独立開発可能)
 ```
 
 ## マージ順序 (推奨)
 
-1. **L7** — docker-compose は全サービスに影響。最初にマージ。
+1. **L7** — docker-compose は全サービスに影響。**ブランチクリーンアップ後に**最初にマージ。
 2. **L4** — ErrorBoundary + Users CRUD + kiosk accept。
 3. **L6** — H-5 修正 + queue_manager + task_report 活用。L4 の後。
 4. **L3** — Voice model 拡張。独立。
@@ -261,3 +302,5 @@ L9 (Wallet App)          ──→ L5 (Wallet API が安定していれば独立
 - 他レーンのファイルを変更する必要がある場合、**別コミットで分離**し PR 説明に明記
 - コミットメッセージは `{type}(L{N}): {description}` 形式
 - ブランチ名は `lane/L{N}-{description}` 形式
+- **コミット前に必ず `git branch --show-current` でブランチを確認**
+- **`git diff --cached --stat` でステージ内容が自レーンのファイルのみか確認**
