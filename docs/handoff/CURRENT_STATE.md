@@ -1,26 +1,38 @@
 # SOMS 作業状態ドキュメント — マルチワーカー引き継ぎ用
 
-**更新日時**: 2026-02-13 (Session H 更新)
+**更新日時**: 2026-02-13 (Session I 更新)
 **ブランチ**: main
-**HEAD**: `b1be95b` (refactor: consolidate all handoff docs into docs/handoff/)
-**未コミット**: wallet デフレ機構 + App.tsx 簡素化 + 設計ドキュメント (詳細は Session H ハンドオフ参照)
+**HEAD**: `c0467ac` (docs: add parallel development worker guide and API contracts)
+
+**Session I の成果**:
+- タスク完了レポート機能 (`e07602e`): report_status + completion_note + MQTT broadcast + Brain 受信
+- 並行開発基盤: WORKER_GUIDE.md, API_CONTRACTS.md, DISPATCH.md
+- 4 本の lane ブランチ稼働中 → 詳細は `docs/parallel-dev/DISPATCH.md`
 
 ---
 
-## 0. 最新セッション (Session H) — ウォレット分離設計
+## 0. 並行開発ディスパッチ
 
-**方針転換**: ダッシュボードとウォレットアプリを完全分離。
-- ダッシュボード = アカウント不要のキオスク (タスク表示 + 供給量 + QR)
-- ウォレット = スマホアプリ (残高・送金・決闘・QRスキャン報酬受取)
-- 決闘バックエンドは設計確定前のため revert 済み
+**全ワーカー必読**: `docs/parallel-dev/DISPATCH.md`
 
-**変更**: App.tsx から UserSelector/WalletBadge/WalletPanel 除去、供給量バッジ追加
-**成果物**: `docs/architecture/wallet-separation.md` (設計ドキュメント)
-**詳細**: `docs/handoff/2026-02-13_session-h-wallet-separation.md`
+| ブランチ | 状態 |
+|---------|------|
+| `lane/L4-error-boundary-and-users` | 作業中 (stash あり) |
+| `lane/L3-voice-model-and-fixes` | 要リセット |
+| `lane/L7-infra-cleanup` | 未着手 |
+
+未解決 ISSUES のレーン割当: H-5→L6, H-6→L4, M-5→L7, M-7→L3, L-1~L-8→L7
 
 ---
 
-## 1. 直近セッション (Session G) の作業内容
+## 1. Session H — ウォレット分離設計
+
+**方針**: ダッシュボード (キオスク) とウォレット (スマホアプリ) を完全分離。
+**成果物**: `docs/architecture/wallet-separation.md`
+
+---
+
+## 2. Session G — Brain 7 層改善
 
 ### 実施した2つのフェーズ
 

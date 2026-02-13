@@ -1,7 +1,9 @@
 # Parallel Development Worker Guide
 
 All concurrent workers MUST read this document before starting.
-See also: [API_CONTRACTS.md](./API_CONTRACTS.md) for inter-service API details.
+See also:
+- [API_CONTRACTS.md](./API_CONTRACTS.md) — Inter-service API details
+- [DISPATCH.md](./DISPATCH.md) — Current lane assignments and per-worker instructions
 
 ---
 
