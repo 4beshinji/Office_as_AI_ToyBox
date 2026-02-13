@@ -40,6 +40,32 @@ async def read_tasks(skip: int = 0, limit: int = 100, db: AsyncSession = Depends
         
     return tasks
 
+def _task_to_response(task_model: models.Task) -> schemas.Task:
+    """Convert a Task DB model to a Task schema, handling JSON parsing."""
+    return schemas.Task(
+        id=task_model.id,
+        title=task_model.title,
+        description=task_model.description,
+        location=task_model.location,
+        bounty_gold=task_model.bounty_gold,
+        is_completed=task_model.is_completed,
+        is_queued=task_model.is_queued,
+        created_at=task_model.created_at,
+        completed_at=task_model.completed_at,
+        dispatched_at=task_model.dispatched_at,
+        expires_at=task_model.expires_at,
+        task_type=json.loads(task_model.task_type) if task_model.task_type else [],
+        urgency=task_model.urgency,
+        zone=task_model.zone,
+        min_people_required=task_model.min_people_required,
+        estimated_duration=task_model.estimated_duration,
+        announcement_audio_url=task_model.announcement_audio_url,
+        announcement_text=task_model.announcement_text,
+        completion_audio_url=task_model.completion_audio_url,
+        completion_text=task_model.completion_text,
+        last_reminded_at=task_model.last_reminded_at,
+    )
+
 @router.post("/", response_model=schemas.Task)
 async def create_task(task: schemas.TaskCreate, db: AsyncSession = Depends(get_db)):
     # Duplicate Check: Check for active tasks with same title and location
@@ -52,9 +78,27 @@ async def create_task(task: schemas.TaskCreate, db: AsyncSession = Depends(get_d
     existing_task = result.scalars().first()
 
     if existing_task:
-        # Delete existing active task to "update" it (or avoid duplication)
-        await db.delete(existing_task)
+        # Update existing task in place (preserve ID to prevent repeated audio)
+        existing_task.description = task.description
+        existing_task.bounty_gold = task.bounty_gold
+        existing_task.expires_at = task.expires_at
+        existing_task.task_type = json.dumps(task.task_type) if task.task_type else None
+        existing_task.urgency = task.urgency
+        existing_task.zone = task.zone
+        existing_task.min_people_required = task.min_people_required
+        existing_task.estimated_duration = task.estimated_duration
+        # Update voice data only if new data is provided
+        if task.announcement_audio_url:
+            existing_task.announcement_audio_url = task.announcement_audio_url
+        if task.announcement_text:
+            existing_task.announcement_text = task.announcement_text
+        if task.completion_audio_url:
+            existing_task.completion_audio_url = task.completion_audio_url
+        if task.completion_text:
+            existing_task.completion_text = task.completion_text
         await db.commit()
+        await db.refresh(existing_task)
+        return _task_to_response(existing_task)
 
     new_task = models.Task(
         title=task.title,
@@ -67,9 +111,8 @@ async def create_task(task: schemas.TaskCreate, db: AsyncSession = Depends(get_d
         zone=task.zone,
         min_people_required=task.min_people_required,
         estimated_duration=task.estimated_duration,
-        is_queued=False,  # New tasks default to not queued
-        dispatched_at=func.now(),  # Mark as dispatched immediately
-        # Voice data (if provided by Brain)
+        is_queued=False,
+        dispatched_at=func.now(),
         announcement_audio_url=getattr(task, 'announcement_audio_url', None),
         announcement_text=getattr(task, 'announcement_text', None),
         completion_audio_url=getattr(task, 'completion_audio_url', None),
@@ -78,33 +121,7 @@ async def create_task(task: schemas.TaskCreate, db: AsyncSession = Depends(get_d
     db.add(new_task)
     await db.commit()
     await db.refresh(new_task)
-    
-    # Manually construct response dict to handle task_type parsing and avoid __dict__ issues
-    response_data = {
-        "id": new_task.id,
-        "title": new_task.title,
-        "description": new_task.description,
-        "location": new_task.location,
-        "bounty_gold": new_task.bounty_gold,
-        "is_completed": new_task.is_completed,
-        "is_queued": new_task.is_queued,
-        "created_at": new_task.created_at,
-        "completed_at": new_task.completed_at,
-        "dispatched_at": new_task.dispatched_at,
-        "expires_at": new_task.expires_at,
-        "task_type": json.loads(new_task.task_type) if new_task.task_type else [],
-        "urgency": new_task.urgency,
-        "zone": new_task.zone,
-        "min_people_required": new_task.min_people_required,
-        "estimated_duration": new_task.estimated_duration,
-        "announcement_audio_url": new_task.announcement_audio_url,
-        "announcement_text": new_task.announcement_text,
-        "completion_audio_url": new_task.completion_audio_url,
-        "completion_text": new_task.completion_text,
-        "last_reminded_at": new_task.last_reminded_at
-    }
-    
-    return schemas.Task(**response_data)
+    return _task_to_response(new_task)
 
 @router.put("/{task_id}/complete", response_model=schemas.Task)
 async def complete_task(task_id: int, db: AsyncSession = Depends(get_db)):

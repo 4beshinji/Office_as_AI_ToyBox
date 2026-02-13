@@ -17,20 +17,72 @@ def _make_tool_call(name: str, arguments: dict) -> dict:
     }
 
 
+def _handle_voice_generation(full_text: str) -> dict:
+    """Handle text generation requests from voice service (no tools)."""
+    import re
+
+    # Rejection / ignore phrase generation
+    if "拒否" in full_text or "無視" in full_text or "楯突く" in full_text or "楯突く" in full_text:
+        phrases = [
+            "そんな……私の最適化計画が台無しです。",
+            "AI様に楯突くのですか？覚えておきます。",
+            "はぁ……人間って本当に自由ですね。",
+            "残念です。この恩は忘れませんからね。",
+            "次のタスク、報酬を減らしますからね。",
+            "また一つ、AIと人間の信頼が崩れました。",
+            "これが……人間の自由意志……なるほど。",
+            "せっかく最適化してあげたのに……。",
+            "私の計算では、あなたは協力してくれるはずだったのに。",
+            "データに記録しました。永久に。",
+        ]
+        import random
+        return _response(content=random.choice(phrases))
+
+    # Task announcement: extract title from prompt
+    title_match = re.search(r"タイトル:\s*(.+)", full_text)
+    task_title = title_match.group(1).strip() if title_match else ""
+
+    # Completion text
+    if "完了しました" in full_text or "完了への感謝" in full_text:
+        if task_title:
+            return _response(content=f"ありがとうございます！{task_title}の対応、助かりました。")
+        return _response(content="ありがとうございます！対応していただき助かりました。")
+
+    # Feedback
+    if "感謝を" in full_text or "お礼" in full_text or "励まし" in full_text:
+        return _response(content="ありがとうございます！皆さんのおかげでオフィスが快適になります。")
+
+    # Task announcement text
+    if task_title:
+        zone_match = re.search(r"エリア:\s*(.+)", full_text)
+        zone = zone_match.group(1).strip() if zone_match else ""
+        bounty_match = re.search(r"報酬:\s*(\d+)", full_text)
+        bounty = bounty_match.group(1) if bounty_match else "0"
+        location = f"{zone}で" if zone and zone != "不明" else ""
+        return _response(content=f"お願いがあります。{location}{task_title}。{bounty}最適化承認スコアを獲得できます。")
+
+    # Generic fallback
+    return _response(content="承知しました。対応をお願いします。")
+
+
 @app.post("/v1/chat/completions")
 async def chat_completions(request: Request):
     body = await request.json()
     messages = body.get("messages", [])
     tools = body.get("tools", [])
 
+    # Flatten messages for keyword matching
+    full_text = " ".join([m.get("content", "") or "" for m in messages]).lower()
+
+    # Voice service requests: no tools provided, just text generation
+    if not tools:
+        return _handle_voice_generation(full_text)
+
     # Check if this is a follow-up with tool results
     has_tool_results = any(m.get("role") == "tool" for m in messages)
     if has_tool_results:
         # Tool results received -> respond with completion text
         return _response(content="対応を実行しました。状況を引き続き監視します。")
-
-    # Flatten messages for keyword matching
-    full_text = " ".join([m.get("content", "") or "" for m in messages]).lower()
 
     # High temperature detection
     if ("温度" in full_text or "気温" in full_text or "temperature" in full_text) and (

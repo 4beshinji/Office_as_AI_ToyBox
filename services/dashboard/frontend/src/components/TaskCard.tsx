@@ -10,6 +10,7 @@ export interface Task {
     description: string;
     location?: string;
     bounty_gold: number;
+    urgency: number;
     is_completed: boolean;
     announcement_audio_url?: string;
     announcement_text?: string;
@@ -22,44 +23,36 @@ export interface Task {
 
 interface TaskCardProps {
     task: Task;
+    isAccepted?: boolean;
     onAccept?: (taskId: number) => void;
     onComplete?: (taskId: number) => void;
     onIgnore?: (taskId: number) => void;
 }
 
-// Determine urgency level based on bounty_gold
-const getUrgencyLevel = (bountyGold: number): 'low' | 'medium' | 'high' => {
-    if (bountyGold <= 20) return 'low';
-    if (bountyGold <= 50) return 'medium';
-    return 'high';
-};
-
-const getUrgencyBadge = (bountyGold: number) => {
-    const urgency = getUrgencyLevel(bountyGold);
-
-    const config = {
-        low: {
-            variant: 'success' as const,
-            icon: <Circle size={12} />,
-            label: '低優先度',
-        },
-        medium: {
-            variant: 'warning' as const,
-            icon: <AlertCircle size={12} />,
-            label: '中優先度',
-        },
-        high: {
+const getUrgencyBadge = (urgency: number) => {
+    if (urgency >= 3) {
+        return {
             variant: 'error' as const,
             icon: <AlertTriangle size={12} />,
             label: '高優先度',
-        },
+        };
+    }
+    if (urgency >= 2) {
+        return {
+            variant: 'warning' as const,
+            icon: <AlertCircle size={12} />,
+            label: '中優先度',
+        };
+    }
+    return {
+        variant: 'success' as const,
+        icon: <Circle size={12} />,
+        label: '低優先度',
     };
-
-    return config[urgency];
 };
 
-export default function TaskCard({ task, onAccept, onComplete, onIgnore }: TaskCardProps) {
-    const urgencyBadge = getUrgencyBadge(task.bounty_gold);
+export default function TaskCard({ task, isAccepted, onAccept, onComplete, onIgnore }: TaskCardProps) {
+    const urgencyBadge = getUrgencyBadge(task.urgency ?? 2);
 
     return (
         <Card elevation={2} padding="medium" hoverable>
@@ -96,7 +89,7 @@ export default function TaskCard({ task, onAccept, onComplete, onIgnore }: TaskC
                 </div>
 
                 {/* Actions */}
-                {!task.is_completed && (
+                {!task.is_completed && !isAccepted && (
                     <motion.div
                         className="flex gap-2 pt-2"
                         initial={{ opacity: 0 }}
@@ -112,19 +105,32 @@ export default function TaskCard({ task, onAccept, onComplete, onIgnore }: TaskC
                             受諾
                         </Button>
                         <Button
+                            variant="ghost"
+                            size="medium"
+                            onClick={() => onIgnore?.(task.id)}
+                        >
+                            無視
+                        </Button>
+                    </motion.div>
+                )}
+
+                {!task.is_completed && isAccepted && (
+                    <motion.div
+                        className="flex gap-2 pt-2"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.1 }}
+                    >
+                        <Badge variant="info" size="medium">
+                            対応中
+                        </Badge>
+                        <Button
                             variant="secondary"
                             size="medium"
                             onClick={() => onComplete?.(task.id)}
                             className="flex-1"
                         >
                             完了
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="medium"
-                            onClick={() => onIgnore?.(task.id)}
-                        >
-                            無視
                         </Button>
                     </motion.div>
                 )}

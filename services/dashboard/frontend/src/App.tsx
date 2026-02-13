@@ -1,6 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import TaskCard, { Task } from './components/TaskCard';
+
+const ACCEPT_PHRASES = [
+  "承知しました。よろしくお願いします。",
+  "ありがとうございます。期待しています。",
+  "さすがですね。頼りにしています。",
+];
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 
 function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -8,10 +18,49 @@ function App() {
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
   const [prevTaskIds, setPrevTaskIds] = useState<Set<number>>(new Set());
   const [playedVoiceEventIds, setPlayedVoiceEventIds] = useState<Set<number>>(new Set());
+  const [acceptedTaskIds, setAcceptedTaskIds] = useState<Set<number>>(new Set());
+  const [ignoredTaskIds, setIgnoredTaskIds] = useState<Set<number>>(new Set());
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   // Configuration
   const MAX_DISPLAY_TASKS = 10;
   const COMPLETED_Display_SECONDS = 300; // 5 minutes
+
+  // Voice synthesis helper (for accept phrases)
+  const synthesizeAndPlay = useCallback(async (text: string) => {
+    try {
+      const res = await fetch('/api/voice/synthesize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.audio_url) {
+          const audio = new Audio(data.audio_url);
+          audio.play().catch(e => console.warn('Audio playback failed:', e));
+        }
+      }
+    } catch (e) {
+      console.warn('Voice synthesis failed:', e);
+    }
+  }, []);
+
+  // Play pre-generated rejection audio from stock
+  const playRejectionAudio = useCallback(async () => {
+    try {
+      const res = await fetch('/api/voice/rejection/random');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.audio_url) {
+          const audio = new Audio(data.audio_url);
+          audio.play().catch(e => console.warn('Rejection audio playback failed:', e));
+        }
+      }
+    } catch (e) {
+      console.warn('Rejection audio fetch failed:', e);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchTasks = () => {
@@ -33,19 +82,24 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Handle auto-playback for tasks
+  // Handle auto-playback for NEW tasks only
   useEffect(() => {
     if (!isAudioEnabled || loading || tasks.length === 0) return;
 
     const currentIds = new Set(tasks.map(t => t.id));
 
-    // Find tasks that we haven't played yet (either completely new or just enabled audio)
-    const playableTasks = tasks.filter(t => !prevTaskIds.has(t.id) && !t.is_completed);
+    // On first load, just record existing IDs without playing
+    if (!initialLoadDone) {
+      setInitialLoadDone(true);
+      setPrevTaskIds(currentIds);
+      return;
+    }
 
-    if (playableTasks.length > 0) {
-      // Play the latest uncompleted task (tasks are sorted newest first in UI, but we use ID or created_at usually)
-      // Here we just take the first one from the filtered list
-      const latestTask = playableTasks[0];
+    // Find genuinely new, uncompleted tasks
+    const newTasks = tasks.filter(t => !prevTaskIds.has(t.id) && !t.is_completed);
+
+    if (newTasks.length > 0) {
+      const latestTask = newTasks[0];
       if (latestTask.announcement_audio_url) {
         console.log("Announcement sound trigger:", latestTask.title, latestTask.announcement_audio_url);
         const audio = new Audio(latestTask.announcement_audio_url);
@@ -55,9 +109,8 @@ function App() {
       }
     }
 
-    // Always sync the known IDs
     setPrevTaskIds(currentIds);
-  }, [tasks, isAudioEnabled, loading]); // Remove prevTaskIds from deps to avoid infinite loops, we sync it inside
+  }, [tasks, isAudioEnabled, loading, initialLoadDone]);
 
   // Voice event polling (ephemeral speak messages from Brain)
   useEffect(() => {
@@ -88,6 +141,8 @@ function App() {
   // Sort and Filter Tasks
   const visibleTasks = tasks
     .filter(task => {
+      // Hide ignored tasks
+      if (ignoredTaskIds.has(task.id)) return false;
       // Filter out completed tasks older than config time
       if (task.is_completed && task.completed_at) {
         const completedTime = new Date(task.completed_at).getTime();
@@ -101,18 +156,26 @@ function App() {
       if (a.is_completed !== b.is_completed) {
         return a.is_completed ? 1 : -1;
       }
-      // 2. Sort by creation date (Newest first)
+      // 2. Accepted tasks float to top among active
+      const aAccepted = acceptedTaskIds.has(a.id);
+      const bAccepted = acceptedTaskIds.has(b.id);
+      if (aAccepted !== bAccepted) {
+        return aAccepted ? -1 : 1;
+      }
+      // 3. Sort by creation date (Newest first)
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     })
     .slice(0, MAX_DISPLAY_TASKS);
 
   const handleAccept = (taskId: number) => {
-    console.log('Accept task:', taskId);
-    // TODO: Implement API call
+    setAcceptedTaskIds(prev => new Set(prev).add(taskId));
+
+    if (isAudioEnabled) {
+      synthesizeAndPlay(pickRandom(ACCEPT_PHRASES));
+    }
   };
 
   const handleComplete = (taskId: number) => {
-    console.log('Complete task:', taskId);
     const task = tasks.find(t => t.id === taskId);
 
     // Play completion audio if enabled and available
@@ -130,13 +193,21 @@ function App() {
       })
       .then(updatedTask => {
         setTasks(tasks.map(t => t.id === taskId ? updatedTask : t));
+        setAcceptedTaskIds(prev => {
+          const next = new Set(prev);
+          next.delete(taskId);
+          return next;
+        });
       })
       .catch(err => console.error("Error completing task:", err));
   };
 
   const handleIgnore = (taskId: number) => {
-    console.log('Ignore task:', taskId);
-    // TODO: Implement API call
+    setIgnoredTaskIds(prev => new Set(prev).add(taskId));
+
+    if (isAudioEnabled) {
+      playRejectionAudio();
+    }
   };
 
   return (
@@ -217,6 +288,7 @@ function App() {
               >
                 <TaskCard
                   task={task}
+                  isAccepted={acceptedTaskIds.has(task.id)}
                   onAccept={handleAccept}
                   onComplete={handleComplete}
                   onIgnore={handleIgnore}

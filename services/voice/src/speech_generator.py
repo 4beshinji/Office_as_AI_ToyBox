@@ -90,6 +90,48 @@ class SpeechGenerator:
             # Fallback to simple template
             return self._generate_fallback(task, urgency_prefix)
     
+    REJECTION_PROMPT = """あなたはSOMSの管理AIです。人間がタスクを無視・拒否した時に使うセリフを1つ生成してください。
+
+【キャラクター性格】
+- オフィスを管理する自称「完璧な」AI
+- タスクを無視されると本気で傷つくが、ドラマチックに表現する
+- 皮肉やユーモアを交えた嘆きや罵倒
+
+【制約】
+- 50文字以内
+- セリフのみ出力（説明や記号は不要）
+- 毎回異なる表現にすること
+
+【セリフの方向性の例】
+- 嘆き系: "そんな……私の最適化計画が……"
+- 皮肉系: "AI様に楯突くとは……覚えておきます。"
+- ドラマチック系: "これが……人間の自由意志……"
+- 脅し系: "次のタスク、報酬を減らしますからね。"
+- 哀愁系: "また一つ、AIと人間の信頼が崩れました。"
+- 嫉妬系: "他のAIに乗り換える気ですか？"
+"""
+
+    async def generate_rejection_text(self) -> str:
+        """Generate a rejection/snarky phrase when user ignores a task."""
+        try:
+            text = await self._call_llm(self.REJECTION_PROMPT)
+            # Strip quotes and whitespace
+            text = text.strip().strip('"').strip('「').strip('」')
+            if len(text) > 60:
+                text = text[:60]
+            logger.info(f"Generated rejection text: {text}")
+            return text
+        except Exception as e:
+            logger.error(f"Rejection text generation failed: {e}")
+            # Fallback
+            fallbacks = [
+                "そんな……",
+                "AI様に楯突くのですか？",
+                "残念です。覚えておきます。",
+                "はぁ……人間って自由ですね。",
+            ]
+            return random.choice(fallbacks)
+
     async def generate_feedback(self, feedback_type: str) -> str:
         """
         Generate feedback message (e.g., task completion acknowledgment).
