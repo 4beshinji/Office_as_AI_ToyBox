@@ -16,6 +16,10 @@ class Sanitizer:
         self._task_creation_times: list[float] = []
         self._max_tasks_per_hour = 10
 
+        # Speak cooldown per zone (Layer 6)
+        self._speak_history: dict[str, float] = {}  # zone -> last_speak_time
+        self._speak_cooldown = 300  # 5 minutes
+
     def validate_tool_call(self, tool_name: str, args: Dict[str, Any]) -> Tuple[bool, str]:
         """
         Validate a tool call. Returns (is_safe, reason).
@@ -58,23 +62,39 @@ class Sanitizer:
             logger.warning(f"REJECTED: Rate limit exceeded ({self._max_tasks_per_hour} tasks/hour)")
             return False, f"Rate limit exceeded: {self._max_tasks_per_hour} tasks per hour"
 
-        # Record this creation time (will be confirmed on successful execution)
-        self._task_creation_times.append(now)
-
         return True, "OK"
 
+    def record_task_created(self):
+        """Record a successful task creation for rate limiting."""
+        self._task_creation_times.append(time.time())
+
     def _validate_speak(self, args: Dict[str, Any]) -> Tuple[bool, str]:
-        """Validate speak parameters."""
+        """Validate speak parameters with zone-based cooldown."""
         message = args.get("message", "")
         if not message or not message.strip():
             return False, "Message must not be empty"
+
+        # Zone-based cooldown (Layer 6)
+        zone = args.get("zone", "general")
+        now = time.time()
+        last_speak = self._speak_history.get(zone, 0)
+        if now - last_speak < self._speak_cooldown:
+            remaining = int(self._speak_cooldown - (now - last_speak))
+            logger.warning(f"REJECTED: speak cooldown for zone {zone} ({remaining}s remaining)")
+            return False, f"Speak cooldown: wait {remaining}s for zone {zone}"
+
+        self._speak_history[zone] = now
         return True, "OK"
 
     def _validate_device_command(self, args: Dict[str, Any]) -> Tuple[bool, str]:
         """Validate send_device_command parameters."""
-        # Device existence check
         agent_id = args.get("agent_id", "")
         tool_name = args.get("tool_name", "")
+
+        # Device allowlist check (Layer 6): swarm_hub devices always permitted
+        if not agent_id.startswith("swarm_hub") and agent_id not in self.allowed_devices:
+            logger.warning(f"REJECTED: Device {agent_id} not in allowed list")
+            return False, f"Device '{agent_id}' is not in the allowed device list"
 
         # Parse nested arguments if string
         inner_args = args.get("arguments", {})
@@ -92,7 +112,7 @@ class Sanitizer:
                 limits = self.safety_limits["set_temperature"]
                 if not (limits["min"] <= temp <= limits["max"]):
                     logger.warning(f"REJECTED: Temperature {temp} out of bounds [{limits['min']}-{limits['max']}]")
-                    return False, f"Temperature {temp}°C out of safe range [{limits['min']}-{limits['max']}°C]"
+                    return False, f"Temperature {temp} out of safe range [{limits['min']}-{limits['max']}]"
 
         # Pump duration check
         if tool_name == "run_pump":

@@ -56,7 +56,7 @@ class WorldModel:
         # Route to appropriate handler
         if device_type == "sensor":
             self._update_environment(zone, channel, payload, device_id)
-        elif device_type == "camera":
+        elif device_type in ("camera", "occupancy"):
             self._update_occupancy(zone, payload)
         elif device_type == "activity":
             self._update_activity(zone, payload)
@@ -159,6 +159,8 @@ class WorldModel:
         # Handle different payload formats
         if "person_count" in payload:
             zone.occupancy.vision_count = payload["person_count"]
+        elif "count" in payload:
+            zone.occupancy.vision_count = payload["count"]
         elif "occupancy" in payload:
             zone.occupancy.vision_count = 1 if payload["occupancy"] else 0
         
@@ -374,10 +376,10 @@ class WorldModel:
             if env.co2 is not None and env.co2 > 1000:
                 alerts.append(f"⚠️ [{zone_id}] CO2高濃度: {env.co2}ppm（基準: 1000ppm以下）")
             if env.humidity is not None:
-                if env.humidity > 70:
-                    alerts.append(f"⚠️ [{zone_id}] 高湿度: {env.humidity:.0f}%（基準: 30-70%）")
+                if env.humidity > 60:
+                    alerts.append(f"⚠️ [{zone_id}] 高湿度: {env.humidity:.0f}%（基準: 30-60%）")
                 elif env.humidity < 30:
-                    alerts.append(f"⚠️ [{zone_id}] 低湿度: {env.humidity:.0f}%（基準: 30-70%）")
+                    alerts.append(f"⚠️ [{zone_id}] 低湿度: {env.humidity:.0f}%（基準: 30-60%）")
 
         if alerts:
             context_parts.append("### アラート（要対応）\n" + "\n".join(alerts))

@@ -1,6 +1,8 @@
 import asyncio
 import os
 import json
+import time
+import aiohttp
 from loguru import logger
 from dotenv import load_dotenv
 import paho.mqtt.client as mqtt
@@ -24,6 +26,20 @@ LLM_API_URL = os.getenv("LLM_API_URL", "http://mock-llm:8000/v1")
 REACT_MAX_ITERATIONS = 5
 CYCLE_INTERVAL = 30       # Normal polling interval (seconds)
 EVENT_BATCH_DELAY = 3     # Delay after event to batch multiple events (seconds)
+MIN_CYCLE_INTERVAL = 25   # Minimum interval between cognitive cycles (seconds)
+MAX_SPEAK_PER_CYCLE = 1   # Maximum speak calls per cognitive cycle
+MAX_CONSECUTIVE_ERRORS = 1 # Stop cycle after this many consecutive tool errors
+
+
+def _summarize_action(tool_name: str, args: dict) -> str:
+    """Create a short summary of a tool call for action history."""
+    if tool_name == "speak":
+        return f"zone={args.get('zone', '?')}, msg={args.get('message', '')[:30]}"
+    elif tool_name == "create_task":
+        return f"title={args.get('title', '')}"
+    elif tool_name == "get_zone_status":
+        return f"zone={args.get('zone_id', '')}"
+    return str(args)[:50]
 
 
 class Brain:
@@ -32,12 +48,14 @@ class Brain:
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.mcp = MCPBridge(self.client)
-        self.llm = LLMClient(api_url=LLM_API_URL)
-        self.dashboard = DashboardClient()
         self.sanitizer = Sanitizer()
         self.world_model = WorldModel()
+
+        # Initialized in run() with shared session
+        self.llm = None
+        self.dashboard = None
         self.task_queue = None
-        self.task_reminder = TaskReminder()
+        self.task_reminder = None
         self.tool_executor = None
 
         # Event-driven trigger
@@ -45,34 +63,41 @@ class Brain:
         self._last_event_count: dict[str, int] = {}
         self._loop: asyncio.AbstractEventLoop | None = None
 
+        # Action history for LLM context (Layer 5)
+        self._action_history: list[dict] = []
+
     def on_connect(self, client, userdata, flags, rc, properties=None):
         logger.info(f"Connected to MQTT Broker with result code {rc}")
         client.subscribe("mcp/+/response/#")
         client.subscribe("office/#")
-        client.subscribe("hydro/#")
-        client.subscribe("aqua/#")
 
     def on_message(self, client, userdata, msg):
         try:
             payload = json.loads(msg.payload.decode())
-            topic = msg.topic
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return
 
-            if "mcp" in topic and "response" in topic:
-                self.mcp.handle_response(topic, payload)
-            else:
-                self.world_model.update_from_mqtt(topic, payload)
+        if "mcp" in msg.topic and "response" in msg.topic:
+            self.mcp.handle_response(msg.topic, payload)
+            return
 
-                # Check if new events were generated -> trigger cycle
-                current_event_counts = {
-                    zid: len(z.events) for zid, z in self.world_model.zones.items()
-                }
-                if current_event_counts != self._last_event_count:
-                    self._last_event_count = current_event_counts
-                    if self._loop:
-                        self._loop.call_soon_threadsafe(self._cycle_triggered.set)
+        # Dispatch to asyncio thread for thread-safe world_model access
+        if self._loop:
+            self._loop.call_soon_threadsafe(
+                self._process_mqtt_message, msg.topic, payload
+            )
 
-        except Exception as e:
-            logger.error(f"Error processing message: {e}")
+    def _process_mqtt_message(self, topic: str, payload: dict):
+        """Process MQTT message on the asyncio thread (thread-safe)."""
+        self.world_model.update_from_mqtt(topic, payload)
+
+        # Check if new events were generated -> trigger cycle
+        current_event_counts = {
+            zid: len(z.events) for zid, z in self.world_model.zones.items()
+        }
+        if current_event_counts != self._last_event_count:
+            self._last_event_count = current_event_counts
+            self._cycle_triggered.set()
 
     async def cognitive_cycle(self):
         """ReAct cognitive cycle: Think → Act → Observe → repeat."""
@@ -86,7 +111,6 @@ class Brain:
             return
 
         # Collect recent events (last 5 minutes)
-        import time
         now = time.time()
         recent_events = []
         for zone_id, zone in self.world_model.zones.items():
@@ -117,10 +141,25 @@ class Brain:
         else:
             user_content += "\n\n## 現在のアクティブタスク\nなし"
 
+        # Layer 5: Inject action history to prevent repetitive actions
+        cutoff = now - 1800  # last 30 minutes
+        recent_actions = [a for a in self._action_history if a["time"] > cutoff]
+        if recent_actions:
+            user_content += "\n\n## 直近のBrainアクション履歴（重複注意）\n"
+            for a in recent_actions[-10:]:
+                mins_ago = int((now - a["time"]) / 60)
+                user_content += f"- {mins_ago}分前: {a['tool']}({a.get('summary', '')})\n"
+            user_content += "上記と同じアクションを短期間で繰り返さないでください。特にspeakは同じ内容を30分以内に再送しないこと。\n"
+
         user_msg = {"role": "user", "content": user_content}
 
         messages = [system_msg, user_msg]
         tools = get_tools()
+
+        # Layer 3: ReAct loop guards
+        tool_call_history = []  # (tool_name, args_hash) for duplicate detection
+        speak_count = 0
+        consecutive_errors = 0
 
         # ReAct loop
         for iteration in range(1, REACT_MAX_ITERATIONS + 1):
@@ -138,7 +177,32 @@ class Brain:
                     logger.info(f"LLM (no action): {response.content[:200]}")
                 break
 
-            # Process tool calls
+            # Layer 3: Filter tool calls (duplicates, speak limit)
+            filtered_tool_calls = []
+            for tc in response.tool_calls:
+                name = tc["function"]["name"]
+                args = tc["function"].get("arguments", {})
+                call_key = (name, json.dumps(args, sort_keys=True))
+
+                # Guard 1: Skip duplicate tool+args within this cycle
+                if call_key in tool_call_history:
+                    logger.warning(f"Skipping duplicate tool call: {name}")
+                    continue
+
+                # Guard 2: Limit speak calls per cycle
+                if name == "speak":
+                    if speak_count >= MAX_SPEAK_PER_CYCLE:
+                        logger.warning(f"Skipping speak: max {MAX_SPEAK_PER_CYCLE}/cycle reached")
+                        continue
+                    speak_count += 1
+
+                filtered_tool_calls.append(tc)
+                tool_call_history.append(call_key)
+
+            if not filtered_tool_calls:
+                logger.info("All tool calls filtered out, ending cycle")
+                break
+
             # Add assistant message with tool_calls to conversation
             assistant_msg = {"role": "assistant", "content": response.content or ""}
             assistant_msg["tool_calls"] = [
@@ -150,12 +214,13 @@ class Brain:
                         "arguments": json.dumps(tc["function"]["arguments"], ensure_ascii=False),
                     }
                 }
-                for tc in response.tool_calls
+                for tc in filtered_tool_calls
             ]
             messages.append(assistant_msg)
 
             # Execute each tool call
-            for tc in response.tool_calls:
+            cycle_aborted = False
+            for tc in filtered_tool_calls:
                 tool_name = tc["function"]["name"]
                 arguments = tc["function"]["arguments"]
                 tool_call_id = tc["id"]
@@ -166,8 +231,18 @@ class Brain:
 
                 if result["success"]:
                     logger.info(f"Tool result: {result['result'][:200]}")
+                    consecutive_errors = 0
                 else:
                     logger.warning(f"Tool failed: {result['error']}")
+                    consecutive_errors += 1
+
+                # Layer 5: Record action in history
+                self._action_history.append({
+                    "time": time.time(),
+                    "tool": tool_name,
+                    "summary": _summarize_action(tool_name, arguments),
+                    "success": result.get("success", True),
+                })
 
                 # Add tool result to conversation
                 result_content = result.get("result") or result.get("error", "")
@@ -177,13 +252,30 @@ class Brain:
                     "content": str(result_content),
                 })
 
+                # Guard 3: Stop on consecutive errors
+                if consecutive_errors >= MAX_CONSECUTIVE_ERRORS:
+                    logger.warning(f"Stopping cycle: {consecutive_errors} consecutive error(s)")
+                    cycle_aborted = True
+                    break
+
+            if cycle_aborted:
+                break
+
             # Continue loop - LLM will see tool results and decide next action
+
+        # Layer 5: Prune old action history (older than 2 hours)
+        cutoff_2h = time.time() - 7200
+        self._action_history = [a for a in self._action_history if a["time"] > cutoff_2h]
 
         logger.info("Cycle complete.")
 
     async def run(self):
         self._loop = asyncio.get_running_loop()
         logger.info(f"Connecting to {MQTT_BROKER}:{MQTT_PORT}...")
+        mqtt_user = os.getenv("MQTT_USER")
+        mqtt_pass = os.getenv("MQTT_PASS")
+        if mqtt_user:
+            self.client.username_pw_set(mqtt_user, mqtt_pass)
         try:
             self.client.connect(MQTT_BROKER, MQTT_PORT, 60)
             self.client.loop_start()
@@ -191,39 +283,53 @@ class Brain:
             logger.error(f"Failed to connect to MQTT: {e}")
             return
 
-        # Initialize components
-        self.task_queue = TaskQueueManager(self.world_model, self.dashboard)
-        self.tool_executor = ToolExecutor(
-            sanitizer=self.sanitizer,
-            mcp_bridge=self.mcp,
-            dashboard_client=self.dashboard,
-            world_model=self.world_model,
-            task_queue=self.task_queue,
-        )
-        logger.info("TaskQueueManager and ToolExecutor initialized")
+        # Shared HTTP session for all components (Layer 2)
+        async with aiohttp.ClientSession() as session:
+            # Initialize components with shared session
+            self.llm = LLMClient(api_url=LLM_API_URL, session=session)
+            self.dashboard = DashboardClient(session=session)
+            self.task_reminder = TaskReminder(session=session)
+            self.task_queue = TaskQueueManager(self.world_model, self.dashboard)
+            self.tool_executor = ToolExecutor(
+                sanitizer=self.sanitizer,
+                mcp_bridge=self.mcp,
+                dashboard_client=self.dashboard,
+                world_model=self.world_model,
+                task_queue=self.task_queue,
+                session=session,
+            )
+            logger.info("All components initialized with shared HTTP session")
 
-        # Start reminder service
-        asyncio.create_task(self.task_reminder.run_periodic_check())
-        logger.info("TaskReminder service started")
+            # Start reminder service
+            asyncio.create_task(self.task_reminder.run_periodic_check())
+            logger.info("TaskReminder service started")
 
-        logger.info("Brain is running (ReAct mode)...")
-        while True:
-            # Wait for event trigger or timeout
-            try:
-                await asyncio.wait_for(
-                    self._cycle_triggered.wait(),
-                    timeout=CYCLE_INTERVAL,
-                )
-                # Event triggered - wait briefly to batch multiple events
-                self._cycle_triggered.clear()
-                await asyncio.sleep(EVENT_BATCH_DELAY)
-            except asyncio.TimeoutError:
-                pass  # Normal polling interval reached
+            logger.info("Brain is running (ReAct mode)...")
+            last_cycle_time = 0.0
 
-            try:
-                await self.cognitive_cycle()
-            except Exception as e:
-                logger.error(f"Cognitive cycle error: {e}")
+            while True:
+                # Wait for event trigger or timeout
+                try:
+                    await asyncio.wait_for(
+                        self._cycle_triggered.wait(),
+                        timeout=CYCLE_INTERVAL,
+                    )
+                    # Event triggered - wait briefly to batch multiple events
+                    self._cycle_triggered.clear()
+                    await asyncio.sleep(EVENT_BATCH_DELAY)
+                except asyncio.TimeoutError:
+                    pass  # Normal polling interval reached
+
+                # Layer 4: Rate limit — enforce minimum interval between cycles
+                elapsed = time.time() - last_cycle_time
+                if elapsed < MIN_CYCLE_INTERVAL:
+                    await asyncio.sleep(MIN_CYCLE_INTERVAL - elapsed)
+
+                try:
+                    await self.cognitive_cycle()
+                    last_cycle_time = time.time()
+                except Exception as e:
+                    logger.error(f"Cognitive cycle error: {e}")
 
 
 if __name__ == "__main__":

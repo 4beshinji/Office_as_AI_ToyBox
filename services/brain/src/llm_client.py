@@ -19,10 +19,11 @@ class LLMResponse:
 
 
 class LLMClient:
-    def __init__(self, api_url: str = "http://localhost:8000/v1"):
+    def __init__(self, api_url: str = "http://localhost:8000/v1", session: aiohttp.ClientSession = None):
         self.api_url = api_url
         self.api_key = os.getenv("OPENAI_API_KEY", "EMPTY")
         self.model = os.getenv("LLM_MODEL", "qwen2.5:14b")
+        self._session = session
 
     async def chat(
         self,
@@ -47,21 +48,20 @@ class LLMClient:
         if tools:
             payload["tools"] = tools
 
-        timeout = aiohttp.ClientTimeout(total=120)
         try:
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.post(
-                    f"{self.api_url}/chat/completions",
-                    headers=headers,
-                    json=payload
-                ) as resp:
-                    if resp.status != 200:
-                        error_text = await resp.text()
-                        logger.error(f"LLM API Error {resp.status}: {error_text}")
-                        return LLMResponse(error=f"API Error {resp.status}: {error_text}")
+            async with self._session.post(
+                f"{self.api_url}/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=120),
+            ) as resp:
+                if resp.status != 200:
+                    error_text = await resp.text()
+                    logger.error(f"LLM API Error {resp.status}: {error_text}")
+                    return LLMResponse(error=f"API Error {resp.status}: {error_text}")
 
-                    raw = await resp.json()
-                    return self._parse_response(raw)
+                raw = await resp.json()
+                return self._parse_response(raw)
         except asyncio.TimeoutError:
             logger.error("LLM request timed out (120s)")
             return LLMResponse(error="Request timed out")
@@ -139,15 +139,18 @@ class LLMClient:
         if schema:
             payload["guided_json"] = schema
 
-        timeout = aiohttp.ClientTimeout(total=120)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            try:
-                async with session.post(f"{self.api_url}/chat/completions", headers=headers, json=payload) as resp:
-                    if resp.status != 200:
-                        error_text = await resp.text()
-                        raise Exception(f"LLM API Error {resp.status}: {error_text}")
+        try:
+            async with self._session.post(
+                f"{self.api_url}/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=120),
+            ) as resp:
+                if resp.status != 200:
+                    error_text = await resp.text()
+                    raise Exception(f"LLM API Error {resp.status}: {error_text}")
 
-                    return await resp.json()
-            except Exception as e:
-                print(f"LLM Connection Error: {e}")
-                return {"error": str(e)}
+                return await resp.json()
+        except Exception as e:
+            logger.error(f"LLM Connection Error: {e}")
+            return {"error": str(e)}

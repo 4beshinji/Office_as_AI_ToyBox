@@ -4,18 +4,19 @@ import json
 from loguru import logger
 
 class DashboardClient:
-    def __init__(self, api_url=None, voice_url=None, enable_voice=True):
+    def __init__(self, api_url=None, voice_url=None, enable_voice=True, session: aiohttp.ClientSession = None):
         # Default to internal docker-compose DNS name for backend
         self.api_url = api_url or os.getenv("DASHBOARD_API_URL", "http://backend:8000")
         self.voice_url = voice_url or os.getenv("VOICE_SERVICE_URL", "http://voice-service:8000")
         self.enable_voice = enable_voice
-    
+        self._session = session
+
     async def create_task(
-        self, 
-        title: str, 
-        description: str, 
-        bounty: int = 0, 
-        task_types: list[str] = None, 
+        self,
+        title: str,
+        description: str,
+        bounty: int = 0,
+        task_types: list[str] = None,
         expires_in_minutes: int = None,
         urgency: int = 2,
         zone: str = None,
@@ -23,7 +24,7 @@ class DashboardClient:
     ):
         """
         Create a new task in the dashboard.
-        
+
         Args:
             title: Task title
             description: Task description
@@ -38,14 +39,14 @@ class DashboardClient:
 
         if task_types is None:
             task_types = ["general"]
-        
+
         if announce is None:
             announce = self.enable_voice
 
         # Determine expiration if not provided
         if expires_in_minutes is None:
             expires_in_minutes = 60 * 24 # Default 24h
-            
+
             # Application specific rules
             if 'environment' in task_types: # e.g. lights on
                 expires_in_minutes = min(expires_in_minutes, 60) # 1 hour max for env issues
@@ -83,29 +84,28 @@ class DashboardClient:
                 })
                 # Add voice data to payload
                 if voice_data:
-                    payload["announcement_audio_url"] = voice_data["announcement_audio_url"]
-                    payload["announcement_text"] = voice_data["announcement_text"]
-                    payload["completion_audio_url"] = voice_data["completion_audio_url"]
-                    payload["completion_text"] = voice_data["completion_text"]
+                    payload["announcement_audio_url"] = voice_data.get("announcement_audio_url")
+                    payload["announcement_text"] = voice_data.get("announcement_text")
+                    payload["completion_audio_url"] = voice_data.get("completion_audio_url")
+                    payload["completion_text"] = voice_data.get("completion_text")
             except Exception as e:
                 logger.warning(f"Failed to generate dual voice: {e}")
-        
+
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=payload) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        logger.info(f"Task created successfully: {data}")
-                        
-                        # Note: Voice was already generated and stored in task
-                        if voice_data:
-                            logger.info(f"Announcement: {voice_data['announcement_text']}")
-                            logger.info(f"Completion: {voice_data['completion_text']}")
-                        
-                        return data
-                    else:
-                        logger.error(f"Failed to create task: {response.status} {await response.text()}")
-                        return None
+            async with self._session.post(url, json=payload) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    logger.info(f"Task created successfully: {data}")
+
+                    # Note: Voice was already generated and stored in task
+                    if voice_data:
+                        logger.info(f"Announcement: {voice_data.get('announcement_text')}")
+                        logger.info(f"Completion: {voice_data.get('completion_text')}")
+
+                    return data
+                else:
+                    logger.error(f"Failed to create task: {response.status} {await response.text()}")
+                    return None
         except Exception as e:
             logger.error(f"Error communicating with Dashboard API: {e}")
             return None
@@ -114,19 +114,18 @@ class DashboardClient:
         """Fetch active (non-completed) tasks from dashboard."""
         url = f"{self.api_url}/tasks/"
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
-                    if response.status == 200:
-                        tasks = await response.json()
-                        # Filter to non-completed tasks
-                        active = [
-                            t for t in tasks
-                            if not t.get("is_completed", False)
-                        ]
-                        return active
-                    else:
-                        logger.error(f"Failed to fetch tasks: {response.status}")
-                        return []
+            async with self._session.get(url) as response:
+                if response.status == 200:
+                    tasks = await response.json()
+                    # Filter to non-completed tasks
+                    active = [
+                        t for t in tasks
+                        if not t.get("is_completed", False)
+                    ]
+                    return active
+                else:
+                    logger.error(f"Failed to fetch tasks: {response.status}")
+                    return []
         except Exception as e:
             logger.error(f"Error fetching active tasks: {e}")
             return []
@@ -135,13 +134,12 @@ class DashboardClient:
         """Fetch task statistics from dashboard."""
         url = f"{self.api_url}/tasks/stats"
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
-                    if response.status == 200:
-                        return await response.json()
-                    else:
-                        logger.warning(f"Failed to fetch task stats: {response.status}")
-                        return {}
+            async with self._session.get(url) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    logger.warning(f"Failed to fetch task stats: {response.status}")
+                    return {}
         except Exception as e:
             logger.error(f"Error fetching task stats: {e}")
             return {}
@@ -149,10 +147,10 @@ class DashboardClient:
     async def _generate_dual_voice(self, task_data: dict) -> dict:
         """
         Call voice service to generate both announcement and completion voices.
-        
+
         Args:
             task_data: Task data
-        
+
         Returns:
             Dict with announcement and completion audio URLs and texts
         """
@@ -161,17 +159,16 @@ class DashboardClient:
             payload = {
                 "task": task_data
             }
-            
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=180)) as resp:
-                    if resp.status == 200:
-                        result = await resp.json()
-                        logger.info(f"Dual voice generated successfully")
-                        return result
-                    else:
-                        logger.warning(f"Dual voice generation failed: {resp.status}")
-                        return None
-                        
+
+            async with self._session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=180)) as resp:
+                if resp.status == 200:
+                    result = await resp.json()
+                    logger.info(f"Dual voice generated successfully")
+                    return result
+                else:
+                    logger.warning(f"Dual voice generation failed: {resp.status}")
+                    return None
+
         except Exception as e:
             logger.warning(f"Failed to generate dual voice: {e}")
             return None

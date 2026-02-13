@@ -47,10 +47,8 @@ class MCPBridge:
         if len(parts) < 4:
             return
             
-        request_id = parts[3] # Extract ID from topic or payload? 
-        # Actually payload should contain ID as per JSON-RPC
-        if "id" in payload:
-            request_id = payload["id"]
+        # JSON-RPC payload id is authoritative; topic is fallback
+        request_id = payload.get("id", parts[3])
             
         if request_id in self.pending_requests:
             future = self.pending_requests.pop(request_id)
