@@ -60,7 +60,7 @@ async def p2p_transfer(body: P2PTransferRequest, db: AsyncSession = Depends(get_
     if body.amount < min_transfer:
         raise HTTPException(
             status_code=400,
-            detail=f"最低送金額は {min_transfer} SOMS です",
+            detail=f"Minimum transfer is {min_transfer} SOMS",
         )
 
     fee = calc_fee(body.amount)
@@ -71,7 +71,7 @@ async def p2p_transfer(body: P2PTransferRequest, db: AsyncSession = Depends(get_
     if sender.balance < total_cost:
         raise HTTPException(
             status_code=400,
-            detail=f"残高不足です (必要: {total_cost} SOMS = 送金 {body.amount} + 手数料 {fee})",
+            detail=f"Insufficient balance (required: {total_cost} SOMS = transfer {body.amount} + fee {fee})",
         )
 
     try:
