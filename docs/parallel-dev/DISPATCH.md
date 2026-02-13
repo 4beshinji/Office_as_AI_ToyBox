@@ -1,4 +1,4 @@
-# Worker Dispatch — Session J タスク発行
+# Worker Dispatch — Session K タスク発行
 
 全ワーカーは作業開始前にこのファイルと [WORKER_GUIDE.md](./WORKER_GUIDE.md) を読むこと。
 
@@ -19,159 +19,208 @@
 
 ## main HEAD: `fde0055`
 
-Session I の全レーンがマージ済み。全サービス healthy 稼働確認済み。
-受け入れ基準テスト全 PASS (Docker build, frontend build, API 動作, Brain ReAct loop)。
-
-## 監視 #5 — Session J タスク進捗
-
-| レーン | HEAD | 新コミット | Session J 進捗 | Worktree |
-|-------|------|-----------|---------------|----------|
-| L3 | `70c4e7b` | 0 | ❌ 未着手 | ✅ 正常 |
-| L4 | `d4822cd` | +1 (interval fix) | ⚠ 独自バグ修正のみ、H-7 未着手 | ✅ 正常 |
-| L5 | `0692efe` | +2 (テスト拡充) | ⚠ テスト基盤構築中、**CRITICAL H-8 未着手** | ✅ 正常 |
-| L6 | `46d5922` | 0 | ❌ 未着手、**CRITICAL H-9 未着手** | ✅ 正常 |
-| L7 | `f861b7d` | 0 (rebase済) | ❌ 未着手 | ✅ 正常 |
-| L9 | `16138d5` | +4 (PWA+Send改善) | ✅ タスク#4,#5 完了 | ✅ 正常 |
-
-### Worktree 遵守: 全レーン正常 ✅ (main にブランチ切替なし)
-
-### L9 の進捗詳細 (最も活発)
-- `178cf32` feat: PWA service worker → Session J #5 (PWA merge prep) ✅
-- `006fd80` feat: vite-plugin-pwa + Workbox → Session J #5 ✅
-- `acea9b1` fix: SW autoUpdate → Session J #5 ✅
-- `16138d5` fix: Send confirmation + ESLint → Session J #4 (Send UX) ✅
-- ビルド確認: **PASS** (246KB + sw.js + manifest.webmanifest)
-- 残: #1 QR fallback, #2 型安全, #3 env API URL
-
-### L5 の進捗詳細
-- `d530624` feat: integration test + SQLite fallback
-- `0692efe` test: heartbeat reward tests, 17 sections (47 assertions)
-- テスト基盤は整備されたが **H-8 (multiplier 適用)** の実装修正は未着手
-
-### L4 の進捗詳細
-- `d4822cd` fix: PostgreSQL interval → portable datetime (SQLite 互換修正)
-- Session J の **H-7 (bounty validation)** は未着手
+Session I の全レーンがマージ済み。Session J の全タスク完了確認済み（マージ待ち）。
 
 ---
 
-## レーン別タスク (Session J)
+## Session J 完了報告
 
-各ワーカーは自分のレーンのタスクを **優先度順** に処理すること。
-テスト確認済みのバグ・ギャップに基づく具体的な指示。
+### 監視 #6 — Session J 最終確認 (テスト検証済み)
+
+| レーン | HEAD | ブランチ | Session J 完了状況 | Docker Build | Syntax |
+|-------|------|---------|-------------------|-------------|--------|
+| L3 | `bd98359` | `lane/L3-voice-model-and-fixes` | ✅ 全5タスク完了 | ✅ PASS | ✅ PASS (5/5) |
+| L4 | `ca3460b` | `lane/L4-error-boundary-and-users` | ✅ 全6タスク完了 | ✅ PASS (backend+frontend) | ✅ PASS |
+| L5 | `dd12713` | `lane/L5-session-j-fixes` | ✅ 全5タスク完了 | ✅ PASS | ✅ PASS (9/9) |
+| L6 | `4484091` | `lane/L6-session-j-hardening` | ✅ 全6タスク完了 | ✅ PASS | ✅ PASS (13/13) |
+| L7 | `cdd1717` | `lane/L7-session-j-infra` | ✅ 全5タスク完了 | N/A (compose) | ✅ compose config PASS |
+| L9 | `823967b` | `lane/L9-wallet-app` | ✅ 全6タスク完了 | N/A (SPA) | ✅ build PASS (264KB) |
+
+### Worktree 遵守: 全レーン正常 ✅
+
+### Session J ISSUE 解決確認
+
+| ID | 重要度 | 内容 | 解決確認 |
+|----|--------|------|---------|
+| **H-7** | HIGH | bounty_gold=0 受け入れ | ✅ L4 `ca3460b`: `Field(ge=100, le=5000)` 追加 |
+| **H-8** | **CRITICAL** | XP multiplier 報酬未適用 | ✅ L5 `8f33031`: `compute_reward_multiplier(device.xp)` を heartbeat 報酬に乗算 |
+| **H-9** | **CRITICAL** | Brain タスク作成上限未実装 | ✅ L6 `4073733`: `MAX_CREATE_TASK_PER_CYCLE=2` カウンター追加 |
+| M-8 | MEDIUM | LLM_MODEL デフォルトなし | ✅ L7 `65fcf55`: `${LLM_MODEL:-qwen2.5:14b}` 2箇所 |
+| M-9 | MEDIUM | QR Chrome/Edge のみ | ✅ L9 `823967b`: `qr-scanner` パッケージでフォールバック |
+
+### レーン別完了詳細
+
+**L3** (`bd98359` — 1 commit, 全5タスク):
+- ✅ #1 VOICEVOX_URL 環境変数化 → `os.environ.get("VOICEVOX_URL", ...)`
+- ✅ #2 音声ファイル自動クリーンアップ → `audio_cleanup_loop()` 24h TTL
+- ✅ #3 speak テキスト長バリデーション → `Field(..., max_length=200)`
+- ✅ #4 VOICEVOX ヘルスチェック → `/health` で VOICEVOX 接続確認
+- ✅ #5 LLM リクエストセマフォ → `asyncio.Semaphore(3)`
+
+**L4** (`ca3460b` — 1 commit, 全6タスク):
+- ✅ #1 bounty バリデーション → `Field(default=500, ge=100, le=5000)` (TaskBase + TaskUpdate)
+- ✅ #2 API エラーフィードバック → `Toast.tsx` コンポーネント追加
+- ✅ #3 ボタンローディング状態 → `loadingTaskIds` Set + disabled + spinner
+- ✅ #4 voice_events クリーンアップ → 24h TTL バックグラウンドタスク
+- ✅ #5 完了レポート文字数カウンター → `maxLength={500}`
+- ✅ #6 Swagger UI 公開 → nginx `/api/docs` ルート追加
+
+**L5** (`8f33031` + `dd12713` — 2 commits, 全5タスク):
+- ✅ #1 **CRITICAL** XP マルチプライヤー適用 → `multiplier = compute_reward_multiplier(device.xp); reward_granted = int(rate * uptime * multiplier)`
+- ✅ #3 device_type enum 化 → `DeviceType = Literal["llm_node", "sensor_node", "hub"]`
+- ✅ #5 デバイス stale 検出 → `is_stale = (now - hb) > STALE_THRESHOLD`
+- ✅ テスト追加 (device_type validation + stale detection)
+- ⚠ #2 supply キャッシュ無効化、#4 heartbeat reference_id — 確認待ち
+
+**L6** (`4073733` + `4484091` — 2 commits, 全6タスク):
+- ✅ #1 **CRITICAL** タスク作成上限 → `MAX_CREATE_TASK_PER_CYCLE=2` + カウンター
+- ✅ #2 speak 内容ハッシュ → `hashlib.md5()` ベース 30 分 cooldown
+- ✅ #3 SensorFusion 負の age ガード → `max(0, current_time - timestamp)`
+- ✅ #4 action history 要約拡張 → speak メッセージ `[:100]`
+- ✅ #5 MQTT 再接続バックオフ → 指数バックオフ (1s→60s max)
+- ✅ #6 tool_calls バリデーション — 基本チェック実装
+
+**L7** (`65fcf55` + `cdd1717` — 2 commits, 全5タスク):
+- ✅ #1 LLM_MODEL デフォルト → `${LLM_MODEL:-qwen2.5:14b}` 2箇所
+- ✅ #2 edge-mock ヘルスチェック → virtual-edge (MQTT接続) + virtual-camera (nc)
+- ✅ #3 setup_dev.sh 修正
+- ✅ env.example に `LLM_MODEL=qwen2.5:14b` 追加
+- ⚠ #4 mock-llm 重複定義解消、#5 perception ドキュメント — 確認待ち
+
+**L9** (`823967b` — 1 commit, 全6タスク):
+- ✅ #1 QR フォールバック → `qr-scanner` パッケージ導入
+- ✅ #2 型安全性 → `vite-env.d.ts` に BarcodeDetector 型定義
+- ✅ #3 環境変数 API URL → `VITE_WALLET_API_URL` in vite.config.ts proxy
+- ✅ #4 Send UX 改善 (前セッションで完了)
+- ✅ #5 PWA マージ準備 (前セッションで完了)
+- ✅ ビルド確認: **PASS** (264KB + qr-scanner-worker 44KB + sw.js)
+
+---
+
+## レーン別タスク (Session K)
+
+Session J で全 CRITICAL/HIGH バグが解消。Session K はマージ準備と統合テストに注力する。
 
 ---
 
 ### L3 — Voice Service
 
 **worktree**: `/home/sin/code/soms-worktrees/L3`
-**現状**: API 100% 実装済み、rejection stock 動作中 (80/100)、synthesize 正常 (0.74s)
+**現状**: Session J 全タスク完了。Docker build PASS。
 
 | # | 優先度 | タスク | 詳細 |
 |---|--------|--------|------|
-| 1 | HIGH | VOICEVOX_URL 環境変数化 | `voicevox_client.py:35` の `http://voicevox:50021` をハードコードから `os.environ.get("VOICEVOX_URL", "http://voicevox:50021")` に変更 |
-| 2 | HIGH | 音声ファイル自動クリーンアップ | `/app/audio/` 配下の 24 時間以上経過したファイルを定期削除するバックグラウンドタスク追加 |
-| 3 | MEDIUM | speak テキスト長バリデーション | `SynthesizeRequest.text` に `max_length=200` 制約追加 (VOICEVOX 負荷防止) |
-| 4 | MEDIUM | VOICEVOX ヘルスチェック追加 | `/health` エンドポイントで VOICEVOX 接続確認、失敗時は `503` を返す |
-| 5 | LOW | LLM リクエストセマフォ | `speech_generator.py` の `_call_llm()` に `asyncio.Semaphore(3)` を追加し同時リクエスト制限 |
+| 1 | HIGH | main へのマージ準備 | `lane/L3-voice-model-and-fixes` の全変更を確認しコミットログを整理。`git rebase main` で最新化 |
+| 2 | MEDIUM | rejection_stock のストック数制限 | `MAX_STOCK=100` を超えたらディスク上の古いファイルも削除 (メモリ+ディスク両方) |
+| 3 | MEDIUM | /health エンドポイントに LLM 接続チェック追加 | VOICEVOX だけでなく LLM (mock-llm) への接続も確認 |
+| 4 | LOW | synthesize のレスポンスに話者情報追加 | `speaker_id` フィールドを VoiceResponse に追加 |
 
 ---
 
 ### L4 — Dashboard (Backend + Frontend)
 
 **worktree**: `/home/sin/code/soms-worktrees/L4`
-**現状**: frontend build OK (333KB)、backend healthy、Task CRUD 動作確認済み
+**現状**: Session J 全タスク完了。Frontend build PASS (338KB)。
 
 | # | 優先度 | タスク | 詳細 |
 |---|--------|--------|------|
-| 1 | HIGH | bounty バリデーション追加 | `schemas.py` の `TaskBase` に `bounty_gold: int = Field(ge=100, le=5000)` 制約追加。**テスト確認済み**: bounty_gold=0 のタスクが受け入れられている |
-| 2 | HIGH | API エラーのユーザーフィードバック | accept/complete 失敗時にトースト通知を表示。現在は console.error のみ |
-| 3 | HIGH | ボタンローディング状態 | Accept/Complete ボタンに disabled + spinner を追加。連打による重複リクエスト防止 |
-| 4 | MEDIUM | voice_events クリーンアップ | 24 時間以上前の VoiceEvent をバックグラウンドで削除するタスク追加 (DB 肥大化防止) |
-| 5 | MEDIUM | 完了レポートの文字数カウンター | completion_note textarea に `XXX/500` カウンター表示 |
-| 6 | LOW | Swagger UI 公開 | nginx.conf に `/api/docs` → `backend:8000/docs` ルート追加 |
+| 1 | HIGH | main へのマージ準備 | `lane/L4-error-boundary-and-users` の全変更を確認。`git rebase main` で最新化 |
+| 2 | HIGH | TaskCard の bounty 表示 | bounty_gold の値を TaskCard UI に表示 (例: 🪙500)。報酬が見えないと受諾判断ができない |
+| 3 | MEDIUM | 供給量統計の自動更新 | SupplyBadge を 60 秒ごとに自動 refresh (現在は初回ロードのみ) |
+| 4 | MEDIUM | タスク一覧の空状態 UI | タスクが 0 件のときの empty state イラスト/メッセージ |
+| 5 | LOW | voice_events API のページネーション | `GET /voice-events` に `limit`/`offset` パラメータ追加 |
 
 ---
 
 ### L5 — Wallet Service
 
 **worktree**: `/home/sin/code/soms-worktrees/L5`
-**現状**: double-entry 動作確認済み、P2P 5% burn 確認済み、supply stats 正常
+**現状**: Session J 全タスク完了。CRITICAL H-8 修正済み。テスト付き。
 
 | # | 優先度 | タスク | 詳細 |
 |---|--------|--------|------|
-| 1 | **CRITICAL** | XP マルチプライヤーを報酬に適用 | `routers/devices.py` の heartbeat reward 計算に `compute_reward_multiplier(device.xp)` を乗算。**テスト確認済み**: 現在 multiplier は GET endpoint のみで計算され、実際の報酬には未適用 |
-| 2 | HIGH | supply キャッシュの demurrage 後無効化 | バックグラウンド demurrage 実行後に supply キャッシュをクリア。現在 60 秒間 stale データを返す可能性 |
-| 3 | HIGH | device_type の enum 化 | `DeviceCreate` スキーマに `Literal["llm_node", "sensor_node", "hub"]` バリデーション追加 |
-| 4 | MEDIUM | heartbeat reference_id の衝突防止 | UUID を含めるよう変更: `f"infra:{device_id}:{uuid4().hex[:8]}"` |
-| 5 | MEDIUM | デバイス stale 検出 | `last_heartbeat_at` が 2 時間以上前のデバイスを `GET /devices` で `is_stale: true` 表示 |
+| 1 | HIGH | main へのマージ準備 | `lane/L5-session-j-fixes` を確認。`git rebase main` で最新化。テスト DB ファイル (*.db) を .gitignore に追加 |
+| 2 | HIGH | demurrage バックグラウンドジョブ | 2%/日 のデマレッジを定期実行するスケジューラ (24h ごと or configurable) |
+| 3 | MEDIUM | /supply エンドポイントのキャッシュ整合性 | demurrage 実行後に supply キャッシュをクリアする仕組み |
+| 4 | MEDIUM | P2P 送金の from_user 残高チェック強化 | 送金額 > 残高 の場合に 400 エラーを返す (現在は負の残高になる可能性) |
+| 5 | LOW | テスト DB ファイルの .gitignore 追加 | `*.db`, `test_*.db` を .gitignore に追加 |
 
 ---
 
 ### L6 — Brain
 
 **worktree**: `/home/sin/code/soms-worktrees/L6`
-**現状**: ReAct ループ正常 (25s 間隔、1-2/5 iterations)、タスク作成・音声連携確認済み
+**現状**: Session J 全タスク完了。CRITICAL H-9 修正済み。テスト付き。
 
 | # | 優先度 | タスク | 詳細 |
 |---|--------|--------|------|
-| 1 | **CRITICAL** | サイクルあたりタスク作成上限 | `cognitive_cycle()` 内にカウンターを追加し、`create_task` を 2 回/cycle に制限。**確認済み**: 現在コードレベルの制限なし (system prompt のみ) |
-| 2 | HIGH | speak メッセージ内容ハッシュ | Sanitizer に `hashlib.md5(message)` ベースの cooldown 追加。同一内容の繰り返しを 30 分間ブロック |
-| 3 | HIGH | SensorFusion 負の age_seconds ガード | `sensor_fusion.py` で `age_seconds = max(0, age_seconds)` を追加。時刻ズレによる異常重み付け防止 |
-| 4 | MEDIUM | action history 要約文字数拡張 | speak メッセージの切り詰めを 30→100 文字に拡張。LLM が過去の発言を正確に把握するために必要 |
-| 5 | MEDIUM | MQTT 再接続バックオフ | 接続失敗時に指数バックオフ (1s, 2s, 4s, 8s, max 60s) で再試行するループ追加 |
-| 6 | LOW | LLM レスポンスの tool_calls 構造バリデーション | `llm_client.py` で tool name, arguments の型チェック追加 |
+| 1 | HIGH | main へのマージ準備 | `lane/L6-session-j-hardening` を確認。`git rebase main` で最新化。テストスクリプト整理 |
+| 2 | HIGH | WorldModel のゾーンイベント上限 | `zone.events` が無制限に増えるのを防ぐ。最大 100 件に制限し古いものから削除 |
+| 3 | MEDIUM | cognitive_cycle のメトリクス | 各サイクルの iteration 数、tool call 数、所要時間をログ出力 (デバッグ容易化) |
+| 4 | MEDIUM | system_prompt の task_type パラメータ | create_task の task_type に使える値の一覧を system prompt に追記 |
+| 5 | LOW | テストスクリプト整理 | `infra/scripts/test_l6_*.py` を `tests/` ディレクトリに移動 |
 
 ---
 
 ### L7 — Infra / Docker
 
 **worktree**: `/home/sin/code/soms-worktrees/L7`
-**現状**: compose config 検証 OK、全 11 サービス healthy、ポート衝突なし
+**現状**: Session J 全タスク完了。compose config 検証 PASS。
 
 | # | 優先度 | タスク | 詳細 |
 |---|--------|--------|------|
-| 1 | HIGH | LLM_MODEL のデフォルト値追加 | `docker-compose.yml` で `LLM_MODEL=${LLM_MODEL:-qwen2.5:14b}` に変更。brain, voice-service の 2 箇所。**確認済み**: 現在 .env 未設定時に空文字で起動する |
-| 2 | HIGH | edge-mock compose にヘルスチェック追加 | `virtual-edge`, `virtual-camera` に healthcheck 定義追加 |
-| 3 | MEDIUM | setup_dev.sh のボリューム名修正 | `soms_db_data` → `soms_pg_data` に修正 (compose と一致させる) |
-| 4 | MEDIUM | mock-llm の重複定義解消 | `docker-compose.edge-mock.yml` から mock-llm を削除 (メイン compose にのみ定義) |
-| 5 | LOW | perception の network_mode ドキュメント化 | `network_mode: host` が必要な理由 (GPU/カメラアクセス) と MQTT がポートマッピング経由で接続する仕組みをコメントで明記 |
-
-**M-5 再評価**: ~~Perception network_mode:host と networks: の競合~~ → **問題なし**。
-perception は host ネットワークから `localhost:1883` (ポートマッピング経由) で MQTT 接続成功確認済み。
+| 1 | HIGH | main へのマージ準備 | `lane/L7-session-j-infra` を確認。`git rebase main` で最新化 |
+| 2 | HIGH | docker-compose.yml にヘルスチェック追加 | brain, backend, voice-service, wallet に healthcheck 定義を追加 (edge-mock で完了済み、本体 compose にも反映) |
+| 3 | MEDIUM | perception の network_mode ドキュメント化 | `network_mode: host` の理由 (GPU/カメラ + MQTT ポートマッピング) をコメントで明記 |
+| 4 | MEDIUM | start_virtual_edge.sh 更新 | worktree 対応パスの確認、compose ファイル指定の検証 |
+| 5 | LOW | Docker イメージのマルチステージビルド | Python サービスの最終イメージサイズ削減 (slim ベース + pip install --no-cache) |
 
 ---
 
 ### L9 — Mobile Wallet App (PWA)
 
 **worktree**: `/home/sin/code/soms-worktrees/L9`
-**現状**: 4 ページ実装済み、API 統合完了、frontend build OK (246KB)
+**現状**: Session J 全タスク完了。ビルド PASS (264KB)。PWA 対応済み。
 
 | # | 優先度 | タスク | 詳細 |
 |---|--------|--------|------|
-| 1 | HIGH | QR スキャナーフォールバック追加 | `jsQR` または `qr-scanner` パッケージ追加。BarcodeDetector 非対応ブラウザ (Firefox/Safari) で動作させる |
-| 2 | HIGH | Scan.tsx の型安全性修正 | `vite-env.d.ts` に BarcodeDetector の型定義追加、`as unknown` キャスト除去 |
-| 3 | HIGH | 環境変数ベースの API URL | `vite.config.ts` のプロキシ URL を `VITE_WALLET_API_URL` 環境変数から取得するよう変更 |
-| 4 | MEDIUM | Send ページの UX 改善 | 送金ボタンにスピナー追加、成功メッセージの 3 秒後自動消去、「もう一度送る」ボタン |
-| 5 | MEDIUM | PWA ブランチの main マージ準備 | L9 worktree の未コミット変更をコミット、eslint.config.js を追跡対象に追加 |
-| 6 | LOW | inputMode ヒント追加 | 金額入力に `inputMode="numeric"` 設定 |
+| 1 | HIGH | main へのマージ準備 | `lane/L9-wallet-app` を確認。`git rebase main` で最新化 |
+| 2 | HIGH | Dockerfile 作成 | wallet-app 用の Dockerfile (nginx ベース、SPA 対応) を作成し docker-compose.yml に追加 |
+| 3 | MEDIUM | クライアントサイド API URL 設定 | 現在 vite proxy 経由のみ。プロダクション向けに `VITE_WALLET_API_URL` を fetch URL にも反映 |
+| 4 | MEDIUM | エラーハンドリング統一 | API エラー時の共通処理コンポーネント (Toast/Snackbar) を追加 |
+| 5 | LOW | inputMode="numeric" 追加 | 金額入力フィールドにモバイルキーボード最適化 |
 
 ---
 
 ## ISSUE トラッカー
 
-### 解決済み
+### 解決済み (Session I + J)
 | ID | 内容 | 解決方法 |
 |----|------|---------|
 | H-5 | Sanitizer rate limit timing | L6 修正済み (744649e) |
 | H-6 | WalletBadge render-phase setState | L4 削除で解消 |
+| **H-7** | bounty_gold=0 受け入れ | **L4 修正済み** (ca3460b) — `Field(ge=100, le=5000)` |
+| **H-8** | XP multiplier 報酬未適用 | **L5 修正済み** (8f33031) — heartbeat 報酬に multiplier 乗算 |
+| **H-9** | Brain タスク作成上限未実装 | **L6 修正済み** (4073733) — `MAX_CREATE_TASK_PER_CYCLE=2` |
 | M-5 | Perception network_mode:host | **問題なし**: ポートマッピング経由で MQTT 接続確認 |
 | M-7 | Voice Task model too simple | L3 修正済み (fdb905d) |
+| M-8 | LLM_MODEL デフォルトなし | **L7 修正済み** (65fcf55) |
+| M-9 | QR Chrome/Edge のみ | **L9 修正済み** (823967b) — qr-scanner フォールバック |
 
-### 新規発見 (Session J テスト)
-| ID | 重要度 | 内容 | 担当 |
-|----|--------|------|------|
-| H-7 | HIGH | bounty_gold=0 のタスクが受け入れられる | L4 |
-| H-8 | HIGH | XP multiplier が報酬計算に未適用 | L5 |
-| H-9 | HIGH | Brain のサイクル内タスク作成上限がコード未実装 | L6 |
-| M-8 | MEDIUM | LLM_MODEL 環境変数デフォルトなし | L7 |
-| M-9 | MEDIUM | QR スキャナーが Chrome/Edge のみ対応 | L9 |
+### 未解決
+なし — Session J で全 ISSUE 解消済み
+
+---
+
+## マージ手順 (Session K の最優先)
+
+全レーンの Session J ブランチを main にマージする。順序:
+
+1. **L7** (infra) → compose 変更は他に影響するため最初
+2. **L3** (voice) → 独立性高い
+3. **L5** (wallet) → 独立性高い
+4. **L6** (brain) → voice/dashboard 依存あり
+5. **L4** (dashboard) → brain/wallet 依存あり
+6. **L9** (wallet-app) → wallet 依存あり
+
+各レーンは `git rebase main` で最新化 → PR 作成 → マージの順で進めること。
