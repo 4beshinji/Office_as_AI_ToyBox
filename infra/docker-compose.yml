@@ -1,7 +1,7 @@
 services:
   # --- Central Bus ---
   mosquitto:
-    image: eclipse-mosquitto:latest
+    image: eclipse-mosquitto:2
     container_name: soms-mqtt
     restart: always
     ports:
@@ -14,6 +14,12 @@ services:
       - soms_mqtt_log:/mosquitto/log
     networks:
       - soms-net
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -p 1883 -u ${MQTT_USER:-soms} -P ${MQTT_PASS:-soms_dev_mqtt} -t '$$SYS/broker/version' -C 1 -W 5 2>/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
 
   # --- Central Intelligence (Brain) ---
   # NOTE: In a distributed setup, this might run elsewhere.
@@ -37,6 +43,12 @@ services:
       - ../services/brain/src:/app
     networks:
       - soms-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('mosquitto',1883),5); s.close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   # --- PostgreSQL ---
   postgres:
@@ -53,6 +65,12 @@ services:
       - soms_pg_data:/var/lib/postgresql/data
     networks:
       - soms-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-soms} -d soms"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # --- Dashboard Backend ---
   backend:
@@ -71,6 +89,12 @@ services:
       - MQTT_BROKER=mosquitto
     networks:
       - soms-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   frontend:
     build: ../services/dashboard/frontend
@@ -82,6 +106,12 @@ services:
       - backend
     networks:
       - soms-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO /dev/null http://localhost:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   # --- VOICEVOX Engine ---
   voicevox:
@@ -92,6 +122,12 @@ services:
       - "50021:50021"
     networks:
       - soms-net
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/50021' 2>/dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
 
   # --- Voice Service ---
   voice-service:
@@ -113,6 +149,13 @@ services:
       - soms_audio_data:/app/audio
     networks:
       - soms-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
   # --- Wallet Service ---
   wallet:
     build: ../services/wallet
@@ -131,6 +174,12 @@ services:
       - ../services/wallet/src:/app
     networks:
       - soms-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   # --- Local LLM Engine (Ollama) ---
   ollama:
@@ -149,6 +198,13 @@ services:
       - HSA_OVERRIDE_GFX_VERSION=12.0.1
     networks:
       - soms-net
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/11434' 2>/dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
   # Mock LLM for development/testing
   mock-llm:
     build: ./mock_llm
@@ -158,6 +214,13 @@ services:
       - "8001:8000"
     networks:
       - soms-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
   # --- Perception Node ---
   perception:
     build: ../services/perception
@@ -180,6 +243,12 @@ services:
       - MQTT_USER=${MQTT_USER:-soms}
       - MQTT_PASS=${MQTT_PASS:-soms_dev_mqtt}
       - HSA_OVERRIDE_GFX_VERSION=12.0.1
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('localhost',1883),5); s.close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 volumes:
   soms_mqtt_data:
