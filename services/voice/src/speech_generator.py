@@ -220,9 +220,10 @@ class SpeechGenerator:
             if not api_endpoint.endswith("/chat/completions"):
                 api_endpoint = f"{api_endpoint.rstrip('/')}/chat/completions"
 
-            async with aiohttp.ClientSession() as session:
+            timeout = aiohttp.ClientTimeout(total=30)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.post(
-                    api_endpoint, 
+                    api_endpoint,
                     headers=headers,
                     json=payload
                 ) as resp:
