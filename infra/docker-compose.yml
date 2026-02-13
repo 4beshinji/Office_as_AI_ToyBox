@@ -118,8 +118,6 @@ services:
     build: ../services/wallet
     container_name: soms-wallet
     restart: always
-    ports:
-      - "8003:8000"
     depends_on:
       - postgres
       - mosquitto
@@ -186,7 +184,6 @@ services:
 volumes:
   soms_mqtt_data:
   soms_mqtt_log:
-  soms_db_data:
   soms_pg_data:
   soms_audio_data:
   ollama_models:

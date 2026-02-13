@@ -35,3 +35,8 @@ services:
       - "8554:8554"
     networks:
       - soms-net
+
+networks:
+  soms-net:
+    external: true
+    name: infra_soms-net
