@@ -1,12 +1,21 @@
+import logging
+import os
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.sql import func
+from sqlalchemy import text
 from typing import List
+import httpx
+
 from database import get_db
 import models
 import json
+
+logger = logging.getLogger(__name__)
+
+WALLET_SERVICE_URL = os.getenv("WALLET_SERVICE_URL", "http://wallet:8000")
 
 router = APIRouter(
     prefix="/tasks",
@@ -14,6 +23,16 @@ router = APIRouter(
 )
 
 import schemas
+
+async def _get_or_create_system_stats(db: AsyncSession) -> models.SystemStats:
+    """Get the singleton SystemStats row (id=1), creating it if needed."""
+    result = await db.execute(select(models.SystemStats).filter(models.SystemStats.id == 1))
+    stats = result.scalars().first()
+    if not stats:
+        stats = models.SystemStats(id=1, total_xp=0, tasks_completed=0, tasks_created=0)
+        db.add(stats)
+        await db.flush()
+    return stats
 
 @router.get("/", response_model=List[schemas.Task])
 async def read_tasks(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)):
@@ -48,6 +67,7 @@ def _task_to_response(task_model: models.Task) -> schemas.Task:
         description=task_model.description,
         location=task_model.location,
         bounty_gold=task_model.bounty_gold,
+        bounty_xp=task_model.bounty_xp,
         is_completed=task_model.is_completed,
         is_queued=task_model.is_queued,
         created_at=task_model.created_at,
@@ -63,6 +83,8 @@ def _task_to_response(task_model: models.Task) -> schemas.Task:
         announcement_text=task_model.announcement_text,
         completion_audio_url=task_model.completion_audio_url,
         completion_text=task_model.completion_text,
+        assigned_to=task_model.assigned_to,
+        accepted_at=task_model.accepted_at,
         last_reminded_at=task_model.last_reminded_at,
     )
 
@@ -125,6 +147,7 @@ async def create_task(task: schemas.TaskCreate, db: AsyncSession = Depends(get_d
         description=task.description,
         location=task.location,
         bounty_gold=task.bounty_gold,
+        bounty_xp=task.bounty_xp,
         expires_at=task.expires_at,
         task_type=json.dumps(task.task_type) if task.task_type else None,
         urgency=task.urgency,
@@ -139,9 +162,33 @@ async def create_task(task: schemas.TaskCreate, db: AsyncSession = Depends(get_d
         completion_text=getattr(task, 'completion_text', None)
     )
     db.add(new_task)
+
+    # Increment system tasks_created counter
+    sys_stats = await _get_or_create_system_stats(db)
+    sys_stats.tasks_created += 1
+
     await db.commit()
     await db.refresh(new_task)
     return _task_to_response(new_task)
+
+@router.put("/{task_id}/accept", response_model=schemas.Task)
+async def accept_task(task_id: int, body: schemas.TaskAccept, db: AsyncSession = Depends(get_db)):
+    """Assign a task to a user."""
+    result = await db.execute(select(models.Task).filter(models.Task.id == task_id))
+    task = result.scalars().first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if task.is_completed:
+        raise HTTPException(status_code=400, detail="Task already completed")
+    if task.assigned_to is not None:
+        raise HTTPException(status_code=400, detail="Task already assigned")
+
+    task.assigned_to = body.user_id
+    task.accepted_at = func.now()
+    await db.commit()
+    await db.refresh(task)
+    return _task_to_response(task)
+
 
 @router.put("/{task_id}/complete", response_model=schemas.Task)
 async def complete_task(task_id: int, db: AsyncSession = Depends(get_db)):
@@ -149,11 +196,34 @@ async def complete_task(task_id: int, db: AsyncSession = Depends(get_db)):
     task = result.scalars().first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    
+
     task.is_completed = True
     task.completed_at = func.now()
+
+    # Accumulate system XP
+    sys_stats = await _get_or_create_system_stats(db)
+    sys_stats.total_xp += task.bounty_xp or 0
+    sys_stats.tasks_completed += 1
+
     await db.commit()
     await db.refresh(task)
+
+    # Pay bounty via wallet service (fire-and-forget)
+    if task.assigned_to and task.bounty_gold:
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                await client.post(
+                    f"{WALLET_SERVICE_URL}/transactions/task-reward",
+                    json={
+                        "user_id": task.assigned_to,
+                        "amount": task.bounty_gold,
+                        "task_id": task.id,
+                        "description": f"Task: {task.title}",
+                    },
+                )
+        except Exception as e:
+            logger.warning("Wallet payment failed for task %d: %s", task.id, e)
+
     return _task_to_response(task)
 
 @router.put("/{task_id}/reminded", response_model=schemas.Task)
@@ -217,22 +287,22 @@ async def dispatch_task(task_id: int, db: AsyncSession = Depends(get_db)):
     return schemas.Task(**t_dict)
 
 
-@router.get("/stats")
+@router.get("/stats", response_model=schemas.SystemStatsResponse)
 async def get_task_stats(db: AsyncSession = Depends(get_db)):
-    """Get task statistics."""
+    """Get task statistics including cumulative system XP."""
     # Queued tasks count
     queued_query = select(func.count()).select_from(models.Task).filter(models.Task.is_queued == True)
     queued_result = await db.execute(queued_query)
     queued_count = queued_result.scalar()
-    
+
     # Completed tasks in last hour
     completed_query = select(func.count()).select_from(models.Task).filter(
         models.Task.is_completed == True,
-        models.Task.completed_at >= func.datetime('now', '-1 hour')
+        models.Task.completed_at >= func.now() - text("interval '1 hour'")
     )
     completed_result = await db.execute(completed_query)
     completed_last_hour = completed_result.scalar()
-    
+
     # Active (dispatched but not completed)
     active_query = select(func.count()).select_from(models.Task).filter(
         models.Task.is_completed == False,
@@ -240,9 +310,16 @@ async def get_task_stats(db: AsyncSession = Depends(get_db)):
     )
     active_result = await db.execute(active_query)
     active_count = active_result.scalar()
-    
-    return {
-        "tasks_queued": queued_count or 0,
-        "tasks_active": active_count or 0,
-        "tasks_completed_last_hour": completed_last_hour or 0
-    }
+
+    # Cumulative system stats
+    sys_stats = await _get_or_create_system_stats(db)
+    await db.commit()  # persist if newly created
+
+    return schemas.SystemStatsResponse(
+        total_xp=sys_stats.total_xp,
+        tasks_completed=sys_stats.tasks_completed,
+        tasks_created=sys_stats.tasks_created,
+        tasks_active=active_count or 0,
+        tasks_queued=queued_count or 0,
+        tasks_completed_last_hour=completed_last_hour or 0,
+    )

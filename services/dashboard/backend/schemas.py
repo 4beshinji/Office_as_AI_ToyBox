@@ -52,10 +52,25 @@ class Task(TaskBase):
     announcement_text: Optional[str] = None
     completion_audio_url: Optional[str] = None
     completion_text: Optional[str] = None
+    assigned_to: Optional[int] = None
+    accepted_at: Optional[datetime] = None
     last_reminded_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+
+class TaskAccept(BaseModel):
+    user_id: int
+
+# SystemStats Schemas
+class SystemStatsResponse(BaseModel):
+    total_xp: int = 0
+    tasks_completed: int = 0
+    tasks_created: int = 0
+    tasks_active: int = 0
+    tasks_queued: int = 0
+    tasks_completed_last_hour: int = 0
 
 # VoiceEvent Schemas
 class VoiceEventCreate(BaseModel):
@@ -74,32 +89,15 @@ class VoiceEvent(VoiceEventCreate):
 # User Schemas
 class UserBase(BaseModel):
     username: str
+    display_name: Optional[str] = None
 
 class UserCreate(UserBase):
     pass
 
 class User(UserBase):
     id: int
-    gold: int
-    xp: int
-    level: int
-
-    class Config:
-        from_attributes = True
-
-# Reward Schemas
-class RewardItemBase(BaseModel):
-    name: str
-    description: Optional[str] = None
-    cost_gold: int
-    icon: Optional[str] = None
-
-class RewardItemCreate(RewardItemBase):
-    pass
-
-class RewardItem(RewardItemBase):
-    id: int
-    is_available: bool
+    is_active: bool = True
+    created_at: datetime
 
     class Config:
         from_attributes = True

@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import TaskCard, { Task } from './components/TaskCard';
 import { useAudioQueue, AudioPriority } from './audio';
+import UserSelector, { UserInfo } from './components/UserSelector';
+import WalletBadge from './components/WalletBadge';
+import WalletPanel from './components/WalletPanel';
 
 const ACCEPT_PHRASES = [
   "承知しました。よろしくお願いします。",
@@ -13,6 +16,15 @@ function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+interface SystemStats {
+  total_xp: number;
+  tasks_completed: number;
+  tasks_created: number;
+  tasks_active: number;
+  tasks_queued: number;
+  tasks_completed_last_hour: number;
+}
+
 function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,6 +34,9 @@ function App() {
   const [acceptedTaskIds, setAcceptedTaskIds] = useState<Set<number>>(new Set());
   const [ignoredTaskIds, setIgnoredTaskIds] = useState<Set<number>>(new Set());
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
+  const [walletOpen, setWalletOpen] = useState(false);
 
   // Configuration
   const MAX_DISPLAY_TASKS = 10;
@@ -33,8 +48,16 @@ function App() {
     const fetchTasks = () => {
       fetch('/api/tasks/')
         .then(res => res.json())
-        .then(data => {
+        .then((data: Task[]) => {
           setTasks(data);
+          // Restore accepted state from server
+          const serverAccepted = new Set(
+            data.filter((t: Task) => t.assigned_to != null && !t.is_completed)
+                .map((t: Task) => t.id)
+          );
+          if (serverAccepted.size > 0) {
+            setAcceptedTaskIds(prev => new Set([...prev, ...serverAccepted]));
+          }
           setLoading(false);
         })
         .catch(err => {
@@ -46,6 +69,19 @@ function App() {
     fetchTasks();
     const interval = setInterval(fetchTasks, 5000);
 
+    return () => clearInterval(interval);
+  }, []);
+
+  // Poll system stats
+  useEffect(() => {
+    const fetchStats = () => {
+      fetch('/api/tasks/stats')
+        .then(res => res.json())
+        .then(data => setSystemStats(data))
+        .catch(err => console.error("Failed to fetch stats:", err));
+    };
+    fetchStats();
+    const interval = setInterval(fetchStats, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -73,7 +109,7 @@ function App() {
     }
 
     setPrevTaskIds(currentIds);
-  }, [tasks, isAudioEnabled, loading, initialLoadDone]);
+  }, [tasks, isAudioEnabled, loading, initialLoadDone, enqueue]);
 
   // Voice event polling (ephemeral speak messages from Brain)
   useEffect(() => {
@@ -96,7 +132,7 @@ function App() {
     pollVoiceEvents();
     const interval = setInterval(pollVoiceEvents, 3000);
     return () => clearInterval(interval);
-  }, [isAudioEnabled, playedVoiceEventIds]);
+  }, [isAudioEnabled, playedVoiceEventIds, enqueue]);
 
   // Sort and Filter Tasks
   const visibleTasks = tasks
@@ -129,6 +165,15 @@ function App() {
 
   const handleAccept = (taskId: number) => {
     setAcceptedTaskIds(prev => new Set(prev).add(taskId));
+
+    // Notify backend of assignment
+    if (currentUser) {
+      fetch(`/api/tasks/${taskId}/accept`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: currentUser.id }),
+      }).catch(err => console.error('Failed to accept task:', err));
+    }
 
     enqueueFromApi(async () => {
       const text = pickRandom(ACCEPT_PHRASES);
@@ -199,6 +244,25 @@ function App() {
               </p>
             </div>
 
+            {/* System Stats + User & Wallet */}
+            <div className="flex items-center gap-4">
+              {systemStats && (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-[var(--xp-purple)]">
+                    <span className="font-bold text-sm text-[var(--xp-purple-dark)]">{systemStats.total_xp} XP</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--gray-100)] border border-[var(--gray-300)]">
+                    <span className="text-sm text-[var(--gray-700)]">{systemStats.tasks_completed} 完了</span>
+                  </div>
+                </div>
+              )}
+              <UserSelector currentUser={currentUser} onSelect={setCurrentUser} />
+              <WalletBadge
+                userId={currentUser?.id ?? null}
+                onClick={() => setWalletOpen(true)}
+              />
+            </div>
+
             {/* Audio Toggle */}
             <button
               onClick={() => setIsAudioEnabled(!isAudioEnabled)}
@@ -225,7 +289,7 @@ function App() {
             お願い事一覧
           </h2>
           <p className="text-[var(--gray-600)]">
-            各タスクを遂行し「最適化承認スコア」を蓄積することで、次世代のシステムへの適合性を証明しましょう。
+            タスクを完了して SOMS コインを獲得しましょう。インフラの維持にも報酬が支払われます。
           </p>
         </div>
 
@@ -267,6 +331,15 @@ function App() {
           </motion.div>
         )}
       </main>
+
+      {/* Wallet Side Panel */}
+      {currentUser && (
+        <WalletPanel
+          userId={currentUser.id}
+          isOpen={walletOpen}
+          onClose={() => setWalletOpen(false)}
+        />
+      )}
     </div>
   );
 }

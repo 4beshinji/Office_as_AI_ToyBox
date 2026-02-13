@@ -34,6 +34,10 @@ class Task(Base):
     # Reminder tracking
     last_reminded_at = Column(DateTime(timezone=True), nullable=True)
 
+    # Assignment tracking
+    assigned_to = Column(Integer, nullable=True)
+    accepted_at = Column(DateTime(timezone=True), nullable=True)
+
 class VoiceEvent(Base):
     __tablename__ = "voice_events"
     id = Column(Integer, primary_key=True, index=True)
@@ -43,8 +47,19 @@ class VoiceEvent(Base):
     tone = Column(String, default="neutral")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+class SystemStats(Base):
+    __tablename__ = "system_stats"
+    id = Column(Integer, primary_key=True, default=1)
+    total_xp = Column(Integer, default=0)
+    tasks_completed = Column(Integer, default=0)
+    tasks_created = Column(Integer, default=0)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
+    display_name = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
     credits = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

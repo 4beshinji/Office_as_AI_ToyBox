@@ -35,6 +35,22 @@ services:
     networks:
       - soms-net
 
+  # --- PostgreSQL ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: soms-postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-soms}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-soms_dev_password}
+      - POSTGRES_DB=soms
+    ports:
+      - "5432:5432"
+    volumes:
+      - soms_pg_data:/var/lib/postgresql/data
+    networks:
+      - soms-net
+
   # --- Dashboard Backend ---
   backend:
     build: ../services/dashboard/backend
@@ -44,11 +60,11 @@ services:
       - "8000:8000"
     depends_on:
       - mosquitto
+      - postgres
     volumes:
       - ../services/dashboard/backend:/app
-      - soms_db_data:/data
     environment:
-      - DATABASE_URL=sqlite+aiosqlite:////data/soms.db
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-soms}:${POSTGRES_PASSWORD:-soms_dev_password}@postgres:5432/soms
       - MQTT_BROKER=mosquitto
     networks:
       - soms-net
@@ -164,6 +180,7 @@ volumes:
   soms_mqtt_data:
   soms_mqtt_log:
   soms_db_data:
+  soms_pg_data:
   soms_audio_data:
   ollama_models:
 

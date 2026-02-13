@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { MapPin, Coins, Circle, AlertCircle, AlertTriangle } from 'lucide-react';
+import { MapPin, Coins, Zap, Circle, AlertCircle, AlertTriangle } from 'lucide-react';
 import Card from './ui/Card';
 import Badge from './ui/Badge';
 import Button from './ui/Button';
@@ -10,6 +10,7 @@ export interface Task {
     description: string;
     location?: string;
     bounty_gold: number;
+    bounty_xp: number;
     urgency: number;
     is_completed: boolean;
     announcement_audio_url?: string;
@@ -19,6 +20,7 @@ export interface Task {
     created_at: string;
     completed_at?: string;
     task_type?: string[];
+    assigned_to?: number;
 }
 
 interface TaskCardProps {
@@ -82,9 +84,12 @@ export default function TaskCard({ task, isAccepted, onAccept, onComplete, onIgn
                     </p>
                 )}
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                     <Badge variant="gold" icon={<Coins size={14} />}>
-                        {task.bounty_gold} 最適化承認スコア
+                        {task.bounty_gold} SOMS
+                    </Badge>
+                    <Badge variant="xp" icon={<Zap size={14} />}>
+                        {task.bounty_xp} システム活動値
                     </Badge>
                 </div>
 
