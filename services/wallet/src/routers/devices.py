@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -5,12 +7,16 @@ from sqlalchemy import func as sa_func
 from typing import List
 
 from database import get_db
-from models import Device
+from models import Device, RewardRate
 from schemas import (
     DeviceCreate, DeviceUpdate, DeviceResponse,
     DeviceXpGrantRequest, DeviceXpResponse, DeviceXpStatsResponse,
+    HeartbeatResponse,
 )
+from services.ledger import transfer, SYSTEM_USER_ID
 from services.xp_scorer import grant_xp_to_zone, compute_reward_multiplier, find_zone_devices
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/devices", tags=["devices"])
 
@@ -82,6 +88,71 @@ async def xp_grant(body: DeviceXpGrantRequest, db: AsyncSession = Depends(get_db
         devices_awarded=devices_awarded,
         total_xp_granted=total_xp,
         device_ids=device_ids,
+    )
+
+
+@router.post("/{device_id}/heartbeat", response_model=HeartbeatResponse)
+async def device_heartbeat(device_id: str, db: AsyncSession = Depends(get_db)):
+    """Record device heartbeat and auto-grant infrastructure reward if eligible.
+
+    Compares last_heartbeat_at with now to determine uptime since last beat.
+    If the device has been active longer than min_uptime_for_reward for its
+    device_type, grant a prorated infrastructure reward to the device owner.
+    """
+    result = await db.execute(
+        select(Device).filter(Device.device_id == device_id)
+    )
+    device = result.scalars().first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    if not device.is_active:
+        raise HTTPException(status_code=400, detail="Device is inactive")
+
+    now = sa_func.now()
+    prev_heartbeat = device.last_heartbeat_at
+    device.last_heartbeat_at = now
+    await db.flush()
+    # Re-read to get the DB-resolved timestamp
+    await db.refresh(device)
+
+    reward_granted = 0
+    uptime_seconds = 0
+
+    if prev_heartbeat is not None:
+        delta = device.last_heartbeat_at - prev_heartbeat
+        uptime_seconds = int(delta.total_seconds())
+
+        # Look up reward rate for this device type
+        rate_result = await db.execute(
+            select(RewardRate).filter(RewardRate.device_type == device.device_type)
+        )
+        rate = rate_result.scalars().first()
+
+        if rate and uptime_seconds >= rate.min_uptime_for_reward:
+            # Prorate: rate_per_hour * (uptime_seconds / 3600)
+            reward_granted = int(rate.rate_per_hour * uptime_seconds / 3600)
+            if reward_granted > 0:
+                try:
+                    ref = f"infra:{device.device_id}:{int(device.last_heartbeat_at.timestamp())}"
+                    await transfer(
+                        db,
+                        from_user_id=SYSTEM_USER_ID,
+                        to_user_id=device.owner_id,
+                        amount=reward_granted,
+                        transaction_type="INFRASTRUCTURE_REWARD",
+                        description=f"Infra reward: {device.device_id}",
+                        reference_id=ref,
+                    )
+                except ValueError as e:
+                    logger.warning("Heartbeat reward skip %s: %s", device_id, e)
+                    reward_granted = 0
+
+    await db.commit()
+    return HeartbeatResponse(
+        device_id=device.device_id,
+        last_heartbeat_at=device.last_heartbeat_at,
+        reward_granted=reward_granted,
+        uptime_seconds=uptime_seconds,
     )
 
 

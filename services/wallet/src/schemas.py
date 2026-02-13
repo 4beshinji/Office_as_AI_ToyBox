@@ -130,6 +130,14 @@ class RewardRateUpdate(BaseModel):
     min_uptime_for_reward: Optional[int] = None
 
 
+# Device Heartbeat
+class HeartbeatResponse(BaseModel):
+    device_id: str
+    last_heartbeat_at: datetime
+    reward_granted: int  # milli-units (0 if not eligible)
+    uptime_seconds: int
+
+
 # Device XP Stats
 class DeviceXpStatsResponse(BaseModel):
     total_device_xp: int

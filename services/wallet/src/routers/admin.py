@@ -1,3 +1,5 @@
+import time
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -6,17 +8,41 @@ from typing import List
 from database import get_db
 from models import SupplyStats, RewardRate
 from schemas import SupplyResponse, RewardRateResponse, RewardRateUpdate
+from services.demurrage import apply_demurrage
 
 router = APIRouter(tags=["admin"])
+
+# In-memory TTL cache for supply stats (avoid DB hit every request)
+_supply_cache: dict = {"data": None, "expires_at": 0.0}
+_SUPPLY_CACHE_TTL = 60  # seconds
 
 
 @router.get("/supply", response_model=SupplyResponse)
 async def get_supply(db: AsyncSession = Depends(get_db)):
+    now = time.monotonic()
+    if _supply_cache["data"] is not None and now < _supply_cache["expires_at"]:
+        return _supply_cache["data"]
+
     result = await db.execute(select(SupplyStats))
     stats = result.scalars().first()
     if not stats:
-        return SupplyResponse(total_issued=0, total_burned=0, circulating=0)
-    return stats
+        resp = SupplyResponse(total_issued=0, total_burned=0, circulating=0)
+    else:
+        resp = SupplyResponse.model_validate(stats)
+
+    _supply_cache["data"] = resp
+    _supply_cache["expires_at"] = now + _SUPPLY_CACHE_TTL
+    return resp
+
+
+@router.post("/demurrage/trigger")
+async def trigger_demurrage():
+    """Manually trigger a demurrage cycle (admin/testing use)."""
+    await apply_demurrage()
+    # Invalidate supply cache after demurrage burns
+    _supply_cache["data"] = None
+    _supply_cache["expires_at"] = 0.0
+    return {"status": "ok"}
 
 
 @router.get("/reward-rates", response_model=List[RewardRateResponse])
