@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Coins, Zap, Circle, AlertCircle, AlertTriangle } from 'lucide-react';
 import Card from './ui/Card';
@@ -21,13 +22,20 @@ export interface Task {
     completed_at?: string;
     task_type?: string[];
     assigned_to?: number;
+    report_status?: string;
+    completion_note?: string;
+}
+
+export interface TaskReport {
+    status: string;
+    note: string;
 }
 
 interface TaskCardProps {
     task: Task;
     isAccepted?: boolean;
     onAccept?: (taskId: number) => void;
-    onComplete?: (taskId: number) => void;
+    onComplete?: (taskId: number, report?: TaskReport) => void;
     onIgnore?: (taskId: number) => void;
 }
 
@@ -53,8 +61,18 @@ const getUrgencyBadge = (urgency: number) => {
     };
 };
 
+const REPORT_STATUSES = [
+    { value: 'no_issue', label: '問題なし' },
+    { value: 'resolved', label: '対応済み' },
+    { value: 'needs_followup', label: '要追加対応' },
+    { value: 'cannot_resolve', label: '対応不可' },
+] as const;
+
 export default function TaskCard({ task, isAccepted, onAccept, onComplete, onIgnore }: TaskCardProps) {
     const urgencyBadge = getUrgencyBadge(task.urgency ?? 2);
+    const [showReport, setShowReport] = useState(false);
+    const [reportStatus, setReportStatus] = useState('');
+    const [reportNote, setReportNote] = useState('');
 
     return (
         <Card elevation={2} padding="medium" hoverable>
@@ -119,7 +137,7 @@ export default function TaskCard({ task, isAccepted, onAccept, onComplete, onIgn
                     </motion.div>
                 )}
 
-                {!task.is_completed && isAccepted && (
+                {!task.is_completed && isAccepted && !showReport && (
                     <motion.div
                         className="flex gap-2 pt-2"
                         initial={{ opacity: 0 }}
@@ -132,11 +150,67 @@ export default function TaskCard({ task, isAccepted, onAccept, onComplete, onIgn
                         <Button
                             variant="secondary"
                             size="medium"
-                            onClick={() => onComplete?.(task.id)}
+                            onClick={() => setShowReport(true)}
                             className="flex-1"
                         >
                             完了
                         </Button>
+                    </motion.div>
+                )}
+
+                {!task.is_completed && isAccepted && showReport && (
+                    <motion.div
+                        className="pt-2 space-y-3"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <p className="text-sm font-medium text-[var(--gray-700)]">結果を報告</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            {REPORT_STATUSES.map(s => (
+                                <button
+                                    key={s.value}
+                                    onClick={() => setReportStatus(s.value)}
+                                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                                        reportStatus === s.value
+                                            ? 'border-[var(--primary-500)] bg-[var(--primary-50)] text-[var(--primary-700)] font-medium'
+                                            : 'border-[var(--gray-300)] bg-white text-[var(--gray-600)] hover:border-[var(--gray-400)]'
+                                    }`}
+                                >
+                                    {s.label}
+                                </button>
+                            ))}
+                        </div>
+                        <textarea
+                            value={reportNote}
+                            onChange={e => setReportNote(e.target.value)}
+                            placeholder="詳細を入力..."
+                            rows={2}
+                            maxLength={500}
+                            className="w-full px-3 py-2 text-sm border border-[var(--gray-300)] rounded-lg resize-none focus:outline-none focus:border-[var(--primary-500)]"
+                        />
+                        <div className="flex gap-2">
+                            <Button
+                                variant="primary"
+                                size="medium"
+                                onClick={() => onComplete?.(task.id, { status: reportStatus, note: reportNote })}
+                                className="flex-1"
+                                disabled={!reportStatus}
+                            >
+                                送信
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="medium"
+                                onClick={() => {
+                                    setShowReport(false);
+                                    setReportStatus('');
+                                    setReportNote('');
+                                }}
+                            >
+                                戻る
+                            </Button>
+                        </div>
                     </motion.div>
                 )}
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import TaskCard, { Task } from './components/TaskCard';
+import TaskCard, { Task, TaskReport } from './components/TaskCard';
 import { useAudioQueue, AudioPriority } from './audio';
 
 const ACCEPT_PHRASES = [
@@ -193,7 +193,7 @@ function App() {
     }, AudioPriority.USER_ACTION);
   };
 
-  const handleComplete = (taskId: number) => {
+  const handleComplete = (taskId: number, report?: TaskReport) => {
     const task = tasks.find(t => t.id === taskId);
 
     if (task?.completion_audio_url) {
@@ -202,6 +202,11 @@ function App() {
 
     fetch(`/api/tasks/${taskId}/complete`, {
       method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        report_status: report?.status || null,
+        completion_note: report?.note || null,
+      }),
     })
       .then(res => {
         if (!res.ok) throw new Error('Failed to complete task');

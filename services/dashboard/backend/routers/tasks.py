@@ -16,6 +16,7 @@ import json
 logger = logging.getLogger(__name__)
 
 WALLET_SERVICE_URL = os.getenv("WALLET_SERVICE_URL", "http://wallet:8000")
+MQTT_BROKER = os.getenv("MQTT_BROKER", "mosquitto")
 
 
 async def _grant_device_xp(zone: str, task_id: int, xp_amount: int, event_type: str):
@@ -45,6 +46,25 @@ async def _get_zone_multiplier(zone: str) -> float:
     except Exception as e:
         logger.warning("Zone multiplier fetch failed for zone=%s: %s", zone, e)
     return 1.0
+
+
+def _publish_task_report(task: "models.Task"):
+    """Publish task completion report to MQTT for Brain consumption (fire-and-forget)."""
+    zone = task.zone or "main"
+    topic = f"office/{zone}/task_report/{task.id}"
+    payload = json.dumps({
+        "task_id": task.id,
+        "title": task.title,
+        "report_status": task.report_status,
+        "completion_note": task.completion_note,
+        "zone": zone,
+    })
+    try:
+        import paho.mqtt.publish as mqtt_publish
+        mqtt_publish.single(topic, payload, hostname=MQTT_BROKER)
+        logger.info("Published task report to %s", topic)
+    except Exception as e:
+        logger.warning("MQTT publish failed for task %d: %s", task.id, e)
 
 
 router = APIRouter(
@@ -116,6 +136,8 @@ def _task_to_response(task_model: models.Task) -> schemas.Task:
         assigned_to=task_model.assigned_to,
         accepted_at=task_model.accepted_at,
         last_reminded_at=task_model.last_reminded_at,
+        report_status=task_model.report_status,
+        completion_note=task_model.completion_note,
     )
 
 @router.post("/", response_model=schemas.Task)
@@ -226,7 +248,11 @@ async def accept_task(task_id: int, body: schemas.TaskAccept, db: AsyncSession =
 
 
 @router.put("/{task_id}/complete", response_model=schemas.Task)
-async def complete_task(task_id: int, db: AsyncSession = Depends(get_db)):
+async def complete_task(
+    task_id: int,
+    body: schemas.TaskComplete = None,
+    db: AsyncSession = Depends(get_db),
+):
     result = await db.execute(select(models.Task).filter(models.Task.id == task_id))
     task = result.scalars().first()
     if not task:
@@ -234,6 +260,13 @@ async def complete_task(task_id: int, db: AsyncSession = Depends(get_db)):
 
     task.is_completed = True
     task.completed_at = func.now()
+
+    # Save completion report if provided
+    if body:
+        if body.report_status:
+            task.report_status = body.report_status
+        if body.completion_note:
+            task.completion_note = body.completion_note[:500]
 
     # Accumulate system XP
     sys_stats = await _get_or_create_system_stats(db)
@@ -268,6 +301,9 @@ async def complete_task(task_id: int, db: AsyncSession = Depends(get_db)):
                 )
         except Exception as e:
             logger.warning("Wallet payment failed for task %d: %s", task.id, e)
+
+    # Publish task report to MQTT (fire-and-forget, for Brain consumption)
+    _publish_task_report(task)
 
     return _task_to_response(task)
 

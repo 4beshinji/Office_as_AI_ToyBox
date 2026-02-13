@@ -31,6 +31,10 @@ class Task(Base):
     is_queued = Column(Boolean, default=False)
     dispatched_at = Column(DateTime(timezone=True), nullable=True)
     
+    # Completion report
+    report_status = Column(String, nullable=True)  # no_issue / resolved / needs_followup / cannot_resolve
+    completion_note = Column(String, nullable=True)  # Free-text (max 500 chars)
+
     # Reminder tracking
     last_reminded_at = Column(DateTime(timezone=True), nullable=True)
 

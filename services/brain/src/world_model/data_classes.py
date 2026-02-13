@@ -127,6 +127,20 @@ class Event(BaseModel):
             return f"ドアが開きました ({self.data.get('device_id', '')})"
         elif self.event_type == "door_closed":
             return f"ドアが閉まりました ({self.data.get('device_id', '')})"
+        elif self.event_type == "task_report":
+            status_labels = {
+                "no_issue": "問題なし",
+                "resolved": "対応済み",
+                "needs_followup": "要追加対応",
+                "cannot_resolve": "対応不可",
+            }
+            title = self.data.get("title", "タスク")
+            status = status_labels.get(self.data.get("report_status", ""), self.data.get("report_status", ""))
+            note = self.data.get("completion_note", "")
+            desc = f"「{title}」→ {status}"
+            if note:
+                desc += f": {note}"
+            return desc
         return f"イベント: {self.event_type}"
 
 

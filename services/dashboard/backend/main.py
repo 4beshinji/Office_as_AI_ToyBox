@@ -35,6 +35,8 @@ def _migrate_add_columns(conn):
     migrations = [
         ("tasks", "assigned_to", "INTEGER", None),
         ("tasks", "accepted_at", "TIMESTAMP WITH TIME ZONE", None),
+        ("tasks", "report_status", "VARCHAR", None),
+        ("tasks", "completion_note", "VARCHAR", None),
         ("users", "display_name", "VARCHAR", None),
         ("users", "is_active", "BOOLEAN", "TRUE"),
         ("users", "created_at", "TIMESTAMP WITH TIME ZONE", "NOW()"),

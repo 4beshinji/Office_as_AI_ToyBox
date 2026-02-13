@@ -60,6 +60,8 @@ class WorldModel:
             self._update_occupancy(zone, payload)
         elif device_type == "activity":
             self._update_activity(zone, payload)
+        elif device_type == "task_report":
+            self._handle_task_report(zone, payload, device_id)
         elif device_type in ["hvac", "light", "coffee_machine"]:
             self._update_device(zone, device_type, device_id, payload)
         
@@ -218,6 +220,23 @@ class WorldModel:
         if "mode" in payload or "target_temp" in payload:
             device.specific_state.update(payload)
     
+    def _handle_task_report(self, zone: ZoneState, payload: dict, device_id: str):
+        """Handle task completion report from dashboard."""
+        event = Event(
+            timestamp=time.time(),
+            event_type="task_report",
+            severity="info",
+            data={
+                "task_id": payload.get("task_id", device_id),
+                "title": payload.get("title", ""),
+                "report_status": payload.get("report_status", "unknown"),
+                "completion_note": payload.get("completion_note", ""),
+            }
+        )
+        zone.events.append(event)
+        logger.info("Task report received: task_id=%s status=%s",
+                     payload.get("task_id"), payload.get("report_status"))
+
     def _detect_events(self, zone: ZoneState):
         """Detect events based on state changes."""
         current_time = time.time()

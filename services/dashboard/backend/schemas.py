@@ -55,10 +55,16 @@ class Task(TaskBase):
     assigned_to: Optional[int] = None
     accepted_at: Optional[datetime] = None
     last_reminded_at: Optional[datetime] = None
+    report_status: Optional[str] = None
+    completion_note: Optional[str] = None
 
     class Config:
         from_attributes = True
 
+
+class TaskComplete(BaseModel):
+    report_status: Optional[str] = None  # no_issue / resolved / needs_followup / cannot_resolve
+    completion_note: Optional[str] = None  # Free-text (max 500 chars)
 
 class TaskAccept(BaseModel):
     user_id: int
