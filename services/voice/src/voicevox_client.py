@@ -1,4 +1,5 @@
 import aiohttp
+import random
 from pathlib import Path
 from loguru import logger
 import io
@@ -6,9 +7,30 @@ from pydub import AudioSegment
 
 class VoicevoxClient:
     """Client for VOICEVOX speech synthesis API."""
-    
-    # Speaker ID: 47 (ナースロボ＿タイプＴ - ノーマル)
-    SPEAKER_ID = 47
+
+    # ナースロボ＿タイプＴ style variants
+    SPEAKER_NORMAL = 47    # ノーマル
+    SPEAKER_HAPPY = 48     # 楽しい
+    SPEAKER_COOL = 46      # クール
+    SPEAKER_WHISPER = 49   # ささやき
+
+    # Default speaker for general announcements
+    SPEAKER_ID = SPEAKER_NORMAL
+
+    # Speaker pools for different contexts
+    ANNOUNCEMENT_SPEAKERS = [SPEAKER_NORMAL]
+    REJECTION_SPEAKERS = [SPEAKER_NORMAL, SPEAKER_COOL]
+    COMPLETION_SPEAKERS = [SPEAKER_NORMAL, SPEAKER_HAPPY]
+
+    @classmethod
+    def pick_speaker(cls, context: str = "announcement") -> int:
+        """Pick a speaker ID appropriate for the given context."""
+        pool = {
+            "announcement": cls.ANNOUNCEMENT_SPEAKERS,
+            "rejection": cls.REJECTION_SPEAKERS,
+            "completion": cls.COMPLETION_SPEAKERS,
+        }.get(context, cls.ANNOUNCEMENT_SPEAKERS)
+        return random.choice(pool)
     
     def __init__(self, base_url: str = "http://voicevox:50021"):
         self.base_url = base_url

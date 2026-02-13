@@ -22,6 +22,15 @@ rejection_stock = RejectionStock(speech_gen, voice_client)
 AUDIO_DIR = Path("/app/audio")
 AUDIO_DIR.mkdir(exist_ok=True)
 
+# VOICEVOX output format constants
+VOICEVOX_SAMPLE_RATE = 24000
+VOICEVOX_BYTES_PER_SAMPLE = 2
+
+
+def estimate_audio_duration(audio_data: bytes) -> float:
+    """Estimate audio duration in seconds from raw PCM data."""
+    return round(len(audio_data) / (VOICEVOX_SAMPLE_RATE * VOICEVOX_BYTES_PER_SAMPLE), 2)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -68,12 +77,12 @@ async def synthesize_text(request: SynthesizeRequest):
         await voice_client.save_audio(audio_data, audio_path)
 
         # 3. Calculate duration
-        duration_seconds = len(audio_data) / (24000 * 2)
+        duration_seconds = estimate_audio_duration(audio_data)
 
         return VoiceResponse(
             audio_url=f"/audio/{audio_filename}",
             text_generated=request.text,
-            duration_seconds=round(duration_seconds, 2)
+            duration_seconds=duration_seconds
         )
 
     except Exception as e:
@@ -109,14 +118,13 @@ async def announce_task(request: TaskAnnounceRequest):
         audio_path = AUDIO_DIR / audio_filename
         await voice_client.save_audio(audio_data, audio_path)
 
-        # 4. Calculate duration (rough estimate based on sample rate)
-        # VOICEVOX typically outputs 24kHz, 16-bit mono
-        duration_seconds = len(audio_data) / (24000 * 2)  # bytes / (sample_rate * bytes_per_sample)
+        # 4. Calculate duration
+        duration_seconds = estimate_audio_duration(audio_data)
 
         return VoiceResponse(
             audio_url=f"/audio/{audio_filename}",
             text_generated=speech_text,
-            duration_seconds=round(duration_seconds, 2)
+            duration_seconds=duration_seconds
         )
 
     except Exception as e:
@@ -150,12 +158,12 @@ async def generate_feedback(feedback_type: str):
         await voice_client.save_audio(audio_data, audio_path)
 
         # 4. Calculate duration
-        duration_seconds = len(audio_data) / (24000 * 2)
+        duration_seconds = estimate_audio_duration(audio_data)
 
         return VoiceResponse(
             audio_url=f"/audio/{audio_filename}",
             text_generated=feedback_text,
-            duration_seconds=round(duration_seconds, 2)
+            duration_seconds=duration_seconds
         )
 
     except Exception as e:
@@ -190,8 +198,9 @@ async def announce_task_with_completion(request: TaskAnnounceRequest):
         # 3. Synthesize announcement
         announcement_audio = await voice_client.synthesize(announcement_text)
 
-        # 4. Synthesize completion
-        completion_audio = await voice_client.synthesize(completion_text)
+        # 4. Synthesize completion (with speaker variation)
+        completion_speaker = VoicevoxClient.pick_speaker("completion")
+        completion_audio = await voice_client.synthesize(completion_text, speaker_id=completion_speaker)
 
         # 5. Save announcement audio
         announcement_id = str(uuid.uuid4())
@@ -206,8 +215,8 @@ async def announce_task_with_completion(request: TaskAnnounceRequest):
         await voice_client.save_audio(completion_audio, completion_path)
 
         # 7. Calculate durations
-        announcement_duration = len(announcement_audio) / (24000 * 2)
-        completion_duration = len(completion_audio) / (24000 * 2)
+        announcement_duration = estimate_audio_duration(announcement_audio)
+        completion_duration = estimate_audio_duration(completion_audio)
 
         logger.info(f"Announcement: {announcement_text}")
         logger.info(f"Completion: {completion_text}")
@@ -215,10 +224,10 @@ async def announce_task_with_completion(request: TaskAnnounceRequest):
         return DualVoiceResponse(
             announcement_audio_url=f"/audio/{announcement_filename}",
             announcement_text=announcement_text,
-            announcement_duration=round(announcement_duration, 2),
+            announcement_duration=announcement_duration,
             completion_audio_url=f"/audio/{completion_filename}",
             completion_text=completion_text,
-            completion_duration=round(completion_duration, 2)
+            completion_duration=completion_duration
         )
 
     except Exception as e:
@@ -243,7 +252,8 @@ async def get_random_rejection():
     rejection_stock.request_started()
     try:
         text = await speech_gen.generate_rejection_text()
-        audio_data = await voice_client.synthesize(text)
+        rejection_speaker = VoicevoxClient.pick_speaker("rejection")
+        audio_data = await voice_client.synthesize(text, speaker_id=rejection_speaker)
         audio_id = str(uuid.uuid4())[:8]
         audio_filename = f"rejection_ondemand_{audio_id}.mp3"
         audio_path = AUDIO_DIR / audio_filename

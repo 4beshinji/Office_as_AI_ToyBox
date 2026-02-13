@@ -94,7 +94,12 @@ class RejectionStock:
             import random
             idx = random.randrange(len(self._entries))
             entry = self._entries.pop(idx)
-            self._save_manifest()
+            try:
+                self._save_manifest()
+            except Exception as e:
+                self._entries.insert(idx, entry)
+                logger.error(f"Failed to save manifest after pop, entry restored: {e}")
+                return None
         logger.info(
             f"Served rejection audio: {entry['text']} "
             f"(stock remaining: {self.count})"
@@ -127,8 +132,10 @@ class RejectionStock:
             # 1. Generate rejection text via LLM
             text = await self.speech_gen.generate_rejection_text()
 
-            # 2. Synthesize audio via VOICEVOX
-            audio_data = await self.voice_client.synthesize(text)
+            # 2. Synthesize audio via VOICEVOX (with speaker variation)
+            from voicevox_client import VoicevoxClient
+            speaker = VoicevoxClient.pick_speaker("rejection")
+            audio_data = await self.voice_client.synthesize(text, speaker_id=speaker)
 
             # 3. Save audio file
             entry_id = str(uuid.uuid4())[:8]
@@ -151,7 +158,14 @@ class RejectionStock:
                     if old_path.exists():
                         old_path.unlink()
                 self._entries.append(entry)
-                self._save_manifest()
+                try:
+                    self._save_manifest()
+                except Exception as e:
+                    self._entries.pop()
+                    if audio_path.exists():
+                        audio_path.unlink()
+                    logger.error(f"Manifest save failed, rolled back entry: {e}")
+                    return False
 
             logger.info(
                 f"Generated rejection entry: '{text}' (stock: {self.count})"
