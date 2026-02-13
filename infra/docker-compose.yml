@@ -9,6 +9,7 @@ services:
       - "${MQTT_BIND_ADDR:-0.0.0.0}:9001:9001" # Websocket
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./mosquitto/passwd:/mosquitto/config/passwd:ro
       - soms_mqtt_data:/mosquitto/data
       - soms_mqtt_log:/mosquitto/log
     networks:
@@ -27,6 +28,8 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - MQTT_BROKER=mosquitto
+      - MQTT_USER=${MQTT_USER:-soms}
+      - MQTT_PASS=${MQTT_PASS:-soms_dev_mqtt}
       - LOG_LEVEL=INFO
       - LLM_API_URL=${LLM_API_URL:-http://mock-llm:8000/v1}
       - LLM_MODEL=${LLM_MODEL}
@@ -45,7 +48,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-soms_dev_password}
       - POSTGRES_DB=soms
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - soms_pg_data:/var/lib/postgresql/data
     networks:
@@ -124,6 +127,8 @@ services:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-soms}:${POSTGRES_PASSWORD:-soms_dev_password}@postgres:5432/soms
       - MQTT_BROKER=mosquitto
       - MQTT_PORT=1883
+      - MQTT_USER=${MQTT_USER:-soms}
+      - MQTT_PASS=${MQTT_PASS:-soms_dev_mqtt}
     volumes:
       - ../services/wallet/src:/app
     networks:
@@ -174,6 +179,8 @@ services:
     environment:
       - MQTT_BROKER=localhost
       - MQTT_PORT=1883
+      - MQTT_USER=${MQTT_USER:-soms}
+      - MQTT_PASS=${MQTT_PASS:-soms_dev_mqtt}
       - HSA_OVERRIDE_GFX_VERSION=12.0.1
 
 volumes:

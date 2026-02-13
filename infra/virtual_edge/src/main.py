@@ -90,6 +90,10 @@ def on_message(client, userdata, msg):
 def main():
     logger.info("Starting Virtual Edge Service...")
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    mqtt_user = os.getenv("MQTT_USER")
+    mqtt_pass = os.getenv("MQTT_PASS")
+    if mqtt_user:
+        client.username_pw_set(mqtt_user, mqtt_pass)
     client.on_connect = on_connect
     client.on_message = on_message
 

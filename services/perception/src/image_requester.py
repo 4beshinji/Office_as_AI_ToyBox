@@ -6,6 +6,7 @@ import uuid
 import json
 import base64
 import logging
+import os
 from typing import Dict, Optional
 import paho.mqtt.client as mqtt
 import numpy as np
@@ -26,6 +27,10 @@ class ImageRequester:
         self.broker = broker
         self.port = port
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        mqtt_user = os.getenv("MQTT_USER")
+        mqtt_pass = os.getenv("MQTT_PASS")
+        if mqtt_user:
+            self.client.username_pw_set(mqtt_user, mqtt_pass)
         self.pending_requests: Dict[str, asyncio.Future] = {}
         self._loop: asyncio.AbstractEventLoop | None = None
         self.client.on_message = self._on_message
