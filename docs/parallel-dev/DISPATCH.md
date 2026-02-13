@@ -178,12 +178,68 @@ git stash pop
 
 ---
 
+### L9 — Mobile Wallet App / PWA (新規)
+
+**優先度**: 高
+**ブランチ**: `git checkout -b lane/L9-wallet-app main`
+
+**技術スタック**: React 19 + TypeScript + Vite 6 + Tailwind CSS 4 + React Router 7 (PWA)
+**ディレクトリ**: `services/wallet-app/` (スキャフォールド作成済み)
+
+**スキャフォールド済み**:
+- [x] `package.json`, `vite.config.ts`, `tsconfig.json`
+- [x] `src/api/wallet.ts` — Wallet API クライアント (全エンドポイント型定義済み)
+- [x] `public/manifest.json` — PWA マニフェスト
+- [x] `src/App.tsx` — ルーター骨格 (placeholder)
+
+**タスク**:
+1. `npm install` で依存インストール
+2. **Home ページ** (`src/pages/Home.tsx`)
+   - 残高表示 (大きなフォント、SOMS 単位変換: balance / 1000)
+   - 直近の取引 3 件
+   - 供給量サマリー
+3. **QR スキャンページ** (`src/pages/Scan.tsx`)
+   - カメラアクセスで QR コード読み取り
+   - QR ペイロード形式: `soms://reward?task_id={id}&amount={amount}`
+   - `claimTaskReward()` API 呼出
+4. **送金ページ** (`src/pages/Send.tsx`)
+   - 宛先ユーザー ID 入力
+   - 金額入力 + リアルタイム手数料プレビュー (`previewFee()`)
+   - 確認 → `sendTransfer()` 実行
+5. **履歴ページ** (`src/pages/History.tsx`)
+   - 無限スクロール (offset ページネーション)
+   - 取引タイプ別フィルタ
+   - デビット/クレジット色分け
+6. **共通コンポーネント**
+   - `BottomNav.tsx` — タブナビゲーション (Home / Scan / Send / History)
+   - `BalanceCard.tsx` — 残高表示カード
+   - `TransactionItem.tsx` — 取引行コンポーネント
+7. **ユーザー識別** — localStorage に user_id を保存 (初回起動時に入力 or QR から取得)
+
+**API 依存** (全て `services/wallet-app/src/api/wallet.ts` に実装済み):
+- `GET /api/wallet/wallets/{user_id}` — 残高
+- `GET /api/wallet/wallets/{user_id}/history` — 履歴
+- `GET /api/wallet/supply` — 供給量
+- `GET /api/wallet/transactions/transfer-fee?amount=X` — 手数料プレビュー
+- `POST /api/wallet/transactions/p2p-transfer` — P2P 送金
+- `POST /api/wallet/transactions/task-reward` — QR 報酬受取
+
+**モック方法**: Wallet Service が停止中でも `vite.config.ts` のプロキシ先を変更して MSW 等でスタブ可能。
+
+**注意**:
+- `services/wallet/` (バックエンド) には触れない。API 契約は `API_CONTRACTS.md` §2 準拠。
+- `services/dashboard/` には触れない。コード共有なし。
+- 決闘 (NFC/BLE) は MVP スコープ外。設計確定後に Capacitor 化を検討。
+
+---
+
 ## レーン間の依存関係
 
 ```
 L4 (stash pop + commit) ──→ L6 (queue_manager.py 修正を引き取る)
 L3 (Voice model 拡張)   ──→ L6 (Brain が新フィールドを活用するなら)
 L7 (docker-compose 修正) ──→ L2 (Perception の network_mode 修正後にテスト)
+L9 (Wallet App)          ──→ L5 (Wallet API が安定していれば独立開発可能)
 ```
 
 ## マージ順序 (推奨)
@@ -193,8 +249,9 @@ L7 (docker-compose 修正) ──→ L2 (Perception の network_mode 修正後�
 3. **L6** — H-5 修正 + queue_manager + task_report 活用。L4 の後。
 4. **L3** — Voice model 拡張。独立。
 5. **L5** — Wallet 改善。独立。
-6. **L1, L2** — Edge/Perception。独立。
-7. **L8** — 最後にドキュメント更新。
+6. **L9** — Wallet App。L5 と同時マージ可能 (API 契約変更がなければ)。
+7. **L1, L2** — Edge/Perception。独立。
+8. **L8** — 最後にドキュメント更新。
 
 ---
 

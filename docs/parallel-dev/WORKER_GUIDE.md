@@ -29,6 +29,7 @@ See also:
 | **L6** | Brain (Internal Logic) | `services/brain/src/` | other `services/` directories |
 | **L7** | Infra / Docker | `infra/` (compose, scripts, mock_llm, mosquitto), `env.example` | service source code |
 | **L8** | Docs / Promo | `docs/`, `README.md`, `DEPLOYMENT.md` | source code |
+| **L9** | Mobile Wallet App (PWA) | `services/wallet-app/` | `services/wallet/`, `services/dashboard/` |
 
 ### Lane Coupling Map
 
@@ -36,6 +37,8 @@ See also:
 L1 Edge ──MQTT──> L6 Brain ──REST──> L4 Dashboard ──REST──> L5 Wallet
                     │                   │
 L2 Perception ─MQTT┘                   └──nginx──> L3 Voice
+
+L9 Wallet App (PWA) ──REST──> L5 Wallet
 
 L7 Infra  = docker-compose, env, scripts (shared config)
 L8 Docs   = documentation only (no code)
