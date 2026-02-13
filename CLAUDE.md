@@ -31,6 +31,16 @@ docker logs -f soms-perception
 
 Service names in docker-compose: `mosquitto`, `brain`, `backend`, `frontend`, `voicevox`, `voice-service`, `ollama`, `mock-llm`, `perception`
 
+### Frontend Development
+
+```bash
+cd services/dashboard/frontend
+npm install
+npm run dev      # Vite dev server
+npm run build    # tsc -b && vite build
+npm run lint     # ESLint
+```
+
 ### Testing
 
 Tests are standalone Python scripts (no pytest framework):
@@ -45,7 +55,7 @@ python3 infra/scripts/test_world_model.py
 python3 infra/scripts/test_human_task.py
 ```
 
-Perception service has test scripts in `services/perception/`:
+Perception service tests in `services/perception/`:
 ```bash
 python3 services/perception/test_activity.py
 python3 services/perception/test_discovery.py
@@ -56,51 +66,117 @@ python3 services/perception/test_yolo_detect.py
 
 ### 4-Layer Design
 
-1. **Central Intelligence** (`services/brain/`) — LLM-driven decision engine using a ReAct (Think→Act→Observe) cognitive loop. Cycles every 30s or on new MQTT events, max 5 iterations per cycle.
-2. **Perception** (`services/perception/`) — YOLOv11 vision system with configurable monitors (occupancy, whiteboard, activity) defined in `config/monitors.yaml`. Uses host networking for camera access.
-3. **Communication** — MQTT broker (Mosquitto) as central message bus. Uses MCP (Model Context Protocol) over MQTT with JSON-RPC 2.0 payloads. Topics: `mcp/{agent_id}/request/{method}` and `mcp/{agent_id}/response/{request_id}`.
-4. **Edge** (`edge/`) — ESP32 MicroPython firmware for sensors (BME680, MH-Z19 CO2) and relays. Thin-client design: logic lives on central server.
+1. **Central Intelligence** (`services/brain/`) — LLM-driven decision engine using a ReAct (Think→Act→Observe) cognitive loop. Cycles every 30s or on new MQTT events, max 5 iterations per cycle, 3s event batch delay.
+2. **Perception** (`services/perception/`) — YOLOv11 vision system with pluggable monitors (occupancy, whiteboard, activity) defined in `config/monitors.yaml`. Uses host networking for camera access.
+3. **Communication** — MQTT broker (Mosquitto) as central message bus. Uses MCP (Model Context Protocol) over MQTT with JSON-RPC 2.0 payloads.
+4. **Edge** (`edge/`) — ESP32 devices for sensors and relays. Two firmware variants: MicroPython (`edge/office/`) for production, PlatformIO C++ (`edge/test-edge/`) for development. Shared MicroPython library in `edge/lib/soms_mcp.py`. Diagnostic scripts in `edge/tools/`. All devices use MCP (JSON-RPC 2.0) and publish per-channel telemetry (`{"value": X}`) for WorldModel compatibility.
 
 ### Service Ports
 
-| Service | Port | Notes |
-|---------|------|-------|
-| Dashboard Frontend | 80 | React + nginx |
-| Dashboard Backend API | 8000 | FastAPI, Swagger at `/docs` |
-| Mock LLM | 8001 | Keyword-based simulator for dev |
-| Voice Service | 8002 | TTS via VOICEVOX |
-| VOICEVOX Engine | 50021 | Speech synthesis backend |
-| Ollama (LLM) | 11434 | ROCm GPU, OpenAI-compatible API |
-| MQTT | 1883 | Mosquitto broker |
+| Service | Port | Container Name |
+|---------|------|----------------|
+| Dashboard Frontend | 80 | soms-frontend |
+| Dashboard Backend API | 8000 | soms-backend |
+| Mock LLM | 8001 | soms-mock-llm |
+| Voice Service | 8002 | soms-voice |
+| VOICEVOX Engine | 50021 | soms-voicevox |
+| Ollama (LLM) | 11434 | soms-ollama |
+| MQTT | 1883 | soms-mqtt |
+
+### MQTT Topic Structure
+
+```
+# Sensor telemetry
+office/{zone}/{device_type}/{device_id}/{channel}
+  e.g. office/main/sensor/env_01/temperature
+
+# Camera status
+office/{zone}/camera/{camera_id}/status
+
+# Activity detection
+office/{zone}/activity/{monitor_id}
+
+# MCP device control (JSON-RPC 2.0)
+mcp/{agent_id}/request/{method}
+mcp/{agent_id}/response/{request_id}
+```
+
+Brain subscribes to `office/#`, `hydro/#`, `aqua/#` and `mcp/+/response/#`.
 
 ### Inter-Service Communication
 
 - **Brain ↔ Edge Devices**: MCP over MQTT (JSON-RPC 2.0)
 - **Brain → Dashboard**: REST API (`POST/GET/PUT /tasks`)
-- **Brain → Voice**: REST API (`POST /api/voice/announce`)
-- **Perception → MQTT**: Publishes detection state to broker
+- **Brain → Voice**: REST API (`POST /api/voice/announce`, `POST /api/voice/synthesize`)
+- **Perception → MQTT**: Publishes detection results to broker
 - **Brain ← MQTT**: Subscribes to sensor telemetry and perception events, triggers cognitive cycles on state changes
 
 ### Brain Service Internals (`services/brain/src/`)
 
-- `main.py` — ReAct cognitive loop, MQTT event handler
-- `llm_client.py` — vLLM/Ollama API wrapper (OpenAI-compatible)
-- `mcp_bridge.py` — MQTT ↔ JSON-RPC translation layer
-- `world_model/` — Sensor fusion, zone/device state tracking
-- `task_scheduling/` — Priority queue for LLM-generated tasks
-- `tool_registry.py` — Tool definitions for LLM function calling
-- `tool_executor.py` — Executes tool calls from LLM responses
+- `main.py` — `Brain` class: ReAct cognitive loop, MQTT event handler, component orchestration
+- `llm_client.py` — Async OpenAI-compatible API wrapper (aiohttp, 120s timeout)
+- `mcp_bridge.py` — MQTT ↔ JSON-RPC 2.0 translation layer (10s timeout per call)
+- `world_model/` — `WorldModel` maintains unified zone state from MQTT; `SensorFusion` aggregates readings; `ZoneState`/`EnvironmentData`/`Event` dataclasses
+- `task_scheduling/` — `TaskQueueManager` with priority scoring and decision logic
+- `tool_registry.py` — OpenAI function-calling schema definitions (5 tools)
+- `tool_executor.py` — Routes and executes tool calls with sanitizer validation
 - `system_prompt.py` — Constitutional AI system prompt builder
 - `sanitizer.py` — Input validation and security
+- `dashboard_client.py` — REST client for dashboard backend
+- `task_reminder.py` — Periodic reminder service (re-announces tasks after 1 hour)
+
+### LLM Tools (defined in `tool_registry.py`)
+
+| Tool | Purpose | Key Params |
+|------|---------|------------|
+| `create_task` | Create human task on dashboard with bounty | title, description, bounty (500-5000), urgency (0-4), zone |
+| `send_device_command` | Control edge device via MCP | agent_id, tool_name, arguments (JSON) |
+| `get_zone_status` | Query WorldModel for zone details | zone_id |
+| `speak` | Voice-only announcement (ephemeral, no dashboard) | message (70 chars max), zone, tone |
+| `get_active_tasks` | List current tasks (duplicate prevention) | — |
+
+### Perception Service (`services/perception/src/`)
+
+- Monitors are pluggable: `OccupancyMonitor`, `WhiteboardMonitor`, `ActivityMonitor` (all extend `MonitorBase`)
+- Image sources abstracted: `RTSPSource`, `MQTTSource`, `HTTPStream` via `ImageSourceFactory`
+- `activity_analyzer.py` — Tiered pose buffer (4 tiers, up to 4 hours) with posture normalization
+- `camera_discovery.py` — ICMP ping sweep + YOLO verification for auto-discovery
+- Monitor config in `config/monitors.yaml` includes YOLO model paths, camera-zone mappings, and discovery settings
+
+### Dashboard Backend API (`services/dashboard/backend/`)
+
+SQLAlchemy async ORM with aiosqlite. Key models: `Task` (bounty/urgency/voice fields), `VoiceEvent` (tone: neutral/caring/humorous/alert), `User` (credits).
+
+Routers: `routers/tasks.py` (CRUD), `routers/users.py`, `routers/voice_events.py`. Swagger UI at `:8000/docs`.
+
+### Voice Service API (`services/voice/src/`)
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /api/voice/synthesize` | Direct text→speech (used by `speak` tool) |
+| `POST /api/voice/announce` | Task announcement with LLM text generation |
+| `POST /api/voice/announce_with_completion` | Dual voice: announcement + completion |
+| `POST /api/voice/feedback/{type}` | Acknowledgment messages |
+| `GET /audio/{filename}` | Serve generated MP3 files |
+
+VOICEVOX speaker ID 47 (ナースロボ_タイプT).
+
+### Mock Infrastructure (`infra/`)
+
+- `mock_llm/` — Keyword-based LLM simulator (FastAPI, OpenAI-compatible). Matches temperature/CO2/supply keywords → tool calls
+- `virtual_edge/` — Virtual ESP32 device emulator for testing without hardware
+- `virtual_camera/` — RTSP server (mediamtx + ffmpeg) for virtual camera feed
+- `docker-compose.edge-mock.yml` — Lightweight compose for virtual-edge + mock-llm + virtual-camera
 
 ## Tech Stack
 
 - **Backend**: Python 3.11, FastAPI, SQLAlchemy (async), paho-mqtt >=2.0, Pydantic 2.x, loguru
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS 4, Framer Motion
-- **ML/Vision**: Ultralytics YOLOv11, OpenCV, PyTorch (ROCm)
-- **LLM**: Ollama with ROCm for AMD GPUs (Qwen2.5-32B target model)
-- **Edge**: MicroPython on ESP32, PlatformIO C++ for camera/sensor nodes
-- **Infra**: Docker Compose, Mosquitto MQTT, SQLite (aiosqlite)
+- **Frontend**: React 19, TypeScript, Vite 7, Tailwind CSS 4, Framer Motion, Lucide icons
+- **ML/Vision**: Ultralytics YOLOv11 (yolo11s.pt + yolo11s-pose.pt), OpenCV, PyTorch (ROCm)
+- **LLM**: Ollama with ROCm for AMD GPUs (Qwen2.5 target model)
+- **TTS**: VOICEVOX (Japanese speech synthesis)
+- **Edge**: MicroPython on ESP32 (BME680, MH-Z19 CO2, DHT22), PlatformIO C++ for camera nodes
+- **Infra**: Docker Compose, Mosquitto MQTT, SQLite (aiosqlite), nginx
 
 ## Code Conventions
 
@@ -108,16 +184,18 @@ python3 services/perception/test_yolo_detect.py
 - Configuration via environment variables (`.env` file, `python-dotenv`)
 - LLM tools follow OpenAI function-calling schema with explicit `parameters.properties` and `required` fields
 - Source code is bind-mounted into containers (`volumes: - ../services/X/src:/app`), so changes take effect on container restart without rebuild
-- Documentation is bilingual (English code/comments, Japanese deployment docs)
+- Documentation is bilingual (English code/comments, Japanese deployment docs and tool descriptions)
 - Perception monitors are YAML-configured (`services/perception/config/monitors.yaml`), not hardcoded
+- Logging uses `loguru` (brain, voice, perception) and standard `logging` (world_model)
 
 ## Environment Configuration
 
 Key variables in `.env` (see `env.example`):
 
 - `LLM_API_URL` — `http://mock-llm:8000/v1` (dev) or `http://ollama:11434/v1` (prod)
-- `LLM_MODEL` — Model name for Ollama
+- `LLM_MODEL` — Model name for Ollama (e.g. `qwen2.5:14b`)
 - `MQTT_BROKER` / `MQTT_PORT` — Broker address (default: `mosquitto:1883`)
-- `DATABASE_URL` — SQLite path for dashboard
-- `RTSP_URL` — Camera feed URL
+- `DATABASE_URL` — SQLite path (default: `sqlite+aiosqlite:////data/soms.db`)
+- `RTSP_URL` — Camera feed URL (dev: `rtsp://virtual-camera:8554/live`)
 - `TZ` — Timezone (default: `Asia/Tokyo`)
+- `HSA_OVERRIDE_GFX_VERSION` — AMD GPU compatibility override (set in docker-compose)

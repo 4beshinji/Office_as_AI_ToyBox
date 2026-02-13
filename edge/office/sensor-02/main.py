@@ -1,16 +1,14 @@
 
 import machine
 import time
-import json
-from mcp_device import MCPDevice
+import sys
+
+# Add shared library path
+sys.path.insert(0, "/lib")
+
+from soms_mcp import MCPDevice
 from bme680_driver import BME680_I2C
 from mhz19_driver import MHZ19C
-
-# --- Configuration ---
-DEVICE_ID = "sensor-node-02"
-WIFI_SSID = "GITY Wi-Fi"
-WIFI_PASS = "gity2023"
-MQTT_BROKER = "192.168.128.161"      # SOMS Server Static IP
 
 # Pin Definitions (Seeed XIAO ESP32C6)
 # BME680 (I2C): SDA=D5(GPIO23), SCL=D4(GPIO22)
@@ -26,19 +24,19 @@ i2c = None
 bme = None
 try:
     print(f"Initializing SoftI2C on SDA={I2C_SDA_PIN}, SCL={I2C_SCL_PIN}...")
-    i2c = machine.SoftI2C(sda=machine.Pin(I2C_SDA_PIN, machine.Pin.PULL_UP), 
-                          scl=machine.Pin(I2C_SCL_PIN, machine.Pin.PULL_UP), 
+    i2c = machine.SoftI2C(sda=machine.Pin(I2C_SDA_PIN, machine.Pin.PULL_UP),
+                          scl=machine.Pin(I2C_SCL_PIN, machine.Pin.PULL_UP),
                           freq=100000, timeout=100000)
     devices = i2c.scan()
     print(f"I2C Scan Devices Found: {[hex(d) for d in devices]}")
-    
+
     # Auto-detect address
     addr = None
     if 0x77 in devices:
         addr = 0x77
     elif 0x76 in devices:
         addr = 0x76
-        
+
     if addr:
         bme = BME680_I2C(i2c, address=addr)
         print(f"BME680 initialized at {hex(addr)}.")
@@ -58,14 +56,14 @@ except Exception as e:
 
 def get_sensor_data():
     data = {}
-    
+
     # BME680
     if bme:
         try:
             data.update(bme.read_sensor())
         except Exception as e:
             print(f"BME read error: {e}")
-            
+
     # MH-Z19C
     if mhz:
         try:
@@ -82,22 +80,16 @@ def restart_device():
     machine.reset()
     return {"status": "restarting"}
 
-# --- Device Setup ---
-device = MCPDevice(
-    device_id=DEVICE_ID,
-    ssid=WIFI_SSID,
-    password=WIFI_PASS,
-    broker=MQTT_BROKER,
-    topic_prefix=f"office/meeting_room_a/sensor/{DEVICE_ID}"
-)
+# --- Device Setup (reads config.json for WiFi/MQTT/zone) ---
+device = MCPDevice()
 
 # Register Tools
 device.register_tool("get_status", get_sensor_data)
 device.register_tool("restart", restart_device)
 
 def main():
-    print(f"Starting Sensor Node {DEVICE_ID}...")
-    
+    print(f"Starting Sensor Node {device.device_id}...")
+
     try:
         device.connect()
     except Exception as e:
@@ -106,25 +98,33 @@ def main():
         machine.reset()
 
     last_report = 0
-    REPORT_INTERVAL = 30 # seconds
 
     while True:
         try:
             device.loop()
-            
+
             # Periodic Telemetry
             now = time.time()
-            if now - last_report > REPORT_INTERVAL:
+            if now - last_report > device.report_interval:
                 sensor_data = get_sensor_data()
                 print(f"Telemetry: {sensor_data}")
-                
+
                 if sensor_data:
-                    device.publish_telemetry("status", sensor_data)
-                
+                    device.publish_sensor_data(sensor_data)
+
                 last_report = now
-                
-            time.sleep(0.1) 
-            
+
+            time.sleep(0.1)
+
+        except OSError as e:
+            print(f"Connection error: {e}")
+            time.sleep(5)
+            try:
+                device.reconnect()
+            except Exception:
+                print("Reconnect failed, resetting...")
+                time.sleep(10)
+                machine.reset()
         except Exception as e:
             print(f"Error in main loop: {e}")
             time.sleep(5)
