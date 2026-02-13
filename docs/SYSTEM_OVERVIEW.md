@@ -644,31 +644,52 @@ Office_as_AI_ToyBox/
 │   │   ├── main.py             #   モニター管理・起動
 │   │   ├── yolo_inference.py   #   YOLOv11 推論ラッパー
 │   │   ├── pose_estimator.py   #   骨格推定 (17キーポイント)
-│   │   ├── activity_analyzer.py#   4層バッファ活動分析
+│   │   ├── activity_analyzer.py#   4層バッファ活動分析 (421行)
 │   │   ├── camera_discovery.py #   ネットワークカメラ自動検出
-│   │   └── monitors/           #   OccupancyMonitor 等
+│   │   └── monitors/           #   Occupancy / Activity / Whiteboard
 │   ├── dashboard/
-│   │   ├── backend/            #   FastAPI + SQLAlchemy
-│   │   └── frontend/src/       #   React 19 + Tailwind
-│   └── voice/src/              # VOICEVOX 連携
+│   │   ├── backend/            #   FastAPI + SQLAlchemy + Wallet 統合
+│   │   └── frontend/src/       #   React 19 + AudioQueue + WalletPanel
+│   ├── voice/src/              # VOICEVOX 連携
+│   │   ├── main.py             #   9 API エンドポイント
+│   │   ├── speech_generator.py #   LLM テキスト生成
+│   │   ├── voicevox_client.py  #   VOICEVOX 合成クライアント
+│   │   └── rejection_stock.py  #   事前生成ストック (最大100)
+│   └── wallet/src/             # 複式簿記信用台帳
+│       ├── main.py             #   FastAPI + PostgreSQL
+│       ├── models.py           #   Wallet, LedgerEntry, Device
+│       ├── routers/            #   wallets, transactions, devices, admin
+│       └── services/           #   ledger (複式仕訳), xp_scorer (報酬乗数)
 ├── edge/
-│   ├── lib/soms_mcp.py         # 共通 MCP ライブラリ
+│   ├── lib/                    # 共通ライブラリ
+│   │   ├── soms_mcp.py         #   MCP + MQTT 統一インターフェース
+│   │   ├── drivers/            #   6種センサードライバ
+│   │   ├── swarm/              #   SensorSwarm プロトコルライブラリ
+│   │   └── sensor_registry.py  #   設定駆動センサー初期化
 │   ├── office/                 # MicroPython ファームウェア
-│   │   ├── sensor-02/          #   BME680 + MH-Z19C
-│   │   └── sensor-node/        #   DHT22
-│   ├── test-edge/              # PlatformIO C++
-│   │   ├── sensor-node/        #   BME680 (C++)
-│   │   └── camera-node/        #   OV2640 カメラ
+│   │   ├── unified-node/       #   量産向け汎用ファームウェア
+│   │   └── sensor-02/          #   BME680 + MH-Z19C (レガシー)
+│   ├── swarm/                  # SensorSwarm ファームウェア
+│   │   ├── hub-node/           #   SwarmHub (WiFi+MQTT, 中継)
+│   │   ├── leaf-espnow/        #   ESP-NOW リーフ
+│   │   ├── leaf-uart/          #   UART リーフ (Pi Pico)
+│   │   └── leaf-arduino/       #   I2C/BLE リーフ (Arduino)
+│   ├── test-edge/              # C++ ファームウェア
+│   │   └── camera-node/        #   OV2640 カメラ (ESP32 WROVER)
 │   └── tools/                  # 診断スクリプト (17本)
 ├── infra/
-│   ├── docker-compose.yml      # メイン Docker 構成
+│   ├── docker-compose.yml      # メイン構成 (11サービス)
 │   ├── docker-compose.edge-mock.yml  # 仮想デバイス構成
-│   ├── mock_llm/               # キーワードベース LLM シミュレータ
-│   ├── virtual_edge/           # 仮想 ESP32 エミュレータ
+│   ├── mock_llm/               # ツール有無分岐 LLM シミュレータ
+│   ├── virtual_edge/           # 仮想エミュレータ (SwarmHub + 3Leaf 含む)
 │   ├── virtual_camera/         # RTSP テストパターン生成
 │   ├── mosquitto/              # MQTT ブローカー設定
 │   └── scripts/                # セットアップ・テストスクリプト
-├── docs/architecture/          # 設計ドキュメント
+├── docs/
+│   ├── SYSTEM_OVERVIEW.md      # 本文書 (技術全体像)
+│   ├── CITY_SCALE_VISION.md    # 都市規模ビジョン
+│   ├── CURRENCY_SYSTEM.md      # 経済システム詳細
+│   └── architecture/           # 初期設計ドキュメント (設計時点の記録)
 ├── CLAUDE.md                   # 開発者ガイド
 ├── HANDOFF.md                  # 作業引き継ぎ
 └── .env                        # 環境設定
@@ -698,18 +719,20 @@ docker compose --env-file ../.env \
 docker compose -f infra/docker-compose.yml up -d --build
 ```
 
-- **Ollama + Qwen2.5**: 本物の LLM 推論 (32GB VRAM)
-- **Perception**: YOLOv11 による実カメラ映像分析
-- **実 ESP32**: BME680/MH-Z19C/OV2640 の実センサーデータ
+- **Ollama + Qwen2.5:14b**: 本物の LLM 推論 (ROCm, ~51 tok/s)
+- **Perception**: YOLOv11 による実カメラ映像分析 (ホストネットワーク)
+- **実 ESP32**: unified-node + SensorSwarm の実センサーデータ
 
 ### サービスポート
 
 | サービス | ポート | コンテナ名 |
 |---------|--------|-----------|
-| Dashboard Frontend | 80 | soms-frontend |
+| Dashboard Frontend (nginx) | 80 | soms-frontend |
 | Dashboard Backend API | 8000 | soms-backend |
 | Mock LLM | 8001 | soms-mock-llm |
 | Voice Service | 8002 | soms-voice |
+| Wallet Service | 8003 | soms-wallet |
+| PostgreSQL | 5432 | soms-postgres |
 | VOICEVOX Engine | 50021 | soms-voicevox |
 | Ollama (LLM) | 11434 | soms-ollama |
 | MQTT Broker | 1883 | soms-mqtt |

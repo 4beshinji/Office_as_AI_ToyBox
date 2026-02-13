@@ -8,19 +8,23 @@ interface WalletBadgeProps {
 
 export default function WalletBadge({ userId, onClick }: WalletBadgeProps) {
   const [balance, setBalance] = useState<number | null>(null);
+  const [trackedUserId, setTrackedUserId] = useState(userId);
+
+  // Reset balance during render when userId changes (React recommended pattern)
+  if (userId !== trackedUserId) {
+    setTrackedUserId(userId);
+    setBalance(null);
+  }
 
   useEffect(() => {
-    if (!userId) { setBalance(null); return; }
-    fetch(`/api/wallet/wallets/${userId}`)
-      .then(res => res.json())
-      .then(data => setBalance(data.balance ?? null))
-      .catch(() => setBalance(null));
-    const interval = setInterval(() => {
+    if (!userId) return;
+    const fetchBalance = () =>
       fetch(`/api/wallet/wallets/${userId}`)
         .then(res => res.json())
         .then(data => setBalance(data.balance ?? null))
-        .catch(() => {});
-    }, 10000);
+        .catch(() => setBalance(null));
+    fetchBalance();
+    const interval = setInterval(fetchBalance, 10000);
     return () => clearInterval(interval);
   }, [userId]);
 

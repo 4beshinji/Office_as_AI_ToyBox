@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, Send } from 'lucide-react';
 
 interface Transaction {
@@ -28,12 +28,12 @@ export default function WalletPanel({ userId, isOpen, onClose }: WalletPanelProp
   const [transferMsg, setTransferMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [sending, setSending] = useState(false);
 
-  const fetchHistory = () => {
+  const fetchHistory = useCallback(() => {
     fetch(`/api/wallet/wallets/${userId}/history?limit=20`)
       .then(res => res.json())
       .then(data => setTransactions(Array.isArray(data) ? data : []))
       .catch(() => setTransactions([]));
-  };
+  }, [userId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -42,7 +42,7 @@ export default function WalletPanel({ userId, isOpen, onClose }: WalletPanelProp
       .then(res => res.json())
       .then((data: UserOption[]) => setUsers(data.filter(u => u.id !== userId)))
       .catch(() => setUsers([]));
-  }, [userId, isOpen]);
+  }, [userId, isOpen, fetchHistory]);
 
   const handleTransfer = async () => {
     if (!toUserId || !amount) return;
